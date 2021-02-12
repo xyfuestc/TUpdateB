@@ -11,22 +11,17 @@ import (
 	"strconv"
 )
 
-//索引为parityID,输出为dataID
 var RelationsInputP = make([][]int, config.M*config.W, config.M*config.W)
-
-//索引为dataID,输出为parityID
 var RelationsInputD = make([][]int, config.K*config.W, config.K*config.W)
 
 var RequestNum = 0
 
 var ackNum = 0
 
-//最大请求数100万
 var totalReqChunks = make([]config.MetaInfo, 0, 1000000)
 
 var curReqChunks = make([]config.MetaInfo, config.MaxBatchSize, config.MaxBatchSize)
 
-//处理client更新请求
 func handleUpdateReq(conn net.Conn) {
 	defer conn.Close()
 
@@ -42,7 +37,6 @@ func handleUpdateReq(conn net.Conn) {
 
 	chunkID := 0
 	switch req.OPType {
-	//用户更新请求
 	case config.UPDT_REQ:
 		chunkID = req.LocalChunkID
 		stripeID := chunkID / config.K
@@ -63,7 +57,6 @@ func handleUpdateReq(conn net.Conn) {
 			fmt.Printf("encode err:%v", err)
 			return
 		} else {
-			//添加到批处理列表
 			totalReqChunks = append(totalReqChunks, *metaInfo)
 		}
 
@@ -72,7 +65,6 @@ func handleUpdateReq(conn net.Conn) {
 		}
 	}
 
-	//fmt.Printf("收到的数据：%v", req)
 
 }
 func initialize(k, m, w int) {
@@ -98,7 +90,7 @@ func initialize(k, m, w int) {
 
 }
 
-//更新相关Parity数据
+//cau algorithm
 func CAU_Update() {
 
 	//fmt.Printf("CAU_UPDATE:\n")
@@ -320,7 +312,7 @@ func main() {
 
 func listen() {
 	initialize(config.K, config.M, config.W)
-	//建立tcp服务
+	//1.listen port:8977
 	IP := fmt.Sprintf("%s:%d", config.HOST_IP, config.ListenPort)
 	fmt.Println(IP)
 	listen, err := net.Listen("tcp", IP)
@@ -330,35 +322,37 @@ func listen() {
 	}
 
 	for {
-		//等待客户端连接
+		//2.wait for client
 		conn, err := listen.Accept()
 		if err != nil {
 			fmt.Println("accept failed, err:%v", err)
 			continue
 		}
-		//启动一个单独的goroutine去处理链接
+		//3.handle client requests
 		go handleUpdateReq(conn)
+
+
 
 	}
 }
 
 func listenACK() {
-	//建立tcp服务
+	//1.create TCP connection
 	IP := fmt.Sprintf("%s:%d", config.HOST_IP, config.ACKPort)
 	listen, err := net.Listen("tcp", IP)
 	if err != nil {
 		fmt.Printf("listen failed, err:%v", err)
 		return
 	}
-
+	
 	for {
-		//等待客户端连接
+		//2.wait for ack
 		conn, err := listen.Accept()
 		if err != nil {
 			fmt.Println("accept failed, err:%v", err)
 			continue
 		}
-		//启动一个单独的goroutine去处理链接
+		//3.handle ack
 		go handleACK(conn)
 
 	}
