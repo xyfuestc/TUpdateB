@@ -53,7 +53,7 @@ func connectMS(chunkID int) config.MetaInfo {
 		OPType:       config.UPDT_REQ,
 		LocalChunkID: chunkID,
 	}
-	res := common.SendData(request, config.HOST_IP, config.ListenPort, "metaInfo")
+	res := common.SendData(request, config.MSIP, config.ListenPort, "metaInfo")
 	metaInfo, _ := res.(config.MetaInfo)
 
 	return metaInfo

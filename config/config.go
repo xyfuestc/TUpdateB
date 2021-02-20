@@ -5,7 +5,7 @@ import "github.com/templexxx/reedsolomon"
 const K int = 6
 const M int = 3
 const W int = 1
-const HOST_IP string = "127.0.0.1"
+
 const ChunkSize int = 1024 * 1024 //1MB
 const MaxBatchSize int = 100
 
@@ -40,25 +40,25 @@ type Strategy int
 const (
 	CAU Strategy = 0
 )
-const IP_BASE string = "192.168.1."
-const MSIP string = IP_BASE + "99"
+const BaseIP string = "172.19.0."
+const MSIP = BaseIP + "3"
 
-var DataNodeIPs = [K]string{IP_BASE + "100", IP_BASE + "101", IP_BASE + "102", IP_BASE + "103", IP_BASE + "104", IP_BASE + "105"}
-var ParityNodeIPs = [M]string{IP_BASE + "106", IP_BASE + "107", IP_BASE + "108"}
+var DataNodeIPs = [K]string{BaseIP + "100", BaseIP + "101", BaseIP + "102", BaseIP + "103", BaseIP + "104", BaseIP + "105"}
+var ParityNodeIPs = [M]string{BaseIP + "10", BaseIP + "11", BaseIP + "12"}
 var Rack0 = Rack{
-	Nodes:        map[string]string{"0": IP_BASE + "100", "1": IP_BASE + "101", "2": IP_BASE + "102"},
+	Nodes:        map[string]string{"0": BaseIP + "4", "1": BaseIP + "5", "2": BaseIP + "6"},
 	NodeNum:      3,
 	CurUpdateNum: 0,
 	Stripes:      map[int][]int{},
 }
 var Rack1 = Rack{
-	Nodes:        map[string]string{"3": IP_BASE + "103", "4": IP_BASE + "104", "5": IP_BASE + "105"},
+	Nodes:        map[string]string{"3": BaseIP + "103", "4": BaseIP + "104", "5": BaseIP + "105"},
 	NodeNum:      3,
 	CurUpdateNum: 0,
 	Stripes:      map[int][]int{},
 }
 var Rack2 = Rack{
-	Nodes:        map[string]string{"0": IP_BASE + "106", "1": IP_BASE + "107", "2": IP_BASE + "108"},
+	Nodes:        map[string]string{"0": BaseIP + "106", "1": BaseIP + "107", "2": BaseIP + "108"},
 	NodeNum:      3,
 	CurUpdateNum: 0,
 	Stripes:      map[int][]int{},

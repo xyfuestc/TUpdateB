@@ -313,7 +313,7 @@ func main() {
 func listen() {
 	initialize(config.K, config.M, config.W)
 	//1.listen port:8977
-	IP := fmt.Sprintf("%s:%d", config.HOST_IP, config.ListenPort)
+	IP := fmt.Sprintf("%s:%d", config.MSIP, config.ListenPort)
 	fmt.Println(IP)
 	listen, err := net.Listen("tcp", IP)
 	if err != nil {
@@ -338,7 +338,7 @@ func listen() {
 
 func listenACK() {
 	//1.create TCP connection
-	IP := fmt.Sprintf("%s:%d", config.HOST_IP, config.ACKPort)
+	IP := fmt.Sprintf("%s:%d", config.MSIP, config.ACKPort)
 	listen, err := net.Listen("tcp", IP)
 	if err != nil {
 		fmt.Printf("listen failed, err:%v", err)
