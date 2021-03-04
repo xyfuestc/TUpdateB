@@ -11,23 +11,25 @@ import (
 	"strconv"
 )
 
-//处理client更新请求
-func handleUpdateReq(conn net.Conn) {
+//handle req
+func handleReq(conn net.Conn) {
 
 	defer conn.Close()
-	//解析请求
+	//decode the req
 	dec := gob.NewDecoder(conn)
 
 	var td config.TD
 	err := dec.Decode(&td)
 	if err != nil {
-		log.Fatal("handleUpdateReq:datanode更新数据，解码出错: ", err)
+		log.Fatal("handleReq:datanode更新数据，解码出错: ", err)
 	}
+
 
 	switch td.OPType {
-	case config.UPDT_REQ:
+	//data update from client
+	case config.UpdateReq:
 		buff := td.Buff
-		file, err := os.OpenFile("./data/dataFile", os.O_RDWR, 0)
+		file, err := os.OpenFile(config.DataFilePath, os.O_RDWR, 0)
 		//1.打开文件后，光标默认在文件开头。
 		if err != nil {
 			fmt.Printf("打开文件出错：%v\n", err)
@@ -39,33 +41,9 @@ func handleUpdateReq(conn net.Conn) {
 		file.Write(buff)
 		//fmt.Printf("更新datanode成功！更新大小：%d B\n", config.ChunkSize)
 
-		ack := &config.ACKData{
+		ack := &config.ReqData{
 			ChunkID: td.DataChunkID,
-		}
-
-		enc := gob.NewEncoder(conn)
-		err = enc.Encode(ack)
-		if err != nil {
-			fmt.Printf("encode err:%v", err)
-			return
-		}
-	//接收其他DataNode的更新数据
-	case config.MoveDataToRoot:
-		buff := td.Buff
-		file, err := os.OpenFile("./data/dataFile", os.O_RDWR, 0)
-		//1.打开文件后，光标默认在文件开头。
-		if err != nil {
-			fmt.Printf("打开文件出错：%v\n", err)
-			return
-		}
-		defer file.Close()
-		index := td.StripeID
-		file.Seek(int64((index-1)*config.ChunkSize), 0)
-		file.Write(buff)
-		//fmt.Printf("更新datanode成功！更新大小：%d B\n", config.ChunkSize)
-
-		ack := &config.ACKData{
-			ChunkID: td.DataChunkID,
+			AckID: td.DataChunkID+1,    //ackID=chunkID+1
 		}
 
 		enc := gob.NewEncoder(conn)
@@ -75,34 +53,14 @@ func handleUpdateReq(conn net.Conn) {
 			return
 		}
 
-	}
+	//DDU mode, send data to root parity
+	case config.DDU:
 
-}
-
-/***********处理MS的命令***********/
-/*
-* 1.针对Data-Delta Update，接收MS命令，将数据直接发给对应的rootParity
-* 2.针对Parity-Delta Update，接收MS命令，1）若为leafNode，将数据转发给root 2）若为rootNode，将数据分发给对应parity
- */
-func handleMSCMD(conn net.Conn) {
-	defer conn.Close()
-	//解析请求
-	dec := gob.NewDecoder(conn)
-
-	var cmd config.CMD
-	err := dec.Decode(&cmd)
-	if err != nil {
-		log.Fatal("handleMSCMD: 解码出错: ", err)
-	}
-	index := cmd.DataChunkID
-	toIP := cmd.ToIP
-
-	switch cmd.Type {
-	//若为DDU模式，则只需直接将数据发给rootParity
-	case config.DataDeltaUpdate:
-		//读取DataChunkID对应数据
+		cmd := td
+		index := cmd.DataChunkID
+		//read data from disk
 		var buff = make([]byte, config.ChunkSize, config.ChunkSize)
-		file, err := os.OpenFile("./data/dataFile", os.O_RDONLY, 0)
+		file, err := os.OpenFile(config.DataFilePath, os.O_RDONLY, 0)
 
 		if err != nil {
 			fmt.Printf("打开文件出错：%v\n", err)
@@ -118,70 +76,51 @@ func handleMSCMD(conn net.Conn) {
 			log.Fatal("读取数据块失败！读取大小为：", readSize)
 		}
 
-		//发送读取的数据给对应的Parity
-		td := config.TD{
-			OPType:      config.SendDataToParity,
+		//send data to root parity
+		sendData := config.TD{
+			OPType:      config.DDURoot,
 			DataChunkID: cmd.DataChunkID,
 			Buff:        buff,
 		}
-
-		res := common.SendData(td, toIP, config.DataPort, "ack")
-		ack, ok := res.(config.ACKData)
+		//get ack to ms
+		res := common.SendData(sendData, cmd.ToIP, config.NodeListenPort, "ack")
+		ack, ok := res.(config.ReqData)
 		if ok {
 			fmt.Printf("成功更新数据块：%d\n", ack.ChunkID)
-			common.SendData(ack, config.MSIP, config.ACKPort, "")
+			common.SendData(ack, config.MSIP, config.MSListenPort, "")
 		} else {
 			log.Fatal("client updateData 解码出错!")
 		}
 
 	}
 
+
 }
+
 func main() {
-	listenClientReq()
-	listenMSCMD()
+	listenReq()
 }
 
-func listenMSCMD() {
+func listenReq() {
+	//listen Req
 	listenAddr := common.GetLocalIP()
-	listenAddr = listenAddr + ":" + strconv.Itoa(config.NodeListenMSCMDPort)
-	fmt.Println(listenAddr)
-	listen, err := net.Listen("tcp", listenAddr)
+	listenAddr = listenAddr + ":" + strconv.Itoa(config.NodeListenPort)
+	fmt.Printf("client req listening: %s",listenAddr)
+	listenReq, err := net.Listen("tcp", listenAddr)
 	if err != nil {
-		fmt.Printf("listen failed, err:%v", err)
-		return
-	}
-	for {
-		//等待客户端连接
-		conn, err := listen.Accept()
-		if err != nil {
-			fmt.Println("accept failed, err:%v", err)
-			continue
-		}
-		//启动一个单独的goroutine去处理链接
-		go handleMSCMD(conn)
-	}
-}
-
-func listenClientReq() {
-	listenAddr := common.GetLocalIP()
-	listenAddr = listenAddr + ":" + strconv.Itoa(config.NodeListenClientPort)
-	fmt.Println(listenAddr)
-	listen, err := net.Listen("tcp", listenAddr)
-	if err != nil {
-		fmt.Printf("listen failed, err:%v", err)
+		fmt.Printf("listenReq failed, err:%v\n", err)
 		return
 	}
 
 	for {
 		//等待客户端连接
-		conn, err := listen.Accept()
+		conn, err := listenReq.Accept()
 		if err != nil {
-			fmt.Println("accept failed, err:%v", err)
+			fmt.Printf("accept failed, err:%v\n", err)
 			continue
 		}
 		//启动一个单独的goroutine去处理链接
-		go handleUpdateReq(conn)
+		go handleReq(conn)
 
 	}
 }

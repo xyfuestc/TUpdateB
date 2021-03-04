@@ -14,11 +14,14 @@ import (
 
 func main() {
 
-	readTrace("./example-traces/wdev_1.csv")
+	fileName := "./example-traces/wdev_1.csv"
+	readTrace(fileName)
 	//readTrace("./example-traces/test.csv")
 }
 
 func readTrace(fileName string) {
+
+	fmt.Printf("read trace file: %s\n", fileName)
 	/*******打开更新文件*********/
 	fi, err := os.Open(fileName)
 	if err != nil {
@@ -48,33 +51,39 @@ func readTrace(fileName string) {
 }
 
 func connectMS(chunkID int) config.MetaInfo {
-	/*******1.与服务器建立连接，端口：8977********/
-	request := &config.UpdateReqData{
-		OPType:       config.UPDT_REQ,
-		LocalChunkID: chunkID,
+
+	fmt.Printf("connect to MS.\n")
+	/*******1.connect to MS, port : 8977********/
+	request := &config.ReqData{
+		OPType:  config.UpdateReq,
+		ChunkID: chunkID,
 	}
-	res := common.SendData(request, config.MSIP, config.ListenPort, "metaInfo")
+	res := common.SendData(request, config.MSIP, config.MSListenPort, "metaInfo")
 	metaInfo, _ := res.(config.MetaInfo)
 
 	return metaInfo
 }
 
-/*********通知DataNode，更新数据块***********/
+/*********inform datanode to update its local data***********/
 func updateData(metaInfo config.MetaInfo, ChunkSize int) {
 
+	fmt.Printf("inform datanode %d to update its local datachunk %d.\n",
+												metaInfo.DataNodeID, metaInfo.DataChunkID)
+	//generate random update data
 	dataStr := common.RandStringBytesMask(ChunkSize)
 	dataBytes := []byte(dataStr)
 	td := &config.TD{
-		OPType:      config.UPDT_REQ,
+		OPType:      config.UpdateReq,
 		Buff:        dataBytes,
 		DataChunkID: metaInfo.DataChunkID,
 	}
-	res := common.SendData(td, metaInfo.ChunkIP, config.NodeListenClientPort, "ack")
-	ack, ok := res.(config.ACKData)
+	//send to datanode, wait for ack
+	res := common.SendData(td, metaInfo.ChunkIP, config.NodeListenPort, "ack")
+	ack, ok := res.(config.ReqData)
 	if ok {
-		fmt.Printf("成功更新数据块：%d\n", ack.ChunkID)
+		fmt.Printf("success to update data: %d\n", ack.ChunkID)
 	} else {
-		log.Fatal("client updateData 解码出错!")
+		log.Fatal("client update data: decode error!")
 	}
 
 }

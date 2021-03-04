@@ -10,58 +10,65 @@ const ChunkSize int = 1024 * 1024 //1MB
 const MaxBatchSize int = 100
 
 type OPType int
-type CMDType int
+//type CMDType int
 
 const (
-	ListenPort           int = 8977
-	NodeListenClientPort int = 8988
-	NodeListenMSCMDPort  int = 8999
-	CMDPort              int = 9000
-	DataPort             int = 9090
-	ACKPort              int = 10010
+	MSListenPort   int = 8977   // metainfo server listening port
+	NodeListenPort int = 8978   // datanode or paritynode listening port
 )
 
 //DataNode操作
 const (
-	UPDT_REQ         OPType = 0
-	MoveDataToRoot   OPType = 1 //内部发送数据
-	SendDataToParity OPType = 2 //data发送给parity
-	DDU              OPType = 3
+	//data operation
+	UpdateReq      OPType = iota //client update, 0
+	SendDataToRoot               //内部发送数据，1
+	DDURoot                      //data发送给parity，2
+	DDULeaf
+	PDU
+
+
+	//metaserver cmd
+	DDU // DDU(i < j)，发送命令给DataNode，使其转发更新数据给rootParity
+
+
+	//ack
+	ACK
 )
 
-//MS命令
-const (
-	DataDeltaUpdate CMDType = 0 // DDU(i < j)，发送命令给DataNode，使其转发更新数据给rootParity
-
-)
 
 type Strategy int
 
 const (
 	CAU Strategy = 0
 )
-const BaseIP string = "172.19.0."
-const MSIP = BaseIP + "3"
+//const BaseIP string = "172.19.0."
+const BaseIP string = "127.0.0."
+//const MSIP = BaseIP + "3"
+const MSIP = BaseIP + "1"
+const DataFilePath string = "/tmp/dataFile.dt"
 
-var DataNodeIPs = [K]string{BaseIP + "100", BaseIP + "101", BaseIP + "102", BaseIP + "103", BaseIP + "104", BaseIP + "105"}
+var DataNodeIPs = [K]string{BaseIP + "4", BaseIP + "5", BaseIP + "6", BaseIP + "7", BaseIP + "8", BaseIP + "9"}
 var ParityNodeIPs = [M]string{BaseIP + "10", BaseIP + "11", BaseIP + "12"}
 var Rack0 = Rack{
 	Nodes:        map[string]string{"0": BaseIP + "4", "1": BaseIP + "5", "2": BaseIP + "6"},
 	NodeNum:      3,
 	CurUpdateNum: 0,
 	Stripes:      map[int][]int{},
+	GateIP:       "",
 }
 var Rack1 = Rack{
-	Nodes:        map[string]string{"3": BaseIP + "103", "4": BaseIP + "104", "5": BaseIP + "105"},
+	Nodes:        map[string]string{"3": BaseIP + "7", "4": BaseIP + "8", "5": BaseIP + "9"},
 	NodeNum:      3,
 	CurUpdateNum: 0,
 	Stripes:      map[int][]int{},
+	GateIP:       "",
 }
 var Rack2 = Rack{
-	Nodes:        map[string]string{"0": BaseIP + "106", "1": BaseIP + "107", "2": BaseIP + "108"},
+	Nodes:        map[string]string{"0": BaseIP + "10", "1": BaseIP + "11", "2": BaseIP + "12"},
 	NodeNum:      3,
 	CurUpdateNum: 0,
 	Stripes:      map[int][]int{},
+	GateIP:       "",
 }
 
 //传输数据格式
@@ -74,33 +81,32 @@ type TD struct {
 	NumRecvChunkItem   int
 	NumRecvChunkParity int
 	PortNum            int
-	NextIP             string
+	ToIP               string
 	SenderIP           string
 	FromIP             string
+	NextIPs            []string
 	Buff               []byte
 }
 
-type ACKData struct {
-	ChunkID int
-}
 
 //传输命令格式
-type CMD struct {
-	SendSize           int
-	Type               CMDType
-	StripeID           int
-	DataChunkID        int
-	UpdateParityID     int
-	NumRecvChunkItem   int
-	NumRecvChunkParity int
-	PortNum            int
-	NextIP             string
-	FromIP             string
-	ToIP               string
-}
-type UpdateReqData struct {
-	OPType       OPType
-	LocalChunkID int
+//type CMD struct {
+//	SendSize           int
+//	Type               CMDType
+//	StripeID           int
+//	DataChunkID        int
+//	UpdateParityID     int
+//	NumRecvChunkItem   int
+//	NumRecvChunkParity int
+//	PortNum            int
+//	ToIP             string
+//	FromIP             string
+//	ToIP               string
+//}
+type ReqData struct {
+	OPType  OPType
+	ChunkID int
+	AckID   int
 }
 
 type MetaInfo struct {
@@ -123,6 +129,7 @@ type Rack struct {
 	NodeNum      int
 	CurUpdateNum int
 	Stripes      map[int][]int
+	GateIP       string
 }
 
 var RS *reedsolomon.RS

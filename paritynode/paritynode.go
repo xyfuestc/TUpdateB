@@ -12,12 +12,11 @@ import (
 )
 
 func main() {
-	listenData()
+	listen()
 }
 
-func handleRequest(conn net.Conn) {
+func handleReq(conn net.Conn) {
 	defer conn.Close()
-	//解析请求
 	dec := gob.NewDecoder(conn)
 
 	var td config.TD
@@ -27,14 +26,17 @@ func handleRequest(conn net.Conn) {
 	}
 
 	switch td.OPType {
-	//接收dataNode数据
-	case config.SendDataToParity:
-		//接收来的数据
+	/*
+		send data to root (in the same rack),
+		in DDU mode：1）as root, receive data from datanode
+	*/
+	case config.DDURoot:
+		//received data
 		buff := td.Buff
 
 		oldBuff := make([]byte, config.ChunkSize, config.ChunkSize)
 
-		file, err := os.OpenFile("./data/dataFile", os.O_RDWR, 0)
+		file, err := os.OpenFile(config.DataFilePath, os.O_RDWR, 0)
 		if err != nil {
 			fmt.Printf("打开文件出错：%v\n", err)
 			return
@@ -43,39 +45,116 @@ func handleRequest(conn net.Conn) {
 		index := td.StripeID
 		file.ReadAt(oldBuff, int64(index*config.ChunkSize))
 
-		//进行数据融合（异或）
+		//cau compute parity new value
+		row := 0
+		col := td.DataChunkID - (td.DataChunkID/config.K)*config.K
+		factor := config.RS.GenMatrix[row*config.K+col]
 		for i := 0; i < len(buff); i++ {
-			buff[i] = buff[i] ^ oldBuff[i]
+			buff[i] =  config.Gfmul(factor, buff[i]) ^ oldBuff[i]
 		}
-		//写入文件
+		//write to file
 		file.Write(buff)
 
-		//返回ack
-		ack := &config.ACKData{
-			ChunkID: td.DataChunkID,
+		acks := 0 //count ack
+
+		for _, leafIP := range td.NextIPs {
+
+			//send data to leaf
+			data := &config.TD{
+				OPType:      config.DDULeaf,
+				Buff:        buff,
+				DataChunkID: td.DataChunkID,
+				ToIP: leafIP,
+			}
+			//send update data to leaf, wait for ack
+			res := common.SendData(data, leafIP, config.NodeListenPort, "ack")
+			ack, ok := res.(config.ReqData)
+			if ok {
+				fmt.Printf("success to update data: %d\n", ack.ChunkID)
+				acks++
+			} else {
+				log.Fatal("client update data: decode error!")
+			}
 		}
-		enc := gob.NewEncoder(conn)
-		err = enc.Encode(ack)
-		if err != nil {
-			fmt.Printf("parityNode : handleRequest encode err:%v", err)
-			return
+		//return stripe ack (stripe update finished)
+		if acks == len(td.NextIPs){
+			//return ack
+			ack := &config.ReqData{
+				ChunkID: td.DataChunkID,
+				AckID: td.DataChunkID+1,
+			}
+			enc := gob.NewEncoder(conn)
+			err = enc.Encode(ack)
+			if err != nil {
+				fmt.Printf("parityNode : handleReq encode err:%v", err)
+				return
+			}
 		}
-	//接收其他DataNode的更新数据
-	case config.MoveDataToRoot:
+	//2) as leaf, receive data from root
+	case config.DDULeaf:
+		//received data
 		buff := td.Buff
-		file, err := os.OpenFile("./data/dataFile", os.O_RDWR, 0)
-		//1.打开文件后，光标默认在文件开头。
+
+		oldBuff := make([]byte, config.ChunkSize, config.ChunkSize)
+
+		file, err := os.OpenFile(config.DataFilePath, os.O_RDWR, 0)
 		if err != nil {
 			fmt.Printf("打开文件出错：%v\n", err)
 			return
 		}
 		defer file.Close()
 		index := td.StripeID
-		file.Seek(int64((index-1)*config.ChunkSize), 0)
-		file.Write(buff)
-		//fmt.Printf("更新datanode成功！更新大小：%d B\n", config.ChunkSize)
+		file.ReadAt(oldBuff, int64(index*config.ChunkSize))
 
-		ack := &config.ACKData{
+
+		//cau compute parity new value
+		row := common.GetParityIDFromIP(td.ToIP)
+		col := td.DataChunkID - (td.DataChunkID/config.K)*config.K
+		factor := config.RS.GenMatrix[row*config.K+col]
+		for i := 0; i < len(buff); i++ {
+			buff[i] =  config.Gfmul(factor, buff[i]) ^ oldBuff[i]
+		}
+		//write to file
+		file.Write(buff)
+
+		//return ack
+		ack := &config.ReqData{
+			ChunkID: td.DataChunkID,
+			AckID: td.DataChunkID+1,
+		}
+		enc := gob.NewEncoder(conn)
+		err = enc.Encode(ack)
+		if err != nil {
+			fmt.Printf("parityNode : handleReq encode err:%v", err)
+			return
+		}
+
+	case config.PDU:
+		buff := td.Buff
+		oldBuff := make([]byte, config.ChunkSize, config.ChunkSize)
+		file, err := os.OpenFile(config.DataFilePath, os.O_RDWR, 0)
+
+		if err != nil {
+			fmt.Printf("打开文件出错：%v\n", err)
+			return
+		}
+		defer file.Close()
+
+		index := td.StripeID
+		file.ReadAt(oldBuff, int64(index*config.ChunkSize))
+
+		//xor
+		for i := 0; i < len(buff); i++ {
+			buff[i] = buff[i] ^ oldBuff[i]
+		}
+		//write to disk
+		_, e := file.WriteAt(buff, int64(index*config.ChunkSize))
+		if e != nil {
+			log.Fatal("err: ", e)
+		}
+
+		//return ack
+		ack := &config.ReqData{
 			ChunkID: td.DataChunkID,
 		}
 
@@ -86,11 +165,10 @@ func handleRequest(conn net.Conn) {
 			return
 		}
 	}
-
 }
-func listenData() {
+func listen() {
 	listenAddr := common.GetLocalIP()
-	listenAddr = listenAddr + ":" + strconv.Itoa(config.DataPort)
+	listenAddr = listenAddr + ":" + strconv.Itoa(config.NodeListenPort)
 	fmt.Println(listenAddr)
 	listen, err := net.Listen("tcp", listenAddr)
 	if err != nil {
@@ -101,10 +179,10 @@ func listenData() {
 		//等待客户端连接
 		conn, err := listen.Accept()
 		if err != nil {
-			fmt.Println("accept failed, err:%v", err)
+			fmt.Printf("accept failed, err:%v", err)
 			continue
 		}
 		//启动一个单独的goroutine去处理链接
-		go handleRequest(conn)
+		go handleReq(conn)
 	}
 }

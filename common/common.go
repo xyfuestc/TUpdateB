@@ -7,11 +7,12 @@ import (
 	"log"
 	"math/rand"
 	"net"
+	"strconv"
 )
 
 var kinds = map[string]func() interface{}{
 	"metaInfo": func() interface{} { return &config.MetaInfo{} },
-	"ack":      func() interface{} { return &config.ACKData{} },
+	"ack":      func() interface{} { return &config.ReqData{} },
 }
 
 func GetLocalIP() string {
@@ -28,6 +29,11 @@ func GetLocalIP() string {
 		}
 	}
 	return "IP获取失败"
+}
+
+func GetChunkIP(chunkGID int) string {
+	nodeID := chunkGID - (chunkGID/config.K)*config.K
+	return GetNodeIP(nodeID)
 }
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -54,7 +60,7 @@ func SendData(data interface{}, targetIP string, port int, retType string) inter
 	addr := fmt.Sprintf("%s:%d", targetIP, port)
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
-		log.Fatal("建立tcp连接出错: ", err)
+		log.Fatal("接收数据出错: ", err)
 	}
 	//2.发送数据
 	enc := gob.NewEncoder(conn)
@@ -76,9 +82,9 @@ func SendData(data interface{}, targetIP string, port int, retType string) inter
 
 		return retData
 	case "ack":
-		retData := config.ACKData{}
+		retData := config.ReqData{}
 
-		//3.接收返回数据
+		//3.receive ack
 		dec := gob.NewDecoder(conn)
 		err = dec.Decode(&retData)
 		if err != nil {
@@ -93,8 +99,8 @@ func SendData(data interface{}, targetIP string, port int, retType string) inter
 	return nil
 }
 
-/**********根据节点编号获取IP**********/
-func GetIP(nodeID int) string {
+/**********get IP from nodeID**********/
+func GetNodeIP(nodeID int) string {
 	if nodeID <= config.K {
 		return config.DataNodeIPs[nodeID]
 	} else {
@@ -110,4 +116,14 @@ func IsContain(items []int, item int) bool {
 		}
 	}
 	return false
+}
+
+func GetParityIDFromIP(ip string) int {
+
+	for i := 0; i < 3; i++ {
+		if  config.Rack2.Nodes[strconv.Itoa(i)] == ip{
+			return i
+		}
+	}
+	return -1
 }
