@@ -81,17 +81,7 @@ func SendData(data interface{}, targetIP string, port int, retType string) inter
 		}
 
 		return retData
-	case "ack":
-		retData := config.ReqData{}
 
-		//3.receive ack
-		dec := gob.NewDecoder(conn)
-		err = dec.Decode(&retData)
-		if err != nil {
-			log.Fatal("接收数据出错: ", err)
-		}
-
-		return retData
 	default:
 		return nil
 	}

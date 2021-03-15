@@ -17,6 +17,21 @@ func handleReq(conn net.Conn) {
 	defer conn.Close()
 	//decode the req
 	dec := gob.NewDecoder(conn)
+	targetIP := conn.RemoteAddr().String()
+
+	var dataType config.ReqType
+	err1 := dec.Decode(&dataType)
+
+	if err1 != nil {
+		log.Fatal("handleReq:datanode更新数据，解码出错: ", err1)
+	}
+	switch dataType.Type {
+	case config.UpdateReq:
+		fmt.Printf("dataType: UpdateReq\n")
+	default:
+		fmt.Printf("dataType: unknown type\n")
+	}
+
 
 	var td config.TD
 	err := dec.Decode(&td)
@@ -45,13 +60,9 @@ func handleReq(conn net.Conn) {
 			ChunkID: td.DataChunkID,
 			AckID: td.DataChunkID+1,    //ackID=chunkID+1
 		}
+		common.SendData(ack, targetIP, config.ClientACKListenPort, "ack")
 
-		enc := gob.NewEncoder(conn)
-		err = enc.Encode(ack)
-		if err != nil {
-			fmt.Printf("encode err:%v", err)
-			return
-		}
+
 
 	//DDU mode, send data to root parity
 	case config.DDU:
@@ -83,14 +94,7 @@ func handleReq(conn net.Conn) {
 			Buff:        buff,
 		}
 		//get ack to ms
-		res := common.SendData(sendData, cmd.ToIP, config.NodeListenPort, "ack")
-		ack, ok := res.(config.ReqData)
-		if ok {
-			fmt.Printf("成功更新数据块：%d\n", ack.ChunkID)
-			common.SendData(ack, config.MSIP, config.MSListenPort, "")
-		} else {
-			log.Fatal("client updateData 解码出错!")
-		}
+		common.SendData(sendData, cmd.ToIP, config.NodeListenPort, "ack")
 
 	}
 

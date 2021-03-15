@@ -4,9 +4,11 @@ import (
 	"EC/common"
 	"EC/config"
 	"bufio"
+	"encoding/gob"
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -17,6 +19,45 @@ func main() {
 	fileName := "./example-traces/wdev_1.csv"
 	readTrace(fileName)
 	//readTrace("./example-traces/test.csv")
+
+	listenAck()
+}
+
+func listenAck() {
+	listenAddr := common.GetLocalIP()
+	listenAddr = listenAddr + ":" + strconv.Itoa(config.ClientACKListenPort)
+
+	listen, err := net.Listen("tcp", listenAddr)
+	if err != nil {
+		fmt.Printf("listen failed, err:%v", err)
+		return
+	}
+	for {
+		//等待客户端连接
+		conn, err := listen.Accept()
+		if err != nil {
+			fmt.Printf("accept failed, err:%v", err)
+			continue
+		}
+		//启动一个单独的goroutine去处理链接
+		go handleAck(conn)
+	}
+}
+
+func handleAck(conn net.Conn) {
+	defer conn.Close()
+	//decode the req
+	dec := gob.NewDecoder(conn)
+
+
+	var td config.Ack
+
+	err := dec.Decode(&td)
+	if err != nil {
+		log.Fatal("handleReq:datanode更新数据，解码出错: ", err)
+	}
+
+
 }
 
 func readTrace(fileName string) {
@@ -77,13 +118,14 @@ func updateData(metaInfo config.MetaInfo, ChunkSize int) {
 		Buff:        dataBytes,
 		DataChunkID: metaInfo.DataChunkID,
 	}
-	//send to datanode, wait for ack
-	res := common.SendData(td, metaInfo.ChunkIP, config.NodeListenPort, "ack")
-	ack, ok := res.(config.ReqData)
-	if ok {
-		fmt.Printf("success to update data: %d\n", ack.ChunkID)
-	} else {
-		log.Fatal("client update data: decode error!")
+
+	dataType := &config.ReqType{
+		Type: config.UpdateReq,
 	}
+
+	//send data to datanode for update
+	fmt.Printf("send datatype to datanode...\n")
+	common.SendData(dataType, metaInfo.ChunkIP, config.NodeListenPort, "ack")
+	common.SendData(td, metaInfo.ChunkIP, config.NodeListenPort, "ack")
 
 }

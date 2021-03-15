@@ -21,6 +21,63 @@ var ackNum = 0
 var totalReqChunks = make([]config.MetaInfo, 0, 1000000)
 
 var curReqChunks = make([]config.MetaInfo, config.MaxBatchSize, config.MaxBatchSize)
+func handleAck(conn net.Conn) {
+	defer conn.Close()
+	dec := gob.NewDecoder(conn)
+
+	var req config.ReqData
+	err := dec.Decode(&req)
+	if err != nil {
+		fmt.Printf("decode error:%v\n", err)
+	} else {
+		fmt.Printf("req : %v\n", req)
+	}
+
+	RequestNum++
+
+	chunkID := 0
+	switch req.OPType {
+	//handle client update, return the specific chunk's metainfo
+	case config.UpdateReq:
+		chunkID = req.ChunkID
+		stripeID := chunkID / config.K
+		relatedParities := config.GetRelatedParities(chunkID)
+
+		nodeID := chunkID - (chunkID/config.K)*config.K
+		metaInfo := &config.MetaInfo{
+			StripeID:        stripeID,
+			DataChunkID:     chunkID,
+			ChunkStoreIndex: chunkID,
+			RelatedParities: relatedParities,
+			ChunkIP:         common.GetChunkIP(chunkID),
+			DataNodeID:      nodeID,
+		}
+		enc := gob.NewEncoder(conn)
+		err = enc.Encode(metaInfo)
+		if err != nil {
+			fmt.Printf("encode err:%v", err)
+			return
+		} else {
+			totalReqChunks = append(totalReqChunks, *metaInfo)
+		}
+		// start CAU when achieve the threshold (100)
+		if len(totalReqChunks) >= config.MaxBatchSize {
+			CAU_Update()
+		}
+		//handle ack
+		//case config.ACK:
+		//	ackNum++
+		//
+		//	fmt.Printf("received ack：%d\n", ackNum)
+		//
+		//	if ackNum == config.Rack0.CurUpdateNum+config.Rack1.CurUpdateNum {
+		//		fmt.Printf("batch updates have been completed...\n")
+		//
+		//		clearUpdates()
+		//	}
+
+	}
+}
 
 func handleReq(conn net.Conn) {
 	defer conn.Close()
@@ -336,9 +393,12 @@ func main() {
 func listen() {
 	initialize(config.K, config.M, config.W)
 	//1.listen port:8977
-	IP := fmt.Sprintf("%s:%d", config.MSIP, config.MSListenPort)
-	fmt.Println(IP)
-	listen, err := net.Listen("tcp", IP)
+	listenAddress := fmt.Sprintf("%s:%d", config.MSIP, config.MSListenPort)
+	//ackListenAddress := fmt.Sprintf("%s:%d", config.MSIP, config.MSACKListenPort)
+
+
+	listen, err := net.Listen("tcp", listenAddress)
+	//listenAck, err := net.Listen("tcp", ackListenAddress)
 	if err != nil {
 		fmt.Printf("listen failed, err:%v", err)
 		return
@@ -347,12 +407,16 @@ func listen() {
 	for {
 		//2.wait for client
 		conn, err := listen.Accept()
+		//connAck, err := listenAck.Accept()
 		if err != nil {
 			fmt.Println("accept failed, err:%v", err)
 			continue
 		}
 		//3.handle client requests
-		go handleReq(conn) //create a new thread
+		//go handleAck(connAck) //create a new thread
+		handleReq(conn)
 	}
 }
+
+
 

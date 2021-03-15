@@ -67,14 +67,8 @@ func handleReq(conn net.Conn) {
 				ToIP: leafIP,
 			}
 			//send update data to leaf, wait for ack
-			res := common.SendData(data, leafIP, config.NodeListenPort, "ack")
-			ack, ok := res.(config.ReqData)
-			if ok {
-				fmt.Printf("success to update data: %d\n", ack.ChunkID)
-				acks++
-			} else {
-				log.Fatal("client update data: decode error!")
-			}
+			common.SendData(data, leafIP, config.NodeListenPort, "ack")
+
 		}
 		//return stripe ack (stripe update finished)
 		if acks == len(td.NextIPs){
@@ -168,7 +162,7 @@ func handleReq(conn net.Conn) {
 }
 func listen() {
 	listenAddr := common.GetLocalIP()
-	listenAddr = listenAddr + ":" + strconv.Itoa(config.NodeListenPort)
+	listenAddr = listenAddr + ":" + strconv.Itoa(config.ParityNodeListenPort)
 	fmt.Println(listenAddr)
 	listen, err := net.Listen("tcp", listenAddr)
 	if err != nil {

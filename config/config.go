@@ -14,7 +14,13 @@ type OPType int
 
 const (
 	MSListenPort   int = 8977   // metainfo server listening port
-	NodeListenPort int = 8978   // datanode or paritynode listening port
+	MSACKListenPort   int = 8978   // metainfo server ack listening port
+
+	NodeListenPort int = 8979 // datanode or paritynode listening port
+	ParityNodeListenPort int = 9979
+	NodeACKListenPort   int = 8980   // metainfo server ack listening port
+
+	ClientACKListenPort int = 8981
 )
 
 //DataNode操作
@@ -45,7 +51,8 @@ const (
 const BaseIP string = "127.0.0."
 //const MSIP = BaseIP + "3"
 const MSIP = BaseIP + "1"
-const DataFilePath string = "/tmp/dataFile.dt"
+//const DataFilePath string = "/tmp/dataFile.dt"
+const DataFilePath string = "../data/dataFile"
 
 var DataNodeIPs = [K]string{BaseIP + "4", BaseIP + "5", BaseIP + "6", BaseIP + "7", BaseIP + "8", BaseIP + "9"}
 var ParityNodeIPs = [M]string{BaseIP + "10", BaseIP + "11", BaseIP + "12"}
@@ -107,6 +114,16 @@ type ReqData struct {
 	OPType  OPType
 	ChunkID int
 	AckID   int
+}
+
+type ReqType struct {
+	Type OPType
+}
+
+type Ack struct {
+	AckID   int
+	SeqNum  int
+	ChunkID int
 }
 
 type MetaInfo struct {
