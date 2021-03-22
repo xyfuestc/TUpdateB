@@ -70,7 +70,7 @@ func handleAck(conn net.Conn) {
 		//
 		//	fmt.Printf("received ack：%d\n", ackNum)
 		//
-		//	if ackNum == config.Rack0.CurUpdateNum+config.Rack1.CurUpdateNum {
+		//	if ackNum == config.Racks[0].CurUpdateNum+config.Racks[1].CurUpdateNum {
 		//		fmt.Printf("batch updates have been completed...\n")
 		//
 		//		clearUpdates()
@@ -119,20 +119,20 @@ func handleReq(conn net.Conn) {
 			totalReqChunks = append(totalReqChunks, *metaInfo)
 		}
 		// start CAU when achieve the threshold (100)
-		if len(totalReqChunks) >= config.MaxBatchSize {
+		if len(curReqChunks) >= config.MaxBatchSize {
 			CAU_Update()
 		}
-	//handle ack
-	//case config.ACK:
-	//	ackNum++
-	//
-	//	fmt.Printf("received ack：%d\n", ackNum)
-	//
-	//	if ackNum == config.Rack0.CurUpdateNum+config.Rack1.CurUpdateNum {
-	//		fmt.Printf("batch updates have been completed...\n")
-	//
-	//		clearUpdates()
-	//	}
+		//handle ack
+		//case config.ACK:
+		//	ackNum++
+		//
+		//	fmt.Printf("received ack：%d\n", ackNum)
+		//
+		//	if ackNum == config.Racks[0].CurUpdateNum+config.Racks[1].CurUpdateNum {
+		//		fmt.Printf("batch updates have been completed...\n")
+		//
+		//		clearUpdates()
+		//	}
 
 	}
 
@@ -157,6 +157,38 @@ func initialize(k, m, w int) {
 	fmt.Printf("initialization is finished.\n")
 
 	PrintGenMatrix(r.GenMatrix)
+
+	//init Nodes and Racks
+	var start  = config.StartIP
+	for g := 0; g < len(config.DataNodeIPs); g++ {
+		strIP := config.BaseIP + strconv.FormatInt(int64(start), 10)
+		config.DataNodeIPs[g] = strIP
+		start++
+	}
+
+	for g := 0; g < len(config.ParityNodeIPs); g++ {
+		strIP := config.BaseIP + strconv.FormatInt(int64(start), 10)
+		config.ParityNodeIPs[g] = strIP
+		start++
+	}
+
+	start = config.StartIP
+
+	for g := 0; g < len(config.Racks); g++ {
+		strIP1 := config.BaseIP + strconv.FormatInt(int64(start), 10)
+		strIP2 := config.BaseIP + strconv.FormatInt(int64(start+1), 10)
+		strIP3 := config.BaseIP + strconv.FormatInt(int64(start+2), 10)
+		config.Racks[g] = config.Rack{
+			Nodes:        map[string]string{"0": strIP1, "1": strIP2, "2": strIP3},
+			NodeNum:      3,
+			CurUpdateNum: 0,
+			Stripes:      map[int][]int{},
+			GateIP:       "",
+		}
+		start++
+	}
+
+
 	//fmt.Printf("bitMatrix=%v.\n",bitMatrix)
 	//fmt.Printf("RelationsInputP=%v.\n", RelationsInputP)
 	//fmt.Printf("RelationsInputD=%v.\n", RelationsInputD)
@@ -191,8 +223,8 @@ func CAU_Update() {
 	rackUpdate()
 	// 2.rack updates compare:
 	// 1)i < j, use Data-Delta Update(DDU); 2)else, use PDU
-	rackCompare(config.Rack0, config.Rack2)
-	rackCompare(config.Rack1, config.Rack2)
+	rackCompare(config.Racks[0], config.Racks[2])
+	rackCompare(config.Racks[1], config.Racks[2])
 
 }
 //R1 is a rack for datanode, R2 is a rack for paritynode
@@ -235,14 +267,14 @@ func rackCompare(R1 config.Rack, R2 config.Rack) {
 }
 
 func clearUpdates() {
-	config.Rack0.CurUpdateNum = 0
-	config.Rack0.Stripes = make(map[int][]int)
+	config.Racks[0].CurUpdateNum = 0
+	config.Racks[0].Stripes = make(map[int][]int)
 
-	config.Rack1.CurUpdateNum = 0
-	config.Rack1.Stripes = make(map[int][]int)
+	config.Racks[1].CurUpdateNum = 0
+	config.Racks[1].Stripes = make(map[int][]int)
 
-	config.Rack2.CurUpdateNum = 0
-	config.Rack2.Stripes = make(map[int][]int)
+	config.Racks[2].CurUpdateNum = 0
+	config.Racks[2].Stripes = make(map[int][]int)
 
 	ackNum = 0
 }
@@ -257,42 +289,42 @@ func rackUpdate()  {
 		row := curChunk.DataChunkID / config.K
 		p0ParityID := row * config.M
 		//如果chunk在Rack0里
-		if _, ok := config.Rack0.Nodes[strconv.Itoa(nodeID)]; ok {
+		if _, ok := config.Racks[0].Nodes[strconv.Itoa(nodeID)]; ok {
 
 			//stripe未出现
-			if _, ok := config.Rack0.Stripes[row]; !ok {
-				config.Rack0.CurUpdateNum++
-				config.Rack0.Stripes[row] = append(config.Rack0.Stripes[row], curChunk.DataChunkID)
+			if _, ok := config.Racks[0].Stripes[row]; !ok {
+				config.Racks[0].CurUpdateNum++
+				config.Racks[0].Stripes[row] = append(config.Racks[0].Stripes[row], curChunk.DataChunkID)
 				//chunk未出现
-			} else if !common.IsContain(config.Rack0.Stripes[row], curChunk.DataChunkID) {
-				config.Rack0.CurUpdateNum++
-				config.Rack0.Stripes[row] = append(config.Rack0.Stripes[row], curChunk.DataChunkID)
+			} else if !common.IsContain(config.Racks[0].Stripes[row], curChunk.DataChunkID) {
+				config.Racks[0].CurUpdateNum++
+				config.Racks[0].Stripes[row] = append(config.Racks[0].Stripes[row], curChunk.DataChunkID)
 
 			}
 
 			//更新parity(出现过的就不更新了)
-			if _, ok := config.Rack2.Stripes[row]; !ok {
-				config.Rack2.CurUpdateNum += 3
-				config.Rack2.Stripes[row] = append(config.Rack2.Stripes[row],
+			if _, ok := config.Racks[2].Stripes[row]; !ok {
+				config.Racks[2].CurUpdateNum += 3
+				config.Racks[2].Stripes[row] = append(config.Racks[2].Stripes[row],
 					p0ParityID, p0ParityID+1, p0ParityID+2)
 			}
 			//如果chunk在Rack1里
-		} else if _, ok := config.Rack1.Nodes[strconv.Itoa(nodeID)]; ok {
+		} else if _, ok := config.Racks[1].Nodes[strconv.Itoa(nodeID)]; ok {
 
 			//stripe未出现
-			if _, ok := config.Rack1.Stripes[row]; !ok {
-				config.Rack1.CurUpdateNum++
-				config.Rack1.Stripes[row] = append(config.Rack1.Stripes[row], curChunk.DataChunkID)
+			if _, ok := config.Racks[1].Stripes[row]; !ok {
+				config.Racks[1].CurUpdateNum++
+				config.Racks[1].Stripes[row] = append(config.Racks[1].Stripes[row], curChunk.DataChunkID)
 				//chunk未出现
-			} else if !common.IsContain(config.Rack1.Stripes[row], curChunk.DataChunkID) {
-				config.Rack1.CurUpdateNum++
-				config.Rack1.Stripes[row] = append(config.Rack1.Stripes[row], curChunk.DataChunkID)
+			} else if !common.IsContain(config.Racks[1].Stripes[row], curChunk.DataChunkID) {
+				config.Racks[1].CurUpdateNum++
+				config.Racks[1].Stripes[row] = append(config.Racks[1].Stripes[row], curChunk.DataChunkID)
 
 			}
 			//更新parity
-			if _, ok := config.Rack2.Stripes[row]; !ok {
-				config.Rack2.CurUpdateNum += 3
-				config.Rack2.Stripes[row] = append(config.Rack2.Stripes[row],
+			if _, ok := config.Racks[2].Stripes[row]; !ok {
+				config.Racks[2].CurUpdateNum += 3
+				config.Racks[2].Stripes[row] = append(config.Racks[2].Stripes[row],
 					p0ParityID, p0ParityID+1, p0ParityID+2)
 			}
 
@@ -321,16 +353,16 @@ func getRelatedParityID(chunkID int) {
 
 /*******初始化Rack**********/
 //func initRack()  {
-//	config.Rack1 = make(map[string]string)
-//	config.Rack2 = make(map[string]string)
+//	config.Racks[1] = make(map[string]string)
+//	config.Racks[2] = make(map[string]string)
 //	config.Rack3 = make(map[string]string)
 //
 //	for i := 1; i <= len(config.DataNodeIPs); i++ {
 //		if i <= (config.K+config.M)/config.K {
-//			config.Rack1[strconv.Itoa(i)]  = config.DataNodeIPs[i]
+//			config.Racks[1][strconv.Itoa(i)]  = config.DataNodeIPs[i]
 //			config.Rack3[strconv.Itoa(i)]  = config.ParityNodeIPs[i]
 //		}else{
-//			config.Rack2[strconv.Itoa(i)]  = config.DataNodeIPs[i]
+//			config.Racks[2][strconv.Itoa(i)]  = config.DataNodeIPs[i]
 //		}
 //	}
 //}
@@ -393,6 +425,8 @@ func main() {
 func listen() {
 	initialize(config.K, config.M, config.W)
 	//1.listen port:8977
+	config.MSIP = "127.0.0.1"
+
 	listenAddress := fmt.Sprintf("%s:%d", config.MSIP, config.MSListenPort)
 	//ackListenAddress := fmt.Sprintf("%s:%d", config.MSIP, config.MSACKListenPort)
 

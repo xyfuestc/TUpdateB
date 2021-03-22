@@ -111,7 +111,7 @@ func IsContain(items []int, item int) bool {
 func GetParityIDFromIP(ip string) int {
 
 	for i := 0; i < 3; i++ {
-		if  config.Rack2.Nodes[strconv.Itoa(i)] == ip{
+		if  config.Racks[2].Nodes[strconv.Itoa(i)] == ip{
 			return i
 		}
 	}

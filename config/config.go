@@ -48,35 +48,16 @@ const (
 	CAU Strategy = 0
 )
 //const BaseIP string = "172.19.0."
-const BaseIP string = "127.0.0."
+const BaseIP string = "192.168.1."
 //const MSIP = BaseIP + "3"
-const MSIP = BaseIP + "1"
+var MSIP = BaseIP + "1"
 //const DataFilePath string = "/tmp/dataFile.dt"
 const DataFilePath string = "../data/dataFile"
+const StartIP int = 172
+var DataNodeIPs = [K]string{}
+var ParityNodeIPs = [M]string{}
+var Racks = [K+M/M]Rack{}
 
-var DataNodeIPs = [K]string{BaseIP + "4", BaseIP + "5", BaseIP + "6", BaseIP + "7", BaseIP + "8", BaseIP + "9"}
-var ParityNodeIPs = [M]string{BaseIP + "10", BaseIP + "11", BaseIP + "12"}
-var Rack0 = Rack{
-	Nodes:        map[string]string{"0": BaseIP + "4", "1": BaseIP + "5", "2": BaseIP + "6"},
-	NodeNum:      3,
-	CurUpdateNum: 0,
-	Stripes:      map[int][]int{},
-	GateIP:       "",
-}
-var Rack1 = Rack{
-	Nodes:        map[string]string{"3": BaseIP + "7", "4": BaseIP + "8", "5": BaseIP + "9"},
-	NodeNum:      3,
-	CurUpdateNum: 0,
-	Stripes:      map[int][]int{},
-	GateIP:       "",
-}
-var Rack2 = Rack{
-	Nodes:        map[string]string{"0": BaseIP + "10", "1": BaseIP + "11", "2": BaseIP + "12"},
-	NodeNum:      3,
-	CurUpdateNum: 0,
-	Stripes:      map[int][]int{},
-	GateIP:       "",
-}
 
 //传输数据格式
 type TD struct {

@@ -124,7 +124,7 @@ func updateData(metaInfo config.MetaInfo, ChunkSize int) {
 	}
 
 	//send data to datanode for update
-	fmt.Printf("send datatype to datanode...\n")
+	fmt.Printf("send datatype to datanode %d, IP address: %s\n", metaInfo.DataChunkID, metaInfo.ChunkIP)
 	common.SendData(dataType, metaInfo.ChunkIP, config.NodeListenPort, "ack")
 	common.SendData(td, metaInfo.ChunkIP, config.NodeListenPort, "ack")
 
