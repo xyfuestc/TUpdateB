@@ -158,35 +158,7 @@ func initialize(k, m, w int) {
 
 	PrintGenMatrix(r.GenMatrix)
 
-	//init Nodes and Racks
-	var start  = config.StartIP
-	for g := 0; g < len(config.DataNodeIPs); g++ {
-		strIP := config.BaseIP + strconv.FormatInt(int64(start), 10)
-		config.DataNodeIPs[g] = strIP
-		start++
-	}
-
-	for g := 0; g < len(config.ParityNodeIPs); g++ {
-		strIP := config.BaseIP + strconv.FormatInt(int64(start), 10)
-		config.ParityNodeIPs[g] = strIP
-		start++
-	}
-
-	start = config.StartIP
-
-	for g := 0; g < len(config.Racks); g++ {
-		strIP1 := config.BaseIP + strconv.FormatInt(int64(start), 10)
-		strIP2 := config.BaseIP + strconv.FormatInt(int64(start+1), 10)
-		strIP3 := config.BaseIP + strconv.FormatInt(int64(start+2), 10)
-		config.Racks[g] = config.Rack{
-			Nodes:        map[string]string{"0": strIP1, "1": strIP2, "2": strIP3},
-			NodeNum:      3,
-			CurUpdateNum: 0,
-			Stripes:      map[int][]int{},
-			GateIP:       "",
-		}
-		start++
-	}
+	config.InitNodesRacks()
 
 
 	//fmt.Printf("bitMatrix=%v.\n",bitMatrix)

@@ -1,6 +1,9 @@
 package config
 
-import "github.com/templexxx/reedsolomon"
+import (
+	"github.com/templexxx/reedsolomon"
+	"strconv"
+)
 
 const K int = 6
 const M int = 3
@@ -149,5 +152,36 @@ func getRackID(dataNodeID int) int {
 		return 0
 	} else {
 		return 1
+	}
+}
+func InitNodesRacks(){
+	//init Nodes and Racks
+	var start  = StartIP
+	for g := 0; g < len(DataNodeIPs); g++ {
+		strIP := BaseIP + strconv.FormatInt(int64(start), 10)
+		DataNodeIPs[g] = strIP
+		start++
+	}
+
+	for g := 0; g < len(ParityNodeIPs); g++ {
+		strIP := BaseIP + strconv.FormatInt(int64(start), 10)
+		ParityNodeIPs[g] = strIP
+		start++
+	}
+
+	start = StartIP
+
+	for g := 0; g < len(Racks); g++ {
+		strIP1 := BaseIP + strconv.FormatInt(int64(start), 10)
+		strIP2 := BaseIP + strconv.FormatInt(int64(start+1), 10)
+		strIP3 := BaseIP + strconv.FormatInt(int64(start+2), 10)
+		Racks[g] = Rack{
+			Nodes:        map[string]string{"0": strIP1, "1": strIP2, "2": strIP3},
+			NodeNum:      3,
+			CurUpdateNum: 0,
+			Stripes:      map[int][]int{},
+			GateIP:       "",
+		}
+		start++
 	}
 }

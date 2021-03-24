@@ -19,14 +19,11 @@ func main() {
 	fileName := "./example-traces/wdev_1.csv"
 	readTrace(fileName)
 	//readTrace("./example-traces/test.csv")
-
-	listenAck()
+	listenACK()
 }
 
-func listenAck() {
-	listenAddr := common.GetLocalIP()
-	listenAddr = listenAddr + ":" + strconv.Itoa(config.ClientACKListenPort)
-
+func listenACK() {
+	listenAddr := common.GetLocalIP() + ":" + strconv.Itoa(config.ClientACKListenPort)
 	listen, err := net.Listen("tcp", listenAddr)
 	if err != nil {
 		fmt.Printf("listen failed, err:%v", err)
@@ -40,24 +37,20 @@ func listenAck() {
 			continue
 		}
 		//启动一个单独的goroutine去处理链接
-		go handleAck(conn)
+		go handleACK(conn)
 	}
 }
 
-func handleAck(conn net.Conn) {
+func handleACK(conn net.Conn) {
 	defer conn.Close()
-	//decode the req
 	dec := gob.NewDecoder(conn)
 
-
-	var td config.Ack
-
-	err := dec.Decode(&td)
+	var ack config.Ack
+	err := dec.Decode(&ack)
 	if err != nil {
 		log.Fatal("handleReq:datanode更新数据，解码出错: ", err)
 	}
-
-
+	fmt.Printf("client receiving ack: %d of updating chunk :%d\n",ack.AckID, ack.ChunkID)
 }
 
 func readTrace(fileName string) {
