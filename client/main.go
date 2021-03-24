@@ -15,10 +15,7 @@ import (
 )
 
 func main() {
-
-	fileName := "./example-traces/wdev_1.csv"
-	readTrace(fileName)
-	//readTrace("./example-traces/test.csv")
+	readTrace("../example-traces/wdev_1.csv")
 	listenACK()
 }
 
