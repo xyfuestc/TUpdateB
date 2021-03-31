@@ -8,77 +8,35 @@ import (
 	"github.com/templexxx/reedsolomon"
 	"log"
 	"net"
-	"strconv"
 )
 
 var RelationsInputP = make([][]int, config.M*config.W, config.M*config.W)
 var RelationsInputD = make([][]int, config.K*config.W, config.K*config.W)
-
 var RequestNum = 0
 
 var ackNum = 0
-
 var totalReqChunks = make([]config.MetaInfo, 0, 1000000)
-
+var isRunning = false   //标志是否正在执行CAU，若为false，则可以执行新的CAU；否则，不能执行
 var curReqChunks = make([]config.MetaInfo, config.MaxBatchSize, config.MaxBatchSize)
+
 func handleAck(conn net.Conn) {
 	defer conn.Close()
 	dec := gob.NewDecoder(conn)
 
-	var req config.ReqData
-	err := dec.Decode(&req)
+	var ack config.Ack
+	err := dec.Decode(&ack)
 	if err != nil {
-		fmt.Printf("decode error:%v\n", err)
-	} else {
-		fmt.Printf("req : %v\n", req)
+		log.Fatal("ms decoded error: ", err)
 	}
 
-	RequestNum++
+	ackNum++
+	fmt.Printf("ms received chunk %d's ack：%d\n",ack.ChunkID, ack.AckID)
 
-	chunkID := 0
-	switch req.OPType {
-	//handle client update, return the specific chunk's metainfo
-	case config.UpdateReq:
-		chunkID = req.ChunkID
-		stripeID := chunkID / config.K
-		relatedParities := config.GetRelatedParities(chunkID)
-
-		nodeID := chunkID - (chunkID/config.K)*config.K
-		metaInfo := &config.MetaInfo{
-			StripeID:        stripeID,
-			DataChunkID:     chunkID,
-			ChunkStoreIndex: chunkID,
-			RelatedParities: relatedParities,
-			ChunkIP:         common.GetChunkIP(chunkID),
-			DataNodeID:      nodeID,
-		}
-		enc := gob.NewEncoder(conn)
-		err = enc.Encode(metaInfo)
-		if err != nil {
-			fmt.Printf("encode err:%v", err)
-			return
-		} else {
-			totalReqChunks = append(totalReqChunks, *metaInfo)
-		}
-		// start CAU when achieve the threshold (100)
-		if len(totalReqChunks) >= config.MaxBatchSize {
-			CAU_Update()
-		}
-		//handle ack
-		//case config.ACK:
-		//	ackNum++
-		//
-		//	fmt.Printf("received ack：%d\n", ackNum)
-		//
-		//	if ackNum == config.Racks[0].CurUpdateNum+config.Racks[1].CurUpdateNum {
-		//		fmt.Printf("batch updates have been completed...\n")
-		//
-		//		clearUpdates()
-		//	}
-
+	if ackNum == config.Racks[0].CurUpdateNum+config.Racks[1].CurUpdateNum {
+		fmt.Printf("cau update has been completed...\n")
+		clearUpdates()
 	}
 }
-
 func handleReq(conn net.Conn) {
 	defer conn.Close()
 	dec := gob.NewDecoder(conn)
@@ -110,6 +68,7 @@ func handleReq(conn net.Conn) {
 			ChunkIP:         common.GetChunkIP(chunkID),
 			DataNodeID:      nodeID,
 		}
+		fmt.Printf("return the metainfo of chunk %d.\n", chunkID)
 		enc := gob.NewEncoder(conn)
 		err = enc.Encode(metaInfo)
 		if err != nil {
@@ -119,7 +78,7 @@ func handleReq(conn net.Conn) {
 			totalReqChunks = append(totalReqChunks, *metaInfo)
 		}
 		// start CAU when achieve the threshold (100)
-		if len(curReqChunks) >= config.MaxBatchSize {
+		if len(totalReqChunks) >= config.MaxBatchSize && !isRunning {
 			CAU_Update()
 		}
 		//handle ack
@@ -133,9 +92,7 @@ func handleReq(conn net.Conn) {
 		//
 		//		clearUpdates()
 		//	}
-
 	}
-
 }
 func initialize(k, m, w int) {
 	fmt.Printf("Starting metainfo server...\n")
@@ -154,10 +111,9 @@ func initialize(k, m, w int) {
 
 	//bitMatrix := GenerateBitMatrix(r.GenMatrix,config.K, config.M, config.W)
 	GenerateParityRelation(r.GenMatrix, config.CAU)
-	fmt.Printf("initialization is finished.\n")
-
+	fmt.Printf("GM Initialization is finished.\n")
 	PrintGenMatrix(r.GenMatrix)
-
+	fmt.Printf("Init nodes and racks...\n")
 	config.InitNodesRacks()
 
 
@@ -187,6 +143,8 @@ func PrintGenMatrix(gm []byte)  {
 //cau algorithm
 func CAU_Update() {
 
+	isRunning = true
+
 	fmt.Printf("starting cau update algorithm...\n")
 	curReqChunks = totalReqChunks[:100]
 	totalReqChunks = totalReqChunks[100:]
@@ -207,7 +165,7 @@ func rackCompare(R1 config.Rack, R2 config.Rack) {
 
 			fmt.Printf("DDU mode: handle Rack stripe %d...\n", row)
 			// 指定P0为rootParity（默认所有Parity都需要更新）
-			rootParityIP := R2.Nodes["0"]
+			rootParityIP := R2.Nodes[0]
 
 			//lenI := len(chunks)
 
@@ -216,21 +174,17 @@ func rackCompare(R1 config.Rack, R2 config.Rack) {
 				//将块信息发给root
 				curNode := chunks[i] - (chunks[i] / config.K) * config.K
 				curNodeIP := common.GetNodeIP(curNode)
-				cmd := config.TD{
-					OPType:      config.DDU,
+				cmd := config.CMD{
+					Type:      config.DDU,
 					StripeID:    row,
 					DataChunkID: chunks[i],
 					ToIP:        rootParityIP,
 				}
 				fmt.Printf("发送命令给 Node %d，使其将Chunk %d 发送给%s\n", curNode, chunks[i], rootParityIP)
-				res := common.SendData(cmd, curNodeIP, config.NodeListenPort, "ack")
-				ack, ok := res.(config.ReqData)
-				if ok {
-					fmt.Printf("成功更新数据块：%d\n", ack.ChunkID)
-					common.SendData(ack, config.MSIP, config.MSListenPort, "")
-				} else {
-					log.Fatal("client updateData 解码出错!")
-				}
+				common.SendData(cmd, curNodeIP, config.NodeListenPort, "ack")
+
+
+
 			}
 		}
 	} else {
@@ -249,6 +203,7 @@ func clearUpdates() {
 	config.Racks[2].Stripes = make(map[int][]int)
 
 	ackNum = 0
+	isRunning = false
 }
 /*******update R0~R2 with current update requests(curReqChunks)********/
 func rackUpdate()  {
@@ -259,48 +214,48 @@ func rackUpdate()  {
 		//nodeID = col
 		nodeID := curChunk.DataChunkID - (curChunk.DataChunkID/config.K)*config.K
 		row := curChunk.DataChunkID / config.K
-		p0ParityID := row * config.M
-		//如果chunk在Rack0里
-		if _, ok := config.Racks[0].Nodes[strconv.Itoa(nodeID)]; ok {
+		p0ParityID := row * config.M    //指定rootParity = P[0]
 
-			//stripe未出现
-			if _, ok := config.Racks[0].Stripes[row]; !ok {
-				config.Racks[0].CurUpdateNum++
-				config.Racks[0].Stripes[row] = append(config.Racks[0].Stripes[row], curChunk.DataChunkID)
-				//chunk未出现
-			} else if !common.IsContain(config.Racks[0].Stripes[row], curChunk.DataChunkID) {
-				config.Racks[0].CurUpdateNum++
-				config.Racks[0].Stripes[row] = append(config.Racks[0].Stripes[row], curChunk.DataChunkID)
+		rackID := common.GetRackIDFromNode(nodeID) //获取chunk对应的rackID
 
-			}
+		//if:stripe未出现; elseif:chunk未出现
+		if _, ok := config.Racks[rackID].Stripes[row]; !ok {
+			config.Racks[rackID].CurUpdateNum++
+			config.Racks[rackID].Stripes[row] = append(config.Racks[rackID].Stripes[row], curChunk.DataChunkID)
 
-			//更新parity(出现过的就不更新了)
-			if _, ok := config.Racks[2].Stripes[row]; !ok {
-				config.Racks[2].CurUpdateNum += 3
-				config.Racks[2].Stripes[row] = append(config.Racks[2].Stripes[row],
-					p0ParityID, p0ParityID+1, p0ParityID+2)
-			}
-			//如果chunk在Rack1里
-		} else if _, ok := config.Racks[1].Nodes[strconv.Itoa(nodeID)]; ok {
-
-			//stripe未出现
-			if _, ok := config.Racks[1].Stripes[row]; !ok {
-				config.Racks[1].CurUpdateNum++
-				config.Racks[1].Stripes[row] = append(config.Racks[1].Stripes[row], curChunk.DataChunkID)
-				//chunk未出现
-			} else if !common.IsContain(config.Racks[1].Stripes[row], curChunk.DataChunkID) {
-				config.Racks[1].CurUpdateNum++
-				config.Racks[1].Stripes[row] = append(config.Racks[1].Stripes[row], curChunk.DataChunkID)
-
-			}
-			//更新parity
-			if _, ok := config.Racks[2].Stripes[row]; !ok {
-				config.Racks[2].CurUpdateNum += 3
-				config.Racks[2].Stripes[row] = append(config.Racks[2].Stripes[row],
-					p0ParityID, p0ParityID+1, p0ParityID+2)
-			}
+		} else if !common.IsContain(config.Racks[rackID].Stripes[row], curChunk.DataChunkID) {
+			config.Racks[rackID].CurUpdateNum++
+			config.Racks[rackID].Stripes[row] = append(config.Racks[rackID].Stripes[row], curChunk.DataChunkID)
 
 		}
+		//更新parity(出现过的就不更新了)
+		if _, ok := config.Racks[2].Stripes[row]; !ok {
+			config.Racks[2].CurUpdateNum += 3
+			config.Racks[2].Stripes[row] = append(config.Racks[2].Stripes[row],
+				p0ParityID, p0ParityID+1, p0ParityID+2)
+		}
+		//如果chunk在Rack1里
+
+		//else if ok := config.Racks[1].Nodes[nodeID]; ok {
+		//
+		//	//stripe未出现
+		//	if _, ok := config.Racks[1].Stripes[row]; !ok {
+		//		config.Racks[1].CurUpdateNum++
+		//		config.Racks[1].Stripes[row] = append(config.Racks[1].Stripes[row], curChunk.DataChunkID)
+		//		//chunk未出现
+		//	} else if !common.IsContain(config.Racks[1].Stripes[row], curChunk.DataChunkID) {
+		//		config.Racks[1].CurUpdateNum++
+		//		config.Racks[1].Stripes[row] = append(config.Racks[1].Stripes[row], curChunk.DataChunkID)
+		//
+		//	}
+		//	//更新parity
+		//	if _, ok := config.Racks[2].Stripes[row]; !ok {
+		//		config.Racks[2].CurUpdateNum += 3
+		//		config.Racks[2].Stripes[row] = append(config.Racks[2].Stripes[row],
+		//			p0ParityID, p0ParityID+1, p0ParityID+2)
+		//	}
+		//
+		//}
 	}
 
 
@@ -391,38 +346,45 @@ func GenerateBitMatrix(matrix []byte, k, m, w int) []byte {
 }
 
 func main() {
-	listen()
+	initialize(config.K, config.M, config.W)
+
+	fmt.Printf("the ms is listening req: %s\n",config.MSListenPort)
+	l1, err := net.Listen("tcp", "localhost:"+config.MSListenPort)
+	fmt.Printf("the ms is listening ack: %s\n",config.MSACKListenPort)
+	l2, err := net.Listen("tcp", "localhost:"+config.MSACKListenPort)
+
+	if err != nil {
+		log.Fatal("ms listen err: ", err)
+	}
+	go listenACK(l2)
+	listenReq(l1)
+
 }
 
-func listen() {
-	initialize(config.K, config.M, config.W)
-	//1.listen port:8977
-	config.MSIP = "127.0.0.1"
+func listenReq(listen net.Listener) {
 
-	listenAddress := fmt.Sprintf("%s:%d", config.MSIP, config.MSListenPort)
-	//ackListenAddress := fmt.Sprintf("%s:%d", config.MSIP, config.MSACKListenPort)
-
-
-	listen, err := net.Listen("tcp", listenAddress)
-	//listenAck, err := net.Listen("tcp", ackListenAddress)
-	if err != nil {
-		fmt.Printf("listen failed, err:%v", err)
-		return
-	}
-
+	defer listen.Close()
 	for {
-		//2.wait for client
 		conn, err := listen.Accept()
-		//connAck, err := listenAck.Accept()
 		if err != nil {
 			fmt.Println("accept failed, err:%v", err)
 			continue
 		}
-		//3.handle client requests
-		//go handleAck(connAck) //create a new thread
 		handleReq(conn)
 	}
 }
 
+func listenACK(listen net.Listener) {
+
+	defer listen.Close()
+	for {
+		conn, err := listen.Accept()
+		if err != nil {
+			fmt.Println("accept failed, err:%v", err)
+			continue
+		}
+		go handleAck(conn)
+	}
+}
 
 

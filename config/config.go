@@ -16,14 +16,16 @@ type OPType int
 //type CMDType int
 
 const (
-	MSListenPort   int = 8977   // metainfo server listening port
-	MSACKListenPort   int = 8978   // metainfo server ack listening port
+	MSListenPort   string = "8787"   // metainfo server listening port
+	MSACKListenPort   string = "8201"   // metainfo server ack listening port
 
-	NodeListenPort int = 8979 // datanode or paritynode listening port
-	ParityNodeListenPort int = 9979
-	NodeACKListenPort   int = 8980   // metainfo server ack listening port
+	NodeListenPort      string = "8300" // datanode or paritynode listening port
+	ParityListenPort    string = "8303"
+	ParityACKListenPort string = "8304"
+	NodeACKListenPort   string = "8301"   // metainfo server ack listening port
+	NodeCMDListenPort   string = "8302"   // metainfo server ack listening port
 
-	ClientACKListenPort int = 8981
+	ClientACKListenPort string = "8400"
 )
 
 //DataNode操作
@@ -33,15 +35,30 @@ const (
 	SendDataToRoot               //内部发送数据，1
 	DDURoot                      //data发送给parity，2
 	DDULeaf
+
 	PDU
-
-
-	//metaserver cmd
-	DDU // DDU(i < j)，发送命令给DataNode，使其转发更新数据给rootParity
-
 
 	//ack
 	ACK
+)
+
+
+
+type CMDType int
+
+const (
+	//data operation
+	DDU      CMDType = iota //client update, 0
+
+
+)
+
+type Role int
+const (
+	UknownRole Role = iota
+	DDURootPRole
+	DDULeafPRole
+
 )
 
 
@@ -53,10 +70,11 @@ const (
 //const BaseIP string = "172.19.0."
 const BaseIP string = "192.168.1."
 //const MSIP = BaseIP + "3"
-var MSIP = BaseIP + "1"
+var MSIP = BaseIP + "172"
+var ClientIP = BaseIP + "120"
 //const DataFilePath string = "/tmp/dataFile.dt"
 const DataFilePath string = "../data/dataFile"
-const StartIP int = 172
+const StartIP int = 173
 var DataNodeIPs = [K]string{}
 var ParityNodeIPs = [M]string{}
 var Racks = [K+M/M]Rack{}
@@ -81,19 +99,18 @@ type TD struct {
 
 
 //传输命令格式
-//type CMD struct {
-//	SendSize           int
-//	Type               CMDType
-//	StripeID           int
-//	DataChunkID        int
-//	UpdateParityID     int
-//	NumRecvChunkItem   int
-//	NumRecvChunkParity int
-//	PortNum            int
-//	ToIP             string
-//	FromIP             string
-//	ToIP               string
-//}
+type CMD struct {
+	SendSize           int
+	Type               CMDType
+	StripeID           int
+	DataChunkID        int
+	UpdateParityID     int
+	NumRecvChunkItem   int
+	NumRecvChunkParity int
+	PortNum            int
+	FromIP             string
+	ToIP               string
+}
 type ReqData struct {
 	OPType  OPType
 	ChunkID int
@@ -106,7 +123,6 @@ type ReqType struct {
 
 type Ack struct {
 	AckID   int
-	SeqNum  int
 	ChunkID int
 }
 
@@ -126,7 +142,7 @@ type UpdateStripe struct {
 	ParityIDs []int
 }
 type Rack struct {
-	Nodes        map[string]string
+	Nodes        []string
 	NodeNum      int
 	CurUpdateNum int
 	Stripes      map[int][]int
@@ -175,8 +191,11 @@ func InitNodesRacks(){
 		strIP1 := BaseIP + strconv.FormatInt(int64(start), 10)
 		strIP2 := BaseIP + strconv.FormatInt(int64(start+1), 10)
 		strIP3 := BaseIP + strconv.FormatInt(int64(start+2), 10)
+		//strIP1 := BaseIP + strconv.FormatInt(int64(start), 10)
+		//strIP2 := BaseIP + strconv.FormatInt(int64(start), 10)
+		//strIP3 := BaseIP + strconv.FormatInt(int64(start), 10)
 		Racks[g] = Rack{
-			Nodes:        map[string]string{"0": strIP1, "1": strIP2, "2": strIP3},
+			Nodes:        []string{strIP1, strIP2, strIP3},
 			NodeNum:      3,
 			CurUpdateNum: 0,
 			Stripes:      map[int][]int{},

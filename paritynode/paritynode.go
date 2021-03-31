@@ -8,16 +8,21 @@ import (
 	"log"
 	"net"
 	"os"
-	"strconv"
+	"strings"
 )
 
-func main() {
-	listen()
-}
 
+
+var role = config.UknownRole
+var ackNum = 0
+var neibors = (config.K+config.M)/config.M - 1
+var nodeIPForACK string
+var stringIDForACK int
 func handleReq(conn net.Conn) {
 	defer conn.Close()
 	dec := gob.NewDecoder(conn)
+
+	targetIP := strings.Split(conn.RemoteAddr().String(),":")[0]
 
 	var td config.TD
 	err := dec.Decode(&td)
@@ -26,13 +31,16 @@ func handleReq(conn net.Conn) {
 	}
 
 	switch td.OPType {
-	/*
-		send data to root (in the same rack),
-		in DDU mode：1）as root, receive data from datanode
-	*/
+
+	//DDU模式，rootP接收到数据
 	case config.DDURoot:
+
+		role = config.DDURootPRole
+		nodeIPForACK = targetIP
+		stringIDForACK = td.StripeID
 		//received data
 		buff := td.Buff
+
 
 		oldBuff := make([]byte, config.ChunkSize, config.ChunkSize)
 
@@ -55,8 +63,7 @@ func handleReq(conn net.Conn) {
 		//write to file
 		file.Write(buff)
 
-		acks := 0 //count ack
-
+		//send update data to leafs, wait for ack
 		for _, leafIP := range td.NextIPs {
 
 			//send data to leaf
@@ -66,26 +73,19 @@ func handleReq(conn net.Conn) {
 				DataChunkID: td.DataChunkID,
 				ToIP: leafIP,
 			}
-			//send update data to leaf, wait for ack
-			common.SendData(data, leafIP, config.NodeListenPort, "ack")
+			common.SendData(data, leafIP, config.ParityListenPort, "ack")
+		}
+		//return ack to datanode
+		ack := config.Ack{
+			ChunkID: td.DataChunkID,
+			AckID: td.DataChunkID+1,
+		}
+		common.SendData(ack, targetIP, config.NodeACKListenPort, "ack")
 
-		}
-		//return stripe ack (stripe update finished)
-		if acks == len(td.NextIPs){
-			//return ack
-			ack := &config.ReqData{
-				ChunkID: td.DataChunkID,
-				AckID: td.DataChunkID+1,
-			}
-			enc := gob.NewEncoder(conn)
-			err = enc.Encode(ack)
-			if err != nil {
-				fmt.Printf("parityNode : handleReq encode err:%v", err)
-				return
-			}
-		}
 	//2) as leaf, receive data from root
 	case config.DDULeaf:
+
+		role = config.DDULeafPRole
 		//received data
 		buff := td.Buff
 
@@ -109,20 +109,16 @@ func handleReq(conn net.Conn) {
 			buff[i] =  config.Gfmul(factor, buff[i]) ^ oldBuff[i]
 		}
 		//write to file
-		file.Write(buff)
+		file.WriteAt(buff, int64(index*config.ChunkSize))
 
 		//return ack
-		ack := &config.ReqData{
-			ChunkID: td.DataChunkID,
-			AckID: td.DataChunkID+1,
-		}
-		enc := gob.NewEncoder(conn)
-		err = enc.Encode(ack)
-		if err != nil {
-			fmt.Printf("parityNode : handleReq encode err:%v", err)
-			return
-		}
+		//ack := &config.ReqData{
+		//	ChunkID: td.DataChunkID,
+		//	AckID: td.DataChunkID+1,
+		//}
+		//common.SendData(ack, targetIP, config.ParityACKListenPort, "ack")
 
+	//PDU mode, receive data from rootD
 	case config.PDU:
 		buff := td.Buff
 		oldBuff := make([]byte, config.ChunkSize, config.ChunkSize)
@@ -137,46 +133,90 @@ func handleReq(conn net.Conn) {
 		index := td.StripeID
 		file.ReadAt(oldBuff, int64(index*config.ChunkSize))
 
-		//xor
+		//cau compute parity new value
+		row := common.GetParityIDFromIP(td.ToIP)
+		col := td.DataChunkID - (td.DataChunkID/config.K)*config.K
+		factor := config.RS.GenMatrix[row*config.K+col]
 		for i := 0; i < len(buff); i++ {
-			buff[i] = buff[i] ^ oldBuff[i]
+			buff[i] =  config.Gfmul(factor, buff[i]) ^ oldBuff[i]
 		}
-		//write to disk
-		_, e := file.WriteAt(buff, int64(index*config.ChunkSize))
-		if e != nil {
-			log.Fatal("err: ", e)
-		}
+		//write to file
+		file.WriteAt(buff, int64(index*config.ChunkSize))
 
 		//return ack
-		ack := &config.ReqData{
+		ack := &config.Ack{
 			ChunkID: td.DataChunkID,
+			AckID: td.DataChunkID+1,
 		}
-
-		enc := gob.NewEncoder(conn)
-		err = enc.Encode(ack)
-		if err != nil {
-			fmt.Printf("encode err:%v", err)
-			return
-		}
+		common.SendData(ack, targetIP, config.NodeACKListenPort, "ack")
 	}
 }
-func listen() {
-	listenAddr := common.GetLocalIP()
-	listenAddr = listenAddr + ":" + strconv.Itoa(config.ParityNodeListenPort)
-	fmt.Println(listenAddr)
-	listen, err := net.Listen("tcp", listenAddr)
+
+//func handleACK(conn net.Conn) {
+//	defer conn.Close()
+//	dec := gob.NewDecoder(conn)
+//
+//	var ack config.Ack
+//	err := dec.Decode(&ack)
+//	if err != nil {
+//		log.Fatal("parity decoded error: ", err)
+//	}
+//	ackNum++
+//
+//	//return stripe ack (stripe update finished)
+//	if ackNum == neibors{
+//		//return ack
+//		ack := &config.Ack{
+//			ChunkID: td.DataChunkID,
+//			AckID: td.DataChunkID+1,
+//		}
+//		enc := gob.NewEncoder(conn)
+//		err = enc.Encode(ack)
+//		if err != nil {
+//			fmt.Printf("parityNode : handleReq encode err:%v", err)
+//			return
+//		}
+//	}
+//
+//	fmt.Printf("parity received chunk %d's ack：%d\n",ack.ChunkID, ack.AckID)
+//
+//}
+func main() {
+	fmt.Printf("the paritynode is listening req: %s\n",config.ParityListenPort)
+	l1, err := net.Listen("tcp", "localhost:"+config.ParityListenPort)
+	//l2, err := net.Listen("tcp", "localhost:"+config.ParityACKListenPort)
+
 	if err != nil {
-		fmt.Printf("listen failed, err:%v", err)
-		return
+		log.Fatal("parity listen err: ", err)
 	}
+	//go listenACK(l2)
+	listenReq(l1)
+
+}
+
+func listenReq(listen net.Listener) {
+
+	defer listen.Close()
 	for {
-		//等待客户端连接
 		conn, err := listen.Accept()
 		if err != nil {
-			fmt.Printf("accept failed, err:%v", err)
+			fmt.Println("accept failed, err:%v", err)
 			continue
 		}
-		//启动一个单独的goroutine去处理链接
-		go handleReq(conn)
+		handleReq(conn)
 	}
 }
+
+//func listenACK(listen net.Listener) {
+//
+//	defer listen.Close()
+//	for {
+//		conn, err := listen.Accept()
+//		if err != nil {
+//			fmt.Println("accept failed, err:%v", err)
+//			continue
+//		}
+//		go handleACK(conn)
+//	}
+//}
+

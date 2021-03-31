@@ -1,7 +1,7 @@
 package main
 
 import (
-	"EC/common"
+	common "EC/common"
 	"EC/config"
 	"bufio"
 	"encoding/gob"
@@ -15,17 +15,17 @@ import (
 )
 
 func main() {
-	readTrace("../example-traces/wdev_1.csv")
-	listenACK()
+	readTrace("./example-traces/wdev_1.csv")
+	go listenACK()
 }
-
 func listenACK() {
-	listenAddr := common.GetLocalIP() + ":" + strconv.Itoa(config.ClientACKListenPort)
-	listen, err := net.Listen("tcp", listenAddr)
+
+	listen, err := net.Listen("tcp", "localhost:"+config.ClientACKListenPort)
 	if err != nil {
 		fmt.Printf("listen failed, err:%v", err)
 		return
 	}
+
 	for {
 		//等待客户端连接
 		conn, err := listen.Accept()
@@ -37,19 +37,6 @@ func listenACK() {
 		go handleACK(conn)
 	}
 }
-
-func handleACK(conn net.Conn) {
-	defer conn.Close()
-	dec := gob.NewDecoder(conn)
-
-	var ack config.Ack
-	err := dec.Decode(&ack)
-	if err != nil {
-		log.Fatal("handleReq:datanode更新数据，解码出错: ", err)
-	}
-	fmt.Printf("client receiving ack: %d of updating chunk :%d\n",ack.AckID, ack.ChunkID)
-}
-
 func readTrace(fileName string) {
 
 	fmt.Printf("read trace file: %s\n", fileName)
@@ -83,7 +70,7 @@ func readTrace(fileName string) {
 
 func connectMS(chunkID int) config.MetaInfo {
 
-	fmt.Printf("connect to MS.\n")
+	fmt.Printf("connect to ms : %s.\n", config.MSIP)
 	/*******1.connect to MS, port : 8977********/
 	request := &config.ReqData{
 		OPType:  config.UpdateReq,
@@ -108,14 +95,19 @@ func updateData(metaInfo config.MetaInfo, ChunkSize int) {
 		Buff:        dataBytes,
 		DataChunkID: metaInfo.DataChunkID,
 	}
-
-	dataType := &config.ReqType{
-		Type: config.UpdateReq,
-	}
-
 	//send data to datanode for update
 	fmt.Printf("send datatype to datanode %d, IP address: %s\n", metaInfo.DataChunkID, metaInfo.ChunkIP)
-	common.SendData(dataType, metaInfo.ChunkIP, config.NodeListenPort, "ack")
 	common.SendData(td, metaInfo.ChunkIP, config.NodeListenPort, "ack")
 
+}
+func handleACK(conn net.Conn) {
+	defer conn.Close()
+	dec := gob.NewDecoder(conn)
+
+	var ack config.Ack
+	err := dec.Decode(&ack)
+	if err != nil {
+		log.Fatal("client handleACK error: ", err)
+	}
+	fmt.Printf("client receiving ack: %d of updating chunk :%d\n",ack.AckID, ack.ChunkID)
 }

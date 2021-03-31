@@ -7,7 +7,6 @@ import (
 	"log"
 	"math/rand"
 	"net"
-	"strconv"
 )
 
 var kinds = map[string]func() interface{}{
@@ -54,19 +53,19 @@ func RandStringBytesMask(n int) string {
 }
 
 /*******发送数据*********/
-func SendData(data interface{}, targetIP string, port int, retType string) interface{} {
+func SendData(data interface{}, targetIP string, port string, retType string) interface{} {
 
 	//1.与目标建立连接
-	addr := fmt.Sprintf("%s:%d", targetIP, port)
+	addr := fmt.Sprintf("%s:%s", targetIP, port)
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
-		log.Fatal("接收数据出错: ", err)
+		log.Fatal("common: SendData Dial error: ", err)
 	}
 	//2.发送数据
 	enc := gob.NewEncoder(conn)
 	err = enc.Encode(data)
 	if err != nil {
-		log.Fatal("发送数据出错: ", err)
+		log.Fatal("common: SendData gob encode error:  ", err)
 	}
 
 	switch retType {
@@ -77,7 +76,7 @@ func SendData(data interface{}, targetIP string, port int, retType string) inter
 		dec := gob.NewDecoder(conn)
 		err = dec.Decode(&retData)
 		if err != nil {
-			log.Fatal("接收数据出错: ", err)
+			log.Fatal("common: SendData of case metaInfo gob decode error", err)
 		}
 
 		return retData
@@ -111,9 +110,44 @@ func IsContain(items []int, item int) bool {
 func GetParityIDFromIP(ip string) int {
 
 	for i := 0; i < 3; i++ {
-		if  config.Racks[2].Nodes[strconv.Itoa(i)] == ip{
+		if  config.Racks[2].Nodes[i] == ip{
 			return i
 		}
 	}
 	return -1
+}
+
+
+func GetRackID(ip string) int {
+	for _, rack := range config.Racks{
+
+		for k, v := range rack.Nodes {
+			if v == ip {
+				return k
+			}
+		}
+	}
+	return -1
+}
+
+func GetRackIDFromNode(nodeID int) int {
+
+	rackSize := (config.K+config.M)/config.M
+	return nodeID / rackSize
+}
+
+func GetNeighborsIPs(rackID int, ip string) []string {
+
+	ips := config.Racks[rackID].Nodes
+
+	var neighbors = make([]string, 0, config.M)
+
+	for _, v := range ips {
+		if v == ip {
+			continue
+		}
+		neighbors = append(neighbors, v)
+	}
+	return neighbors
+
 }
