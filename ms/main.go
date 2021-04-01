@@ -349,9 +349,9 @@ func main() {
 	initialize(config.K, config.M, config.W)
 
 	fmt.Printf("the ms is listening req: %s\n",config.MSListenPort)
-	l1, err := net.Listen("tcp", "localhost:"+config.MSListenPort)
+	l1, err := net.Listen("tcp", config.MSIP+config.MSListenPort)
 	fmt.Printf("the ms is listening ack: %s\n",config.MSACKListenPort)
-	l2, err := net.Listen("tcp", "localhost:"+config.MSACKListenPort)
+	l2, err := net.Listen("tcp", config.MSIP+config.MSACKListenPort)
 
 	if err != nil {
 		log.Fatal("ms listen err: ", err)

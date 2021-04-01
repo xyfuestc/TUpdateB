@@ -108,21 +108,21 @@ func handleACK(conn net.Conn) {
 func main() {
 
 	fmt.Printf("the datanode is listening req: %s\n",config.NodeListenPort)
-	l1, err := net.Listen("tcp", "localhost:"+config.NodeListenPort)
+	l1, err := net.Listen("tcp", common.GetLocalIP() + config.NodeListenPort)
 	if err != nil {
 		fmt.Printf("listenReq failed, err:%v\n", err)
 		return
 	}
 
 	fmt.Printf("the datanode is listening cmd: %s\n",config.NodeCMDListenPort)
-	l2, err := net.Listen("tcp", "localhost:" + config.NodeCMDListenPort)
+	l2, err := net.Listen("tcp", common.GetLocalIP() + config.NodeCMDListenPort)
 	if err != nil {
 		fmt.Printf("listenCMD failed, err:%v\n", err)
 		return
 	}
 
 	fmt.Printf("the datanode is listening ack: %s\n",config.NodeACKListenPort)
-	l3, err := net.Listen("tcp", "localhost:" + config.NodeACKListenPort)
+	l3, err := net.Listen("tcp", common.GetLocalIP() + config.NodeACKListenPort)
 	if err != nil {
 		fmt.Printf("listenACK failed, err:%v\n", err)
 		return

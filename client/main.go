@@ -15,12 +15,12 @@ import (
 )
 
 func main() {
-	readTrace("./example-traces/wdev_1.csv")
+	readTrace("../example-traces/wdev_1.csv")
 	go listenACK()
 }
 func listenACK() {
 
-	listen, err := net.Listen("tcp", "localhost:"+config.ClientACKListenPort)
+	listen, err := net.Listen("tcp", common.GetLocalIP()+config.ClientACKListenPort)
 	if err != nil {
 		fmt.Printf("listen failed, err:%v", err)
 		return
