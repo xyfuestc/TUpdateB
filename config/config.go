@@ -71,7 +71,7 @@ const (
 const BaseIP string = "192.168.1."
 //const MSIP = BaseIP + "3"
 var MSIP = BaseIP + "172"
-var ClientIP = BaseIP + "120"
+var ClientIP = BaseIP + "170"
 //const DataFilePath string = "/tmp/dataFile.dt"
 const DataFilePath string = "../../test"
 const StartIP int = 173
