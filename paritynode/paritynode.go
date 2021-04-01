@@ -182,7 +182,7 @@ func handleReq(conn net.Conn) {
 //
 //}
 func main() {
-	fmt.Printf("the paritynode is listening req: %s\n",config.ParityListenPort)
+	fmt.Printf("listening req in %s:%s\n", common.GetLocalIP(), config.ParityListenPort)
 	l1, err := net.Listen("tcp", common.GetLocalIP() + ":" + config.ParityListenPort)
 	//l2, err := net.Listen("tcp", "localhost:"+config.ParityACKListenPort)
 

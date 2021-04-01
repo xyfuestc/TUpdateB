@@ -43,6 +43,9 @@ func handleReq(conn net.Conn) {
 			ChunkID: td.DataChunkID,
 			AckID:   td.DataChunkID + 1, //ackID=chunkID+1
 		}
+		fmt.Printf("The datanode updates success for chunk %d\n", td.DataChunkID)
+		fmt.Printf("Sending ack back to client...\n")
+
 		common.SendData(ack, targetIP, config.ClientACKListenPort, "ack")
 
 	}
@@ -107,21 +110,21 @@ func handleACK(conn net.Conn) {
 
 func main() {
 
-	fmt.Printf("the datanode is listening req: %s\n",config.NodeListenPort)
+	fmt.Printf("listening req in %s:%s\n",common.GetLocalIP(), config.NodeListenPort)
 	l1, err := net.Listen("tcp", common.GetLocalIP() +  ":" + config.NodeListenPort)
 	if err != nil {
 		fmt.Printf("listenReq failed, err:%v\n", err)
 		return
 	}
 
-	fmt.Printf("the datanode is listening cmd: %s\n",config.NodeCMDListenPort)
+	fmt.Printf("listening cmd in %s:%s\n", common.GetLocalIP(), config.NodeCMDListenPort)
 	l2, err := net.Listen("tcp", common.GetLocalIP() +  ":" + config.NodeCMDListenPort)
 	if err != nil {
 		fmt.Printf("listenCMD failed, err:%v\n", err)
 		return
 	}
 
-	fmt.Printf("the datanode is listening ack: %s\n",config.NodeACKListenPort)
+	fmt.Printf("listening ack in %s:%s\n", common.GetLocalIP(), config.NodeACKListenPort)
 	l3, err := net.Listen("tcp", common.GetLocalIP() +  ":" + config.NodeACKListenPort)
 	if err != nil {
 		fmt.Printf("listenACK failed, err:%v\n", err)
