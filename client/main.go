@@ -17,8 +17,9 @@ import (
 )
 
 func main() {
-	readTrace("../example-traces/wdev_1.csv")
 	go listenACK()
+	readTrace("../example-traces/wdev_1.csv")
+
 }
 func listenACK() {
 
