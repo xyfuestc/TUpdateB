@@ -20,7 +20,7 @@ func main() {
 }
 func listenACK() {
 
-	listen, err := net.Listen("tcp", common.GetLocalIP()+config.ClientACKListenPort)
+	listen, err := net.Listen("tcp", common.GetLocalIP() + ":" +config.ClientACKListenPort)
 	if err != nil {
 		fmt.Printf("listen failed, err:%v", err)
 		return
