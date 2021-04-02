@@ -18,7 +18,7 @@ var ackNum = 0
 var totalReqChunks = make([]config.MetaInfo, 0, 1000000)
 var isRunning = false   //标志是否正在执行CAU，若为false，则可以执行新的CAU；否则，不能执行
 var curReqChunks = make([]config.MetaInfo, config.MaxBatchSize, config.MaxBatchSize)
-
+var curNeedUpdateBlocks = 0
 func handleAck(conn net.Conn) {
 	defer conn.Close()
 	dec := gob.NewDecoder(conn)
@@ -32,12 +32,12 @@ func handleAck(conn net.Conn) {
 	ackNum++
 	fmt.Printf("ms received chunk %d's ack：%d\n",ack.ChunkID, ack.AckID)
 
-	if ackNum == config.Racks[0].CurUpdateNum+config.Racks[1].CurUpdateNum {
+	if ackNum == curNeedUpdateBlocks {
 		fmt.Printf("cau update has been completed...\n")
 		clearUpdates()
 	}else{
-		fmt.Printf("ackNum: %d, Racks[0].CurUpdateNum=%d, Racks[1].CurUpdateNum=%d\n",
-			ackNum, config.Racks[0].CurUpdateNum, config.Racks[1].CurUpdateNum)
+		fmt.Printf("ackNum: %d, needUpdateBlocks: %d\n",
+			ackNum, curNeedUpdateBlocks)
 	}
 }
 func handleReq(conn net.Conn) {
@@ -212,6 +212,7 @@ func clearUpdates() {
 /*******update R0~R2 with current update requests(curReqChunks)********/
 func rackUpdate()  {
 
+
 	//update Rack
 	for i := 0; i < len(curReqChunks); i++ {
 		curChunk := curReqChunks[i]
@@ -226,11 +227,11 @@ func rackUpdate()  {
 		if _, ok := config.Racks[rackID].Stripes[row]; !ok {
 			config.Racks[rackID].CurUpdateNum++
 			config.Racks[rackID].Stripes[row] = append(config.Racks[rackID].Stripes[row], curChunk.DataChunkID)
-
+			curNeedUpdateBlocks++
 		} else if !common.IsContain(config.Racks[rackID].Stripes[row], curChunk.DataChunkID) {
 			config.Racks[rackID].CurUpdateNum++
 			config.Racks[rackID].Stripes[row] = append(config.Racks[rackID].Stripes[row], curChunk.DataChunkID)
-
+			curNeedUpdateBlocks++
 		}
 		//更新parity(出现过的就不更新了)
 		if _, ok := config.Racks[2].Stripes[row]; !ok {
@@ -238,30 +239,19 @@ func rackUpdate()  {
 			config.Racks[2].Stripes[row] = append(config.Racks[2].Stripes[row],
 				p0ParityID, p0ParityID+1, p0ParityID+2)
 		}
-		//如果chunk在Rack1里
-
-		//else if ok := config.Racks[1].Nodes[nodeID]; ok {
-		//
-		//	//stripe未出现
-		//	if _, ok := config.Racks[1].Stripes[row]; !ok {
-		//		config.Racks[1].CurUpdateNum++
-		//		config.Racks[1].Stripes[row] = append(config.Racks[1].Stripes[row], curChunk.DataChunkID)
-		//		//chunk未出现
-		//	} else if !common.IsContain(config.Racks[1].Stripes[row], curChunk.DataChunkID) {
-		//		config.Racks[1].CurUpdateNum++
-		//		config.Racks[1].Stripes[row] = append(config.Racks[1].Stripes[row], curChunk.DataChunkID)
-		//
-		//	}
-		//	//更新parity
-		//	if _, ok := config.Racks[2].Stripes[row]; !ok {
-		//		config.Racks[2].CurUpdateNum += 3
-		//		config.Racks[2].Stripes[row] = append(config.Racks[2].Stripes[row],
-		//			p0ParityID, p0ParityID+1, p0ParityID+2)
-		//	}
-		//
-		//}
 	}
+	fmt.Printf("this stripe we need update %d data blocks...\n", curNeedUpdateBlocks)
+	printUpdatedStripes()
 
+}
+
+func printUpdatedStripes()  {
+
+	var i = 0
+	for _, rack := range config.Racks{
+		fmt.Printf("rack %d = %v\n", i, rack.Stripes)
+		i++
+	}
 
 }
 
