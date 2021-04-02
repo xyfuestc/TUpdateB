@@ -30,6 +30,8 @@ func handleReq(conn net.Conn) {
 		log.Fatal("handleUpdateReq:parityNode更新数据，解码出错: ", err)
 	}
 
+	fmt.Printf("handleReq: %v\n", td)
+
 	switch td.OPType {
 
 	//DDU模式，rootP接收到数据

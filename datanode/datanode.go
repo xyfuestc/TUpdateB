@@ -87,6 +87,7 @@ func handleCMD(conn net.Conn)  {
 			Buff:        buff,
 			NextIPs: common.GetNeighborsIPs(common.GetRackID(common.GetLocalIP()), common.GetLocalIP()),
 		}
+		fmt.Printf("get cmd: DDU, data has been transferred to rootP (%s)\n", cmd.ToIP)
 		//send data to rootP
 		common.SendData(sendData, cmd.ToIP, config.ParityListenPort, "")
 

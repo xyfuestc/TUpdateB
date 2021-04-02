@@ -35,6 +35,9 @@ func handleAck(conn net.Conn) {
 	if ackNum == config.Racks[0].CurUpdateNum+config.Racks[1].CurUpdateNum {
 		fmt.Printf("cau update has been completed...\n")
 		clearUpdates()
+	}else{
+		fmt.Printf("ackNum: %d, Racks[0].CurUpdateNum=%d, Racks[1].CurUpdateNum=%d\n",
+			ackNum, config.Racks[0].CurUpdateNum, config.Racks[1].CurUpdateNum)
 	}
 }
 func handleReq(conn net.Conn) {
@@ -183,7 +186,7 @@ func rackCompare(R1 config.Rack, R2 config.Rack) {
 					ToIP:        rootParityIP,
 				}
 				fmt.Printf("发送命令给 Node %d (%s)，使其将Chunk %d 发送给%s\n", curNode, curNodeIP,  chunks[i], rootParityIP)
-				common.SendData(cmd, curNodeIP, config.NodeListenPort, "ack")
+				common.SendData(cmd, curNodeIP, config.NodeListenPort, "")
 
 
 
@@ -195,14 +198,13 @@ func rackCompare(R1 config.Rack, R2 config.Rack) {
 }
 
 func clearUpdates() {
-	config.Racks[0].CurUpdateNum = 0
-	config.Racks[0].Stripes = make(map[int][]int)
 
-	config.Racks[1].CurUpdateNum = 0
-	config.Racks[1].Stripes = make(map[int][]int)
+	fmt.Printf("clear all ranks info...\n")
 
-	config.Racks[2].CurUpdateNum = 0
-	config.Racks[2].Stripes = make(map[int][]int)
+	for _,rank := range config.Racks{
+		rank.CurUpdateNum = 0
+		rank.Stripes = make(map[int][]int)
+	}
 
 	ackNum = 0
 	isRunning = false
