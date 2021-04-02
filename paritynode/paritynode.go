@@ -196,7 +196,7 @@ func main() {
 		log.Fatal("parity listen err: ", err)
 	}
 	//go listenACK(l2)
-	go listenReq(l1)
+	listenReq(l1)
 
 }
 
@@ -209,7 +209,7 @@ func listenReq(listen net.Listener) {
 			fmt.Println("accept failed, err:%v", err)
 			continue
 		}
-		go handleReq(conn)
+		handleReq(conn)
 	}
 }
 
