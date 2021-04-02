@@ -202,7 +202,7 @@ func InitNodesRacks(){
 			Stripes:      map[int][]int{},
 			GateIP:       "",
 		}
-		start++
+		start+=3
 
 		fmt.Printf("Rack %d has nodes: %s, %s, %s\n", g, strIP1, strIP2, strIP3)
 	}
