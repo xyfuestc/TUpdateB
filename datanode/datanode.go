@@ -8,12 +8,11 @@ import (
 	"log"
 	"net"
 	"os"
-	"strings"
 )
 
 //handle req
 func handleReq(conn net.Conn) {
-	targetIP := strings.Split(conn.RemoteAddr().String(),":")[0]
+	//targetIP := strings.Split(conn.RemoteAddr().String(),":")[0]
 
 	defer conn.Close()
 	//decode the req
@@ -25,7 +24,6 @@ func handleReq(conn net.Conn) {
 	}
 
 	switch td.OPType {
-	//DDU mode, send data to root parity
 	case config.UpdateReq:
 		buff := td.Buff
 		file, err := os.OpenFile(config.DataFilePath, os.O_RDWR, 0)
@@ -46,7 +44,7 @@ func handleReq(conn net.Conn) {
 		fmt.Printf("The datanode updates success for chunk %d\n", td.DataChunkID)
 		fmt.Printf("Sending ack back to client...\n")
 
-		common.SendData(ack, targetIP, config.ClientACKListenPort, "ack")
+		common.SendData(ack, config.ClientIP, config.ClientACKListenPort, "ack")
 
 	}
 }

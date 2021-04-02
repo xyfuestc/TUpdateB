@@ -23,7 +23,7 @@ func main() {
 }
 func listenACK() {
 
-	fmt.Printf("listening ack to %s:%s",common.GetLocalIP(), config.ClientACKListenPort )
+	fmt.Printf("listening ack to %s:%s\n",common.GetLocalIP(), config.ClientACKListenPort )
 	listen, err := net.Listen("tcp", common.GetLocalIP() + ":" +config.ClientACKListenPort)
 	if err != nil {
 		fmt.Printf("listen failed, err:%v", err)
