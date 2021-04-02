@@ -167,6 +167,8 @@ func rackCompare(R1 config.Rack, R2 config.Rack) {
 			// 指定P0为rootParity（默认所有Parity都需要更新）
 			rootParityIP := R2.Nodes[0]
 
+			fmt.Printf("rootP IP: %s\n", rootParityIP)
+
 			//lenI := len(chunks)
 
 			//handle stripe[i][j]
@@ -180,7 +182,7 @@ func rackCompare(R1 config.Rack, R2 config.Rack) {
 					DataChunkID: chunks[i],
 					ToIP:        rootParityIP,
 				}
-				fmt.Printf("发送命令给 Node %d，使其将Chunk %d 发送给%s\n", curNode, chunks[i], rootParityIP)
+				fmt.Printf("发送命令给 Node %d (%s)，使其将Chunk %d 发送给%s\n", curNode, curNodeIP,  chunks[i], rootParityIP)
 				common.SendData(cmd, curNodeIP, config.NodeListenPort, "ack")
 
 

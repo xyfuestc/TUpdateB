@@ -73,7 +73,7 @@ func readTrace(fileName string) {
 		readSize, _ := strconv.Atoi(str[5]) //更新数据大小
 		//更新块的范围：（minBlockID，maxBlockID）
 		minBlockID, maxBlockID := offset/config.ChunkSize, (offset+readSize)/config.ChunkSize
-		updateBlocks = maxBlockID - minBlockID + 1
+		updateBlocks += maxBlockID - minBlockID + 1
 		/*******依次处理更新请求*******/
 		for i := minBlockID; i <= maxBlockID; i++ {
 			metaInfo := connectMS(i)

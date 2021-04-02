@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"github.com/templexxx/reedsolomon"
 	"strconv"
 )
@@ -202,5 +203,9 @@ func InitNodesRacks(){
 			GateIP:       "",
 		}
 		start++
+
+		fmt.Printf("Rack %d has nodes: %s, %s, %s\n", g, strIP1, strIP2, strIP3)
 	}
+
+
 }
