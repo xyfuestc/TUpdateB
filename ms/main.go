@@ -186,7 +186,7 @@ func rackCompare(R1 config.Rack, R2 config.Rack) {
 					ToIP:        rootParityIP,
 				}
 				fmt.Printf("发送命令给 Node %d (%s)，使其将Chunk %d 发送给%s\n", curNode, curNodeIP,  chunks[i], rootParityIP)
-				common.SendData(cmd, curNodeIP, config.NodeListenPort, "")
+				common.SendData(cmd, curNodeIP, config.NodeCMDListenPort, "")
 
 
 
