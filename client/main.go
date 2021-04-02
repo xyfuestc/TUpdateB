@@ -14,12 +14,14 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 
 var updateBlocks = 0
 var waitingForACK = true
 var updatedNum = 0
+var currentTime  = 0
 func main() {
 	go listenACK()
 	readTrace("../example-traces/wdev_1.csv")
@@ -47,6 +49,9 @@ func listenACK() {
 	}
 }
 func readTrace(fileName string) {
+
+
+	currentTime := time.Now().Second()
 
 	fmt.Printf("read trace file: %s\n", fileName)
 	/*******打开更新文件*********/
@@ -76,6 +81,8 @@ func readTrace(fileName string) {
 			updateData(metaInfo, config.ChunkSize)
 		}
 	}
+
+	fmt.Printf("total spending time : %d\n", time.Now().Second() - currentTime )
 	for{
 		if !waitingForACK {
 			 break
