@@ -16,8 +16,8 @@ import (
 var role = config.UknownRole
 var ackNum = 0
 var neibors = (config.K+config.M)/config.M - 1
-var nodeIPForACK string
-var stringIDForACK int
+//var nodeIPForACK string
+//var stringIDForACK int
 func handleReq(conn net.Conn) {
 	defer conn.Close()
 	dec := gob.NewDecoder(conn)
@@ -36,8 +36,8 @@ func handleReq(conn net.Conn) {
 	case config.DDURoot:
 
 		role = config.DDURootPRole
-		nodeIPForACK = targetIP
-		stringIDForACK = td.StripeID
+		//nodeIPForACK = targetIP
+		//stringIDForACK = td.StripeID
 		//received data
 		buff := td.Buff
 
@@ -196,7 +196,7 @@ func main() {
 		log.Fatal("parity listen err: ", err)
 	}
 	//go listenACK(l2)
-	listenReq(l1)
+	go listenReq(l1)
 
 }
 
@@ -209,7 +209,7 @@ func listenReq(listen net.Listener) {
 			fmt.Println("accept failed, err:%v", err)
 			continue
 		}
-		handleReq(conn)
+		go handleReq(conn)
 	}
 }
 

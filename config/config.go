@@ -78,7 +78,7 @@ const DataFilePath string = "../../test"
 const StartIP int = 173
 var DataNodeIPs = [K]string{}
 var ParityNodeIPs = [M]string{}
-var Racks = [K+M/M]Rack{}
+var Racks = [(K+M)/M]Rack{}
 
 
 //传输数据格式

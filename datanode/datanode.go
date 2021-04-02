@@ -87,8 +87,8 @@ func handleCMD(conn net.Conn)  {
 			Buff:        buff,
 			NextIPs: common.GetNeighborsIPs(common.GetRackID(common.GetLocalIP()), common.GetLocalIP()),
 		}
-		//get ack to ms
-		common.SendData(sendData, cmd.ToIP, config.ParityListenPort, "ack")
+		//send data to rootP
+		common.SendData(sendData, cmd.ToIP, config.ParityListenPort, "")
 
 	}
 }
