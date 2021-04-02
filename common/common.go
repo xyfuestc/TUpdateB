@@ -124,8 +124,6 @@ func GetRackID(ip string) int {
 		for _, v := range rack.Nodes {
 			if v == ip {
 				return i
-			} else{
-				fmt.Printf("v = %s, ip = %s\n", v, ip)
 			}
 		}
 	}

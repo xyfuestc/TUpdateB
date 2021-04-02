@@ -190,6 +190,8 @@ func handleReq(conn net.Conn) {
 //
 //}
 func main() {
+	config.InitNodesRacks()
+
 	fmt.Printf("listening req in %s:%s\n", common.GetLocalIP(), config.ParityListenPort)
 	l1, err := net.Listen("tcp", common.GetLocalIP() + ":" + config.ParityListenPort)
 	//l2, err := net.Listen("tcp", "localhost:"+config.ParityACKListenPort)
