@@ -61,7 +61,7 @@ func handleCMD(conn net.Conn)  {
 
 	case config.DDU:
 
-		index := cmd.DataChunkID
+		index := cmd.DataChunkID/config.K
 		//read data from disk
 		var buff = make([]byte, config.ChunkSize, config.ChunkSize)
 		file, err := os.OpenFile(config.DataFilePath, os.O_RDONLY, 0)
