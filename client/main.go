@@ -16,6 +16,10 @@ import (
 	"strings"
 )
 
+
+var updateBlocks = 0
+var waitingForACK = true
+var updatedNum = 0
 func main() {
 	go listenACK()
 	readTrace("../example-traces/wdev_1.csv")
@@ -64,11 +68,17 @@ func readTrace(fileName string) {
 		readSize, _ := strconv.Atoi(str[5]) //更新数据大小
 		//更新块的范围：（minBlockID，maxBlockID）
 		minBlockID, maxBlockID := offset/config.ChunkSize, (offset+readSize)/config.ChunkSize
+		updateBlocks = maxBlockID - minBlockID + 1
 		/*******依次处理更新请求*******/
 		for i := minBlockID; i <= maxBlockID; i++ {
 			metaInfo := connectMS(i)
 			//fmt.Printf("%v",metaInfo)
 			updateData(metaInfo, config.ChunkSize)
+		}
+	}
+	for{
+		if !waitingForACK {
+			 break
 		}
 	}
 }
@@ -115,4 +125,8 @@ func handleACK(conn net.Conn) {
 		log.Fatal("client handleACK error: ", err)
 	}
 	fmt.Printf("client receiving ack: %d of updating chunk :%d\n",ack.AckID, ack.ChunkID)
+	updatedNum ++
+	if updatedNum == updateBlocks {
+		waitingForACK = false
+	}
 }

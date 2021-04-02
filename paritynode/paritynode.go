@@ -63,6 +63,9 @@ func handleReq(conn net.Conn) {
 		//write to file
 		file.Write(buff)
 
+		fmt.Printf("DDU: rootP update success!\n")
+		fmt.Printf("transfer data to other leafs...\n")
+
 		//send update data to leafs, wait for ack
 		for _, leafIP := range td.NextIPs {
 
@@ -80,6 +83,8 @@ func handleReq(conn net.Conn) {
 			ChunkID: td.DataChunkID,
 			AckID: td.DataChunkID+1,
 		}
+		fmt.Printf("return the ack of chunk %d to client...\n", td.DataChunkID)
+
 		common.SendData(ack, targetIP, config.NodeACKListenPort, "ack")
 
 	//2) as leaf, receive data from root
@@ -110,6 +115,7 @@ func handleReq(conn net.Conn) {
 		}
 		//write to file
 		file.WriteAt(buff, int64(index*config.ChunkSize))
+		fmt.Printf("DDU: leafP update success!\n")
 
 		//return ack
 		//ack := &config.ReqData{
