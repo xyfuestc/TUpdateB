@@ -119,11 +119,13 @@ func GetParityIDFromIP(ip string) int {
 
 
 func GetRackID(ip string) int {
-	for _, rack := range config.Racks{
+	for i, rack := range config.Racks{
 
-		for k, v := range rack.Nodes {
+		for _, v := range rack.Nodes {
 			if v == ip {
-				return k
+				return i
+			} else{
+				fmt.Printf("v = %s, ip = %s\n", v, ip)
 			}
 		}
 	}
