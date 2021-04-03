@@ -42,7 +42,7 @@ func handleReq(conn net.Conn) {
 			AckID:   td.DataChunkID + 1, //ackID=chunkID+1
 		}
 		fmt.Printf("The datanode updates success for chunk %d\n", td.DataChunkID)
-		fmt.Printf("Sending ack back to client...\n")
+		fmt.Printf("Return the ack of block %d.\n", td.DataChunkID)
 
 		common.SendData(ack, config.ClientIP, config.ClientACKListenPort, "ack")
 

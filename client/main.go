@@ -22,6 +22,7 @@ var requireBlocks = 0
 var waitingForACK = true
 var hasUpdatedBlocks = 0
 var currentTime  = 0
+var requestNum = 0
 func main() {
 	go listenACK()
 	readTrace("../example-traces/wdev_1.csv")
@@ -64,6 +65,7 @@ func readTrace(fileName string) {
 	br := bufio.NewReader(fi)
 	for {
 		a, _, c := br.ReadLine()
+		requestNum++
 		if c == io.EOF {
 			break
 		}
@@ -86,7 +88,8 @@ func readTrace(fileName string) {
 		}
 	}
 
-	fmt.Printf("Total spending time is: %d\n", time.Now().Second() - currentTime )
+	fmt.Printf("Total request num is %d, request data blocks are %d, spending time is: %ds\n",
+							requestNum, requireBlocks, time.Now().Second() - currentTime )
 	fmt.Printf("Client is finished.\n")
 }
 

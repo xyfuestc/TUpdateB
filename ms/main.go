@@ -19,6 +19,7 @@ var isRunning = false   //标志是否正在执行CAU，若为false，则可以�
 var curReqChunks = make([]config.MetaInfo, config.MaxBatchSize, config.MaxBatchSize)
 var curNeedUpdateBlocks = 0
 var round = 0
+var actualUpdatedBlocks = 0
 func handleAck(conn net.Conn) {
 	defer conn.Close()
 	dec := gob.NewDecoder(conn)
@@ -33,7 +34,11 @@ func handleAck(conn net.Conn) {
 	fmt.Printf("ms received chunk %d's ack：%d\n",ack.ChunkID, ack.AckID)
 
 	if ackNum == curNeedUpdateBlocks {
-		fmt.Printf("cau update has been completed...\n")
+		actualUpdatedBlocks += curNeedUpdateBlocks
+		fmt.Printf("CAU Round %d has been completed...\n", round)
+		fmt.Printf("Now actual updated blocks : %d.\n", actualUpdatedBlocks)
+		fmt.Printf("==================================\n")
+		round++
 		clearUpdates()
 	}
 }
@@ -66,7 +71,6 @@ func handleReq(conn net.Conn) {
 			ChunkIP:         common.GetChunkIP(chunkID),
 			DataNodeID:      nodeID,
 		}
-		fmt.Printf("return the metainfo of chunk %d.\n", chunkID)
 		enc := gob.NewEncoder(conn)
 		err = enc.Encode(metaInfo)
 		if err != nil {
@@ -94,16 +98,15 @@ func PrintGenMatrix(gm []byte)  {
 		}
 		fmt.Println()
 	}
-
 }
 
 //cau algorithm
 func CAU_Update() {
 
-
 	isRunning = true
 
 	fmt.Printf("Round %d: starting cau update algorithm...\n", round)
+	fmt.Printf("==================================\n")
 	curReqChunks = totalReqChunks[:100]
 	totalReqChunks = totalReqChunks[100:]
 
@@ -113,6 +116,8 @@ func CAU_Update() {
 	// 1)i < j, use Data-Delta Update(DDU); 2)else, use PDU
 	rackCompare(config.Racks[0], config.Racks[2])
 	rackCompare(config.Racks[1], config.Racks[2])
+
+
 
 }
 //R1 is a rack for datanode, R2 is a rack for paritynode
@@ -171,7 +176,6 @@ func clearUpdates() {
 }
 /*******update R0~R2 with current update requests(curReqChunks)********/
 func rackUpdate()  {
-
 
 	//update Rack
 	for i := 0; i < len(curReqChunks); i++ {
