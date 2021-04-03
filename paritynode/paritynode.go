@@ -55,12 +55,15 @@ func handleReq(conn net.Conn) {
 		index := td.StripeID
 		file.ReadAt(oldBuff, int64(index*config.ChunkSize))
 
-		//cau compute parity new value
+		//默认rootP为P0
 		row := 0
-		col := td.DataChunkID - (td.DataChunkID/config.K)*config.K
+		//找到对应的Di
+		col := td.DataChunkID - ( td.DataChunkID / config.K )* config.K
+		fmt.Printf("col=%d, len(buff)=%d\n", col, len(buff))
 		factor := config.RS.GenMatrix[row*config.K+col]
 		for i := 0; i < len(buff); i++ {
-			buff[i] =  config.Gfmul(factor, buff[i]) ^ oldBuff[i]
+			//Pi`=Pi+Aij*delta
+			buff[i] = oldBuff[i] ^ config.Gfmul(factor, buff[i] ^ oldBuff[i])
 		}
 		//write to file
 		file.Write(buff)
