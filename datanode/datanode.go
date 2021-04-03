@@ -85,7 +85,7 @@ func handleCMD(conn net.Conn)  {
 			OPType:      config.DDURoot,
 			DataChunkID: cmd.DataChunkID,
 			Buff:        buff,
-			NextIPs: common.GetNeighborsIPs(common.GetRackID(common.GetLocalIP()), common.GetLocalIP()),
+			NextIPs: common.GetNeighborsIPs(common.GetRackID(cmd.ToIP), common.GetLocalIP()),
 		}
 		fmt.Printf("get cmd: DDU, data has been transferred to rootP (%s)\n", cmd.ToIP)
 		//send data to rootP
