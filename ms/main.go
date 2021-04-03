@@ -18,6 +18,7 @@ var totalReqChunks = make([]config.MetaInfo, 0, 1000000)
 var isRunning = false   //标志是否正在执行CAU，若为false，则可以执行新的CAU；否则，不能执行
 var curReqChunks = make([]config.MetaInfo, config.MaxBatchSize, config.MaxBatchSize)
 var curNeedUpdateBlocks = 0
+var round = 0
 func handleAck(conn net.Conn) {
 	defer conn.Close()
 	dec := gob.NewDecoder(conn)
@@ -34,9 +35,6 @@ func handleAck(conn net.Conn) {
 	if ackNum == curNeedUpdateBlocks {
 		fmt.Printf("cau update has been completed...\n")
 		clearUpdates()
-	}else{
-		fmt.Printf("ackNum: %d, needUpdateBlocks: %d\n",
-			ackNum, curNeedUpdateBlocks)
 	}
 }
 func handleReq(conn net.Conn) {
@@ -47,8 +45,6 @@ func handleReq(conn net.Conn) {
 	err := dec.Decode(&req)
 	if err != nil {
 		fmt.Printf("decode error:%v\n", err)
-	} else {
-		fmt.Printf("req : %v\n", req)
 	}
 
 	RequestNum++
@@ -79,21 +75,10 @@ func handleReq(conn net.Conn) {
 		} else {
 			totalReqChunks = append(totalReqChunks, *metaInfo)
 		}
-		// start CAU when achieve the threshold (100)
+		// start CAU when achieves the threshold (100) and current stripe is not finished.
 		if len(totalReqChunks) >= config.MaxBatchSize && !isRunning {
 			CAU_Update()
 		}
-		//handle ack
-		//case config.ACK:
-		//	ackNum++
-		//
-		//	fmt.Printf("received ack：%d\n", ackNum)
-		//
-		//	if ackNum == config.Racks[0].CurUpdateNum+config.Racks[1].CurUpdateNum {
-		//		fmt.Printf("batch updates have been completed...\n")
-		//
-		//		clearUpdates()
-		//	}
 	}
 }
 func PrintGenMatrix(gm []byte)  {
@@ -115,9 +100,10 @@ func PrintGenMatrix(gm []byte)  {
 //cau algorithm
 func CAU_Update() {
 
+
 	isRunning = true
 
-	fmt.Printf("starting cau update algorithm...\n")
+	fmt.Printf("Round %d: starting cau update algorithm...\n", round)
 	curReqChunks = totalReqChunks[:100]
 	totalReqChunks = totalReqChunks[100:]
 
@@ -177,6 +163,11 @@ func clearUpdates() {
 
 	ackNum = 0
 	isRunning = false
+
+	// 考虑如果用户请求metainfo已经结束，无法启动CAU算法，则在每轮更新结束之后，启动CAU。
+	if len(totalReqChunks) >= config.MaxBatchSize && !isRunning {
+		CAU_Update()
+	}
 }
 /*******update R0~R2 with current update requests(curReqChunks)********/
 func rackUpdate()  {

@@ -30,10 +30,7 @@ func handleReq(conn net.Conn) {
 		log.Fatal("handleUpdateReq:parityNode更新数据，解码出错: ", err)
 	}
 
-	fmt.Printf("handleReq: %v\n", td)
-
 	switch td.OPType {
-
 	//DDU模式，rootP接收到数据
 	case config.DDURoot:
 
@@ -42,8 +39,6 @@ func handleReq(conn net.Conn) {
 		//stringIDForACK = td.StripeID
 		//received data
 		buff := td.Buff
-
-
 		oldBuff := make([]byte, config.ChunkSize, config.ChunkSize)
 
 		file, err := os.OpenFile(config.DataFilePath, os.O_RDWR, 0)
@@ -59,7 +54,6 @@ func handleReq(conn net.Conn) {
 		row := 0
 		//找到对应的Di
 		col := td.DataChunkID - ( td.DataChunkID / config.K ) * config.K
-		fmt.Printf("col=%d, len(buff)=%d\n", col, len(buff))
 		factor := config.RS.GenMatrix[row*config.K+col]
 		for i := 0; i < len(buff); i++ {
 			//Pi`=Pi+Aij*delta

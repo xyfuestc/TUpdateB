@@ -18,14 +18,13 @@ import (
 )
 
 
-var updateBlocks = 0
+var requireBlocks = 0
 var waitingForACK = true
-var updatedNum = 0
+var hasUpdatedBlocks = 0
 var currentTime  = 0
 func main() {
 	go listenACK()
 	readTrace("../example-traces/wdev_1.csv")
-
 }
 func listenACK() {
 
@@ -35,7 +34,6 @@ func listenACK() {
 		fmt.Printf("listen failed, err:%v", err)
 		return
 	}
-
 
 	for {
 		//等待客户端连接
@@ -51,6 +49,7 @@ func listenACK() {
 func readTrace(fileName string) {
 
 
+	//记录初始时间
 	currentTime := time.Now().Second()
 
 	fmt.Printf("read trace file: %s\n", fileName)
@@ -73,7 +72,7 @@ func readTrace(fileName string) {
 		readSize, _ := strconv.Atoi(str[5]) //更新数据大小
 		//更新块的范围：（minBlockID，maxBlockID）
 		minBlockID, maxBlockID := offset/config.ChunkSize, (offset+readSize)/config.ChunkSize
-		updateBlocks += maxBlockID - minBlockID + 1
+
 		/*******依次处理更新请求*******/
 		for i := minBlockID; i <= maxBlockID; i++ {
 			metaInfo := connectMS(i)
@@ -81,13 +80,14 @@ func readTrace(fileName string) {
 			updateData(metaInfo, config.ChunkSize)
 		}
 	}
-
-	fmt.Printf("total spending time : %d\n", time.Now().Second() - currentTime )
 	for{
 		if !waitingForACK {
 			 break
 		}
 	}
+
+	fmt.Printf("Total spending time is: %d\n", time.Now().Second() - currentTime )
+	fmt.Printf("Client is finished.\n")
 }
 
 func connectMS(chunkID int) config.MetaInfo {
@@ -106,6 +106,8 @@ func connectMS(chunkID int) config.MetaInfo {
 
 /*********inform datanode to update its local data***********/
 func updateData(metaInfo config.MetaInfo, ChunkSize int) {
+
+	requireBlocks++
 
 	fmt.Printf("inform datanode %d to update its local datachunk %d.\n",
 												metaInfo.DataNodeID, metaInfo.DataChunkID)
@@ -132,8 +134,8 @@ func handleACK(conn net.Conn) {
 		log.Fatal("client handleACK error: ", err)
 	}
 	fmt.Printf("client receiving ack: %d of updating chunk :%d\n",ack.AckID, ack.ChunkID)
-	updatedNum ++
-	if updatedNum == updateBlocks {
+	hasUpdatedBlocks++
+	if hasUpdatedBlocks == requireBlocks {
 		waitingForACK = false
 	}
 }
