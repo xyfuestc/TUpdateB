@@ -171,8 +171,16 @@ func getRackID(dataNodeID int) int {
 		return 1
 	}
 }
-func InitNodesRacks(){
-	//init Nodes and Racks
+
+func Init(){
+
+	//1.init GM
+	fmt.Printf("Init GM...\n")
+	r, _ := reedsolomon.New(K, M)
+	RS = r
+
+	//2.init Nodes and Racks
+	fmt.Printf("Init nodes and racks...\n")
 	var start  = StartIP
 	for g := 0; g < len(DataNodeIPs); g++ {
 		strIP := BaseIP + strconv.FormatInt(int64(start), 10)

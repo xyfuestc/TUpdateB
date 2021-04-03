@@ -109,7 +109,7 @@ func handleACK(conn net.Conn) {
 
 func main() {
 
-	config.InitNodesRacks()
+	config.Init()
 
 	fmt.Printf("listening req in %s:%s\n",common.GetLocalIP(), config.NodeListenPort)
 	l1, err := net.Listen("tcp", common.GetLocalIP() +  ":" + config.NodeListenPort)

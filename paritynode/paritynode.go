@@ -58,7 +58,7 @@ func handleReq(conn net.Conn) {
 		//默认rootP为P0
 		row := 0
 		//找到对应的Di
-		col := td.DataChunkID - ( td.DataChunkID / config.K )* config.K
+		col := td.DataChunkID - ( td.DataChunkID / config.K ) * config.K
 		fmt.Printf("col=%d, len(buff)=%d\n", col, len(buff))
 		factor := config.RS.GenMatrix[row*config.K+col]
 		for i := 0; i < len(buff); i++ {
@@ -193,7 +193,7 @@ func handleReq(conn net.Conn) {
 //
 //}
 func main() {
-	config.InitNodesRacks()
+	config.Init()
 
 	fmt.Printf("listening req in %s:%s\n", common.GetLocalIP(), config.ParityListenPort)
 	l1, err := net.Listen("tcp", common.GetLocalIP() + ":" + config.ParityListenPort)

@@ -5,7 +5,6 @@ import (
 	"EC/config"
 	"encoding/gob"
 	"fmt"
-	"github.com/templexxx/reedsolomon"
 	"log"
 	"net"
 )
@@ -96,36 +95,6 @@ func handleReq(conn net.Conn) {
 		//		clearUpdates()
 		//	}
 	}
-}
-func initialize(k, m, w int) {
-	fmt.Printf("Starting metainfo server...\n")
-	fmt.Printf("initial parameters: k=%d, m=%d\n", k, m)
-	r, _ := reedsolomon.New(k, m)
-	config.RS = r
-
-	//fmt.Printf("r : %v\n",r)
-
-	//gm, err := reedsolomon.New(config.K, config.M)
-	//if err != nil {
-	//	log.Fatal("初始化矩阵：发生错误:", err)
-	//}else{
-	//	fmt.Printf("gm: %v\n", gm.)
-	//}
-
-	//bitMatrix := GenerateBitMatrix(r.GenMatrix,config.K, config.M, config.W)
-	GenerateParityRelation(r.GenMatrix, config.CAU)
-	fmt.Printf("GM Initialization is finished.\n")
-	PrintGenMatrix(r.GenMatrix)
-	fmt.Printf("Init nodes and racks...\n")
-	config.InitNodesRacks()
-
-
-	//fmt.Printf("bitMatrix=%v.\n",bitMatrix)
-	//fmt.Printf("RelationsInputP=%v.\n", RelationsInputP)
-	//fmt.Printf("RelationsInputD=%v.\n", RelationsInputD)
-	/*******初始化rack*********/
-	//initRack()
-
 }
 func PrintGenMatrix(gm []byte)  {
 
@@ -288,27 +257,27 @@ func getRelatedParityID(chunkID int) {
 //	}
 //}
 
-func GenerateParityRelation(gm []byte, strategy config.Strategy) {
-	switch strategy {
-	case config.CAU:
-
-		col := config.K * config.W
-		for i := 0; i < len(gm); i++ {
-			if gm[i] > 0 {
-				RelationsInputP[i/col] =
-					append(RelationsInputP[i/col], i-(i/col*col))
-			}
-		}
-		for i := 0; i < len(gm); i++ {
-			if gm[i] > 0 {
-				RelationsInputD[i-(i/col*col)] =
-					append(RelationsInputD[i-(i/col*col)], i/col)
-			}
-		}
-
-	}
-
-}
+//func GenerateParityRelation(gm []byte, strategy config.Strategy) {
+//	switch strategy {
+//	case config.CAU:
+//
+//		col := config.K * config.W
+//		for i := 0; i < len(gm); i++ {
+//			if gm[i] > 0 {
+//				RelationsInputP[i/col] =
+//					append(RelationsInputP[i/col], i-(i/col*col))
+//			}
+//		}
+//		for i := 0; i < len(gm); i++ {
+//			if gm[i] > 0 {
+//				RelationsInputD[i-(i/col*col)] =
+//					append(RelationsInputD[i-(i/col*col)], i/col)
+//			}
+//		}
+//
+//	}
+//
+//}
 
 func GenerateBitMatrix(matrix []byte, k, m, w int) []byte {
 
@@ -340,7 +309,8 @@ func GenerateBitMatrix(matrix []byte, k, m, w int) []byte {
 }
 
 func main() {
-	initialize(config.K, config.M, config.W)
+
+	config.Init()
 
 	fmt.Printf("the ms is listening req: %s\n",config.MSListenPort)
 	l1, err := net.Listen("tcp", config.MSIP +":" + config.MSListenPort)
