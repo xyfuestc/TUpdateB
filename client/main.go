@@ -51,7 +51,7 @@ func readTrace(fileName string) {
 
 
 	//记录初始时间
-	currentTime := time.Now().Second()
+	currentTime := time.Now()
 
 	fmt.Printf("read trace file: %s\n", fileName)
 	/*******打开更新文件*********/
@@ -65,10 +65,10 @@ func readTrace(fileName string) {
 	br := bufio.NewReader(fi)
 	for {
 		a, _, c := br.ReadLine()
-		requestNum++
 		if c == io.EOF {
 			break
 		}
+		requestNum++
 		str := strings.Split(string(a), ",")
 		offset, _ := strconv.Atoi(str[4])   //更新偏移量
 		readSize, _ := strconv.Atoi(str[5]) //更新数据大小
@@ -88,8 +88,8 @@ func readTrace(fileName string) {
 		}
 	}
 
-	fmt.Printf("Total request num is %d, request data blocks are %d, spending time is: %ds\n",
-							requestNum, requireBlocks, time.Now().Second() - currentTime )
+	fmt.Printf("Total request num is %d, request data blocks are %d, spending time is: %v,%vs\n",
+							requestNum, requireBlocks, time.Now(), currentTime )
 	fmt.Printf("Client is finished.\n")
 }
 
