@@ -7,13 +7,12 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"os"
 	"strings"
 )
 
 
 
-var role = config.UknownRole
+var role = config.Role_Uknown
 var ackNum = 0
 var neibors = (config.K+config.M)/config.M - 1
 //var nodeIPForACK string
@@ -31,127 +30,100 @@ func handleReq(conn net.Conn) {
 	}
 
 	switch td.OPType {
+	case config.OP_BASE:
+		common.WriteBlock(td.BlockID, td.Buff)
+		//return ack
+		ackNum++
+		ack := &config.Ack{
+			ChunkID: td.BlockID,
+			AckID: ackNum+1,
+		}
+		common.SendData(ack, targetIP, config.NodeACKListenPort, "ack")
 	//DDU模式，rootP接收到数据
 	case config.DDURoot:
-
-		role = config.DDURootPRole
-		//nodeIPForACK = targetIP
-		//stringIDForACK = td.StripeID
-		//received data
-		buff := td.Buff
-		oldBuff := make([]byte, config.ChunkSize, config.ChunkSize)
-
-		file, err := os.OpenFile(config.DataFilePath, os.O_RDWR, 0)
-		if err != nil {
-			fmt.Printf("打开文件出错：%v\n", err)
-			return
-		}
-		defer file.Close()
-		index := td.StripeID
-		file.ReadAt(oldBuff, int64(index*config.ChunkSize))
-
+		role = config.Role_DDURootP
+		delta := td.Buff
+		oldBuff := common.ReadBlock(td.BlockID)
 		//默认rootP为P0
 		row := 0
+		newBuff := make([]byte, config.ChunkSize)
 		//找到对应的Di
-		col := td.DataChunkID - ( td.DataChunkID / config.K ) * config.K
-		factor := config.RS.GenMatrix[row*config.K+col]
-		for i := 0; i < len(buff); i++ {
-			//Pi`=Pi+Aij*delta
-			buff[i] = oldBuff[i] ^ config.Gfmul(factor, buff[i] ^ oldBuff[i])
+		if config.ECMode == "RS" {
+			col := td.BlockID % config.K
+			factor := config.RS.GenMatrix[row*config.K+col]
+			for i := 0; i < len(delta); i++ {
+				newBuff[i] = oldBuff[i] ^ config.Gfmul(factor, delta[i])    //Pi`=Pi+Aij*delta
+			}
+		}else{  //XOR
+			for i := 0; i < len(delta); i++ {
+				newBuff[i] = oldBuff[i] ^ delta[i]   //Pi`=Pi+Aij*delta
+			}
 		}
-		//write to file
-		file.Write(buff)
-
-		fmt.Printf("DDU: rootP update success!\n")
+		common.WriteBlock(td.BlockID, newBuff)
+		fmt.Printf("CMD_DDU: rootP update success!\n")
 		fmt.Printf("transfer data to other leafs...\n")
-
 		//send update data to leafs, wait for ack
 		for _, leafIP := range td.NextIPs {
-
 			//send data to leaf
 			data := &config.TD{
-				OPType:      config.DDULeaf,
-				Buff:        buff,
-				DataChunkID: td.DataChunkID,
-				ToIP: leafIP,
+				OPType:  config.DDULeaf,
+				Buff:    delta,
+				BlockID: td.BlockID,
+				ToIP:    leafIP,
 			}
-			common.SendData(data, leafIP, config.ParityListenPort, "ack")
+			common.SendData(data, leafIP, config.ParityListenPort, "")
 		}
-		//return ack to datanode
-		ack := config.Ack{
-			ChunkID: td.DataChunkID,
-			AckID: td.DataChunkID+1,
+		ackNum++
+		ack := &config.Ack{
+			ChunkID: td.BlockID,
+			AckID: ackNum+1,
 		}
-		fmt.Printf("return the ack of chunk %d to client...\n", td.DataChunkID)
-
+		fmt.Printf("return the ack of chunk %d to client...\n", td.BlockID)
 		common.SendData(ack, targetIP, config.NodeACKListenPort, "ack")
-
 	//2) as leaf, receive data from root
 	case config.DDULeaf:
-
-		role = config.DDULeafPRole
+		role = config.Role_DDULeafP
 		//received data
-		buff := td.Buff
-
-		oldBuff := make([]byte, config.ChunkSize, config.ChunkSize)
-
-		file, err := os.OpenFile(config.DataFilePath, os.O_RDWR, 0)
-		if err != nil {
-			fmt.Printf("打开文件出错：%v\n", err)
-			return
+		delta := td.Buff
+		oldBuff := common.ReadBlock(td.BlockID)
+		newBuff := make([]byte, config.ChunkSize)
+		if config.ECMode == "RS" {
+			row := common.GetParityIDFromIP(td.ToIP)
+			col := td.BlockID - (td.BlockID/config.K)*config.K
+			factor := config.RS.GenMatrix[row*config.K+col]
+			for i := 0; i < len(delta); i++ {
+				newBuff[i] = config.Gfmul(factor, delta[i]) ^ oldBuff[i]
+			}
+		}else { //XOR
+			for i := 0; i < len(delta); i++ {
+				newBuff[i] = delta[i] ^ oldBuff[i]
+			}
 		}
-		defer file.Close()
-		index := td.StripeID
-		file.ReadAt(oldBuff, int64(index*config.ChunkSize))
-
-
-		//cau compute parity new value
-		row := common.GetParityIDFromIP(td.ToIP)
-		col := td.DataChunkID - (td.DataChunkID/config.K)*config.K
-		factor := config.RS.GenMatrix[row*config.K+col]
-		for i := 0; i < len(buff); i++ {
-			buff[i] =  config.Gfmul(factor, buff[i]) ^ oldBuff[i]
-		}
-		//write to file
-		file.WriteAt(buff, int64(index*config.ChunkSize))
-		fmt.Printf("DDU: leafP update success!\n")
-
-		//return ack
-		//ack := &config.ReqData{
-		//	ChunkID: td.DataChunkID,
-		//	AckID: td.DataChunkID+1,
-		//}
-		//common.SendData(ack, targetIP, config.ParityACKListenPort, "ack")
-
+		common.WriteBlock(td.BlockID, newBuff)
+		fmt.Printf("CMD_DDU: leafP update success!\n")
 	//PDU mode, receive data from rootD
 	case config.PDU:
-		buff := td.Buff
-		oldBuff := make([]byte, config.ChunkSize, config.ChunkSize)
-		file, err := os.OpenFile(config.DataFilePath, os.O_RDWR, 0)
-
-		if err != nil {
-			fmt.Printf("打开文件出错：%v\n", err)
-			return
+		delta := td.Buff
+		oldBuff := common.ReadBlock(td.BlockID)
+		newBuff := make([]byte, config.ChunkSize)
+		if config.ECMode == "RS" {
+			row := common.GetParityIDFromIP(td.ToIP)
+			col := td.BlockID - (td.BlockID/config.K)*config.K
+			factor := config.RS.GenMatrix[row*config.K+col]
+			for i := 0; i < len(delta); i++ {
+				newBuff[i] = config.Gfmul(factor, delta[i]) ^ oldBuff[i]
+			}
+		}else { //XOR
+			for i := 0; i < len(delta); i++ {
+				newBuff[i] = delta[i] ^ oldBuff[i]
+			}
 		}
-		defer file.Close()
-
-		index := td.StripeID
-		file.ReadAt(oldBuff, int64(index*config.ChunkSize))
-
-		//cau compute parity new value
-		row := common.GetParityIDFromIP(td.ToIP)
-		col := td.DataChunkID - (td.DataChunkID/config.K)*config.K
-		factor := config.RS.GenMatrix[row*config.K+col]
-		for i := 0; i < len(buff); i++ {
-			buff[i] =  config.Gfmul(factor, buff[i]) ^ oldBuff[i]
-		}
-		//write to file
-		file.WriteAt(buff, int64(index*config.ChunkSize))
-
+		common.WriteBlock(td.BlockID, newBuff)
 		//return ack
+		ackNum++
 		ack := &config.Ack{
-			ChunkID: td.DataChunkID,
-			AckID: td.DataChunkID+1,
+			ChunkID: td.BlockID,
+			AckID: ackNum+1,
 		}
 		common.SendData(ack, targetIP, config.NodeACKListenPort, "ack")
 	}
@@ -172,8 +144,8 @@ func handleReq(conn net.Conn) {
 //	if ackNum == neibors{
 //		//return ack
 //		ack := &config.Ack{
-//			ChunkID: td.DataChunkID,
-//			AckID: td.DataChunkID+1,
+//			BlockID: td.blockID,
+//			AckID: td.blockID+1,
 //		}
 //		enc := gob.NewEncoder(conn)
 //		err = enc.Encode(ack)
@@ -183,7 +155,7 @@ func handleReq(conn net.Conn) {
 //		}
 //	}
 //
-//	fmt.Printf("parity received chunk %d's ack：%d\n",ack.ChunkID, ack.AckID)
+//	fmt.Printf("parity received chunk %d's ack：%d\n",ack.BlockID, ack.AckID)
 //
 //}
 func main() {
