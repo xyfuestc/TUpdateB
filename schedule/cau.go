@@ -64,7 +64,7 @@ func (p CAU) HandleTD(td config.TD)  {
 				BlockID: td.BlockID,
 				ToIP:    leafIP,
 			}
-			common.SendData(data, leafIP, config.ParityListenPort, "")
+			common.SendData(data, leafIP, config.NodeTDListenPort, "")
 		}
 		ack := &config.ACK{
 			BlockID: td.BlockID,
@@ -205,7 +205,7 @@ func (p CAU) DDU(cmd config.CMD)  {
 			NextIPs: common.GetNeighborsIPs(common.GetRackID(ip), common.GetLocalIP()),
 		}
 		fmt.Printf("get cmd: CMD_DDU, data has been transferred to rootP (%s)\n", ip)
-		common.SendData(sendData, sendData.ToIP, config.ParityListenPort, "")
+		common.SendData(sendData, sendData.ToIP, config.NodeCMDListenPort, "")
 	}
 
 }
@@ -221,4 +221,7 @@ func (p CAU) HandleACK(ack config.ACK)  {
 
 		delete(WaitingACKGroup, ack.SID)
 	}
+}
+func (p CAU) Clear()  {
+
 }

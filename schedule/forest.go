@@ -34,3 +34,6 @@ func (p Forest) HandleACK(ack config.ACK)  {
 		delete(WaitingACKGroup, ack.SID)
 	}
 }
+func (p Forest) Clear()  {
+
+}

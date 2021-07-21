@@ -38,7 +38,6 @@ type UserRequest struct {
 var numOfRequestBlocks = 0
 var isWaitingForACK = true
 var numOfUpdatedBlocks = 0
-var BeginTime int64 = 0
 var numOfUserRequests = 0
 var sidCounter = 0
 func main() {
@@ -68,15 +67,13 @@ func listenACK() {
 func handleRequestsFromFile(fileName string) {
 	updateStreamFile, _ := openFile(fileName)
 	userRequestGroup := getUpdateRequestFromFile(updateStreamFile)
-	fmt.Printf("userRequestGroup: %v\n",userRequestGroup)
 	blockGroup := turnRequestsToBlocks(userRequestGroup)
-	fmt.Printf("blockGroup: %v\n",userRequestGroup)
 	handleBlockGroup(blockGroup)
 	//waitForACK()
 
-	fmt.Printf("Total request num is %d, request data blocks are %d, spending time is: %v,%vs\n",
-		numOfUserRequests, numOfRequestBlocks, time.Now(), BeginTime)
-	fmt.Printf("Client is finished.\n")
+	fmt.Printf("Total request num is %d, request data blocks are %d\n",
+		len(userRequestGroup), len(blockGroup))
+	fmt.Printf("done.\n")
 }
 
 func waitForACK() {
@@ -147,7 +144,7 @@ func getOneRequestFromOneLine(lineData []byte) UserRequest {
 }
 
 func requestBlockToMS(blockID int)  {
-	fmt.Printf("connect to ms : %s\n", config.MSIP)
+	fmt.Printf("sid %d : request block %d to ms : %s\n", sidCounter, blockID, config.MSIP)
 	request := &config.ReqData{
 		SID:      sidCounter,
 		OPType:   config.UpdateReq,
@@ -174,7 +171,7 @@ func updateLocalData(metaInfo config.MetaInfo) {
 	}
 	//send data to datanode for update
 	fmt.Printf("send datatype to datanode %d, IP address: %s\n", metaInfo.BlockID, metaInfo.BlockIP)
-	common.SendData(td, metaInfo.BlockIP, config.NodeListenPort, "ack")
+	common.SendData(td, metaInfo.BlockIP, config.NodeReqListenPort, "ack")
 }
 func handleACK(conn net.Conn) {
 	defer conn.Close()

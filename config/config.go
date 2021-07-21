@@ -9,7 +9,7 @@ import (
 const K int = 6
 const M int = 4
 const W int = 1
-const NumOfRack int = 3
+const NumOfRack int = 5
 const MaxReqSize = 100000
 const ChunkSize int = 1024 * 1024 //1MB
 const MaxBatchSize int = 100
@@ -24,13 +24,10 @@ type OPType int
 const (
 	MSListenPort   string = "8787"   // metainfo server listening port
 	MSACKListenPort   string = "8201"   // metainfo server ack listening port
-
-	NodeListenPort      string = "8300" // datanode or paritynode listening port
-	ParityListenPort    string = "8303"
-	ParityACKListenPort string = "8304"
+	NodeReqListenPort   string = "8300" // datanode or paritynode listening port
 	NodeACKListenPort   string = "8301"   // metainfo server ack listening port
 	NodeCMDListenPort   string = "8302"   // metainfo server ack listening port
-
+	NodeTDListenPort   string = "8304"   // metainfo server ack listening port
 	ClientACKListenPort string = "8400"
 )
 
@@ -89,7 +86,7 @@ const BaseIP string = "192.168.1."
 //const MSIP = BaseIP + "3"
 //var MSIP = BaseIP + "172"
 var MSIP = "127.0.0.1"
-var ClientIP = BaseIP + "170"
+//var ClientIP = BaseIP + "170"
 //const DataFilePath string = "/tmp/dataFile.dt"
 const DataFilePath string = "../../test"
 const StartIP int = 173

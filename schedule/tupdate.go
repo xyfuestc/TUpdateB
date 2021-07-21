@@ -36,30 +36,28 @@ type TUpdate struct {
 
 func (p TUpdate) Init()  {
 	InitNetworkDistance()
+	p.ReceivedTDs = make([]config.TD, 0, 100)
+	p.CMDWaitingQueue = make([]config.CMD, 0, 100)
 }
 
 func (p TUpdate) HandleReq(reqData config.ReqData)  {
 	sid := reqData.SID
 	blockID := reqData.BlockID
 	stripeID := reqData.StripeID
-	//relativeParityIDs := common.GetRelatedParities(blockID)
-	//toIPs := common.GetRelatedParityIPs(blockID)
-	tasks := T_Update(blockID)
+	tasks := GetTransmitTasks(blockID)
 	for _, task := range tasks{
-		nodeID := common.GetNodeID(blockID)
 		fromIP := common.GetNodeIP(int(task.Start))
 		toIP := common.GetNodeIP(int(task.End))
 		toIPs := make([]string, 1)
 		toIPs = append(toIPs, toIP)
 		cmd := config.CMD{
 			SID:      sid,
-			Type:     config.CMD_BASE,
 			StripeID: stripeID,
 			BlockID:  blockID,
 			ToIPs:    toIPs,
 			FromIP:   fromIP,
 		}
-		fmt.Printf("发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", nodeID, fromIP, blockID, toIP)
+		fmt.Printf("发送命令给 node: %s，使其将Block %d 发送给 %v\n", fromIP, blockID, toIP)
 		common.SendData(cmd, toIP, config.NodeCMDListenPort, "")
 		PushWaitingACKGroup(cmd.SID, cmd.BlockID, cmd.FromIP, "")
 	}
@@ -149,7 +147,7 @@ func NewGraph(N int) Graph {
 	}
 }
 /*测试*/
-func TestFunc(matrix, nodeIndexs config.Matrix) config.Matrix   {
+func GetMSTPath(matrix, nodeIndexs config.Matrix) config.Matrix   {
 	len := len(nodeIndexs)
 	G := NewGraph(len)
 	for i := 0; i < G.N; i++ {
@@ -160,20 +158,13 @@ func TestFunc(matrix, nodeIndexs config.Matrix) config.Matrix   {
 	path := Prim(G)
 	return path
 }
-func T_Update(blockID int) []Task {
+func GetTransmitTasks(blockID int) []Task {
 	parities :=	common.GetRelatedParities(blockID)
-	fmt.Printf("%v\n", parities)
 	nodeID := common.GetNodeID(blockID)
-	fmt.Printf("%v\n", nodeMatrix)
 	relatedParityMatrix, nodeIndexs := getAdjacentMatrix(parities, nodeID, nodeMatrix)
-	fmt.Printf("%v\n", relatedParityMatrix)
-	fmt.Printf("%v\n", nodeIndexs)
-	path := TestFunc(relatedParityMatrix, nodeIndexs)
-	fmt.Printf("path: %v\n", path)
+	path := GetMSTPath(relatedParityMatrix, nodeIndexs)
 	taskGroup := make([]Task, 0, len(nodeIndexs)-1)
 	for i := 1; i < len(nodeIndexs); i++ {
-		//fmt.Printf("(%d, %d) ", path[i], i)
-		fmt.Printf("(%d, %d) ", nodeIndexs[path[i]], nodeIndexs[i])
 		taskGroup = append(taskGroup, Task{Start: nodeIndexs[path[i]], BlockID: blockID, End:nodeIndexs[i]})
 	}
 	TaskAdjust(taskGroup)
@@ -181,7 +172,7 @@ func T_Update(blockID int) []Task {
 		return taskGroup[i].Start < taskGroup[j].Start
 	})
 
-	fmt.Printf("taskGroup:%v\n", taskGroup)
+	fmt.Printf("GetTransmitTasks :%v\n", taskGroup)
 
 	return taskGroup
 
@@ -206,7 +197,7 @@ func getAdjacentMatrix(parities []byte, nodeID int, allMatrix []byte) (config.Ma
 }
 func (p TUpdate) HandleCMD(cmd config.CMD)  {
 	if p.IsCMDDataExist(cmd) {
-		//finish cmd
+		fmt.Printf("block %d is local\n", cmd.BlockID)
 		buff := common.ReadBlock(cmd.BlockID)
 		p.finishCMD(cmd, buff)
 	}else{
@@ -233,7 +224,7 @@ func (p TUpdate) IsCMDDataExist(cmd config.CMD) bool {
 	return common.GetNodeIP(cmd.BlockID) == common.GetLocalIP()
 }
 func (p TUpdate) finishCMD(cmd config.CMD, buff []byte) {
-	for _,toIP := range cmd.ToIPs {
+	for _, toIP := range cmd.ToIPs {
 		common.SendData(buff, cmd.FromIP, toIP, "")
 	}
 	PushWaitingACKGroup(cmd.SID, cmd.BlockID, cmd.FromIP, "")
@@ -265,4 +256,8 @@ func (p TUpdate) HandleACK(ack config.ACK)  {
 
 		delete(WaitingACKGroup, ack.SID)
 	}
+}
+func (p TUpdate) Clear()  {
+	p.ReceivedTDs = make([]config.TD, 0, 100)
+	p.CMDWaitingQueue = make([]config.CMD, 0, 100)
 }

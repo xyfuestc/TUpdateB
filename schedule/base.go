@@ -13,6 +13,7 @@ type Policy interface {
 	HandleCMD(cmd config.CMD)
 	HandleTD(td config.TD)
 	HandleACK(ack config.ACK)
+	Clear()
 }
 
 type Base struct {
@@ -30,7 +31,7 @@ func (p Base) HandleCMD(cmd config.CMD) {
 			ToIP: parityIP,
 			SID: cmd.SID,
 		}
-		common.SendData(td, parityIP, config.ParityListenPort, "")
+		common.SendData(td, parityIP, config.NodeTDListenPort, "")
 		PushWaitingACKGroup(cmd.SID, cmd.BlockID, cmd.FromIP, parityIP)
 	}
 }
@@ -112,6 +113,10 @@ func IsEmptyInWaitingACKGroup() bool  {
 		return true
 	}
 	return false
+}
+
+func (p Base) Clear()  {
+
 }
 
 

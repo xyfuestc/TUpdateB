@@ -260,14 +260,6 @@ func GetNodeIP(blockID int) string  {
 		return config.ParityNodeIPs[nodeID-config.K]
 	}
 }
-func GetNodeIPFromNodeID(nodeID int) string {
-	//parity node
-	if nodeID > config.K - 1 {
-		 return config.ParityNodeIPs[nodeID - config.K]
-	}else{  //data node
-		return config.DataNodeIPs[nodeID]
-	}
-}
 func RandWriteBlockAndRetDelta(blockID int) []byte  {
 	newDataStr := RandStringBytesMask(config.ChunkSize)
 	newBuff := []byte(newDataStr)
