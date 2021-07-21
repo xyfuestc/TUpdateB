@@ -1,4 +1,4 @@
-package policy
+package schedule
 
 import (
 	"EC/common"
@@ -29,15 +29,56 @@ func TaskAdjust(taskGroup []Task)  {
 	}
 }
 
-
-
-
 type TUpdate struct {
-	
+	ReceivedTDs []config.TD
+	CMDWaitingQueue []config.CMD
 }
 
 func (p TUpdate) Init()  {
 	InitNetworkDistance()
+}
+
+func (p TUpdate) HandleReq(reqData config.ReqData)  {
+	sid := reqData.SID
+	blockID := reqData.BlockID
+	stripeID := reqData.StripeID
+	//relativeParityIDs := common.GetRelatedParities(blockID)
+	//toIPs := common.GetRelatedParityIPs(blockID)
+	tasks := T_Update(blockID)
+	for _, task := range tasks{
+		nodeID := common.GetNodeID(blockID)
+		fromIP := common.GetNodeIP(int(task.Start))
+		toIP := common.GetNodeIP(int(task.End))
+		toIPs := make([]string, 1)
+		toIPs = append(toIPs, toIP)
+		cmd := config.CMD{
+			SID:      sid,
+			Type:     config.CMD_BASE,
+			StripeID: stripeID,
+			BlockID:  blockID,
+			ToIPs:    toIPs,
+			FromIP:   fromIP,
+		}
+		fmt.Printf("发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", nodeID, fromIP, blockID, toIP)
+		common.SendData(cmd, toIP, config.NodeCMDListenPort, "")
+		PushWaitingACKGroup(cmd.SID, cmd.BlockID, cmd.FromIP, "")
+	}
+}
+
+func (p TUpdate) HandleTD(td config.TD)  {
+	if p.meetCMDNeed(td) {
+		cmd := p.getMeetCMD(td)
+		p.finishCMD(cmd, td.Buff)
+		p.deleteCMD(cmd)
+	}
+	//local update
+	common.WriteDeltaBlock(td.BlockID, td.Buff)
+	//return ack
+	ack := &config.ACK{
+		SID:     td.SID,
+		BlockID: td.BlockID,
+	}
+	common.SendData(ack, td.FromIP, config.NodeACKListenPort, "ack")
 }
 
 const MAX_COUNT int = 9
@@ -119,8 +160,6 @@ func TestFunc(matrix, nodeIndexs config.Matrix) config.Matrix   {
 	path := Prim(G)
 	return path
 }
-
-
 func T_Update(blockID int) []Task {
 	parities :=	common.GetRelatedParities(blockID)
 	fmt.Printf("%v\n", parities)
@@ -165,7 +204,65 @@ func getAdjacentMatrix(parities []byte, nodeID int, allMatrix []byte) (config.Ma
 	}
 	return newMatrix, nodeIndexes
 }
+func (p TUpdate) HandleCMD(cmd config.CMD)  {
+	if p.IsCMDDataExist(cmd) {
+		//finish cmd
+		buff := common.ReadBlock(cmd.BlockID)
+		p.finishCMD(cmd, buff)
+	}else{
+		p.CMDWaitingQueue = append(p.CMDWaitingQueue, cmd)
+	}
+}
+func (p TUpdate) meetCMDNeedAndReturnIndex(td config.TD) int {
+	for i, cmd:= range p.CMDWaitingQueue{
+		if cmd.SID == td.SID{
+			return i
+		}
+	}
+	return -1
+}
+func (p TUpdate) meetCMDNeed(td config.TD) bool  {
+	for _, cmd:= range p.CMDWaitingQueue{
+		if cmd.SID == td.SID{
+			return true
+		}
+	}
+	return false
+}
+func (p TUpdate) IsCMDDataExist(cmd config.CMD) bool {
+	return common.GetNodeIP(cmd.BlockID) == common.GetLocalIP()
+}
+func (p TUpdate) finishCMD(cmd config.CMD, buff []byte) {
+	for _,toIP := range cmd.ToIPs {
+		common.SendData(buff, cmd.FromIP, toIP, "")
+	}
+	PushWaitingACKGroup(cmd.SID, cmd.BlockID, cmd.FromIP, "")
+}
+func (p TUpdate) getMeetCMD(td config.TD) config.CMD {
+	for _, cmd:= range p.CMDWaitingQueue{
+		if cmd.SID == td.SID{
+			return cmd
+		}
+	}
+	return config.CMD{}
+}
+func (p TUpdate) deleteCMD(delCMD config.CMD) {
+	for i, cmd:= range p.CMDWaitingQueue{
+		if cmd.SID == delCMD.SID{
+			p.CMDWaitingQueue = append(p.CMDWaitingQueue[:i], p.CMDWaitingQueue[i:]...)
+		}
+	}
+}
+func (p TUpdate) HandleACK(ack config.ACK)  {
+	PopWaitingACKGroup(ack.SID)
+	if !IsExistInWaitingACKGroup(ack.SID) {
+		ack := &config.ACK{
+			SID:     ack.SID,
+			BlockID: ack.BlockID,
+		}
+		ackReceiverIP := WaitingACKGroup[ack.SID].ACKReceiverIP
+		common.SendData(ack, ackReceiverIP, config.NodeACKListenPort, "ack")
 
-
-
-
+		delete(WaitingACKGroup, ack.SID)
+	}
+}

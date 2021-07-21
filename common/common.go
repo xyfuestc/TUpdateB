@@ -7,7 +7,6 @@ import (
 	"log"
 	"math/rand"
 	"net"
-	"github.com/wxnacy/wgo/arrays"
 	"os"
 )
 
@@ -175,7 +174,7 @@ func GetRelatedParities(blockID int) config.Matrix  {
 	//	}
 	//	j++
 	//}
-	nodeID := blockID%config.K
+	nodeID := GetNodeID(blockID)
 	switch nodeID {
 	case 0:
 		parities = append(parities, 1, 2, 3)
@@ -202,10 +201,7 @@ func GetRelatedParityIPs(blockID int) []string {
 	parityIDs := GetRelatedParities(blockID)
 	parityIPs := make([]string, 0, len(parityIDs))
 	for _, index := range parityIDs {
-		curIP := config.ParityNodeIPs[(int(index))/config.W]
-		if arrays.ContainsString(parityIPs, curIP) < 0 {
-			parityIPs = append(parityIPs, curIP)
-		}
+			parityIPs = append(parityIPs, config.ParityNodeIPs[(int(index))])
 	}
 	return parityIPs
 }
@@ -231,7 +227,7 @@ func ReadBlock(blockID int) []byte  {
 	return buff
 }
 func WriteBlock(blockID int, buff []byte)  {
-	index := blockID /config.K
+	index := blockID / config.K
 	file, err := os.OpenFile(config.DataFilePath, os.O_WRONLY, 0)
 
 	if err != nil {
@@ -286,5 +282,65 @@ func RandWriteBlockAndRetDelta(blockID int) []byte  {
 	WriteBlock(blockID, newBuff)
 
 	return deltaBuff
+}
+func WriteDeltaBlock(blockID int, deltaBuff []byte) []byte  {
+	/*****read old data*******/
+	oldBuff := ReadBlock(blockID)
+	/*****compute new delta data*******/
+	newBuff := make([]byte, config.ChunkSize, config.ChunkSize)
+	for i := 0; i < len(newBuff); i++ {
+		newBuff[i] = deltaBuff[i] ^ oldBuff[i]
+	}
+	/*****write new data*******/
+	WriteBlock(blockID, newBuff)
+
+	return deltaBuff
+}
+
+func GetCMD(conn net.Conn) config.CMD  {
+	defer conn.Close()
+	//decode the req
+	dec := gob.NewDecoder(conn)
+	var cmd config.CMD
+	err := dec.Decode(&cmd)
+	if err != nil {
+		log.Fatal("handleReq:datanode更新数据，解码出错: ", err)
+	}
+	return cmd
+}
+func GetACK(conn net.Conn) config.ACK {
+	defer conn.Close()
+	dec := gob.NewDecoder(conn)
+
+	var ack config.ACK
+	err := dec.Decode(&ack)
+	if err != nil {
+		log.Fatal("ms decoded error: ", err)
+	}
+	fmt.Printf("datanode received block %d's ack：%d sid: %d\n",ack.BlockID, ack.AckID, ack.SID)
+	return ack
+}
+func GetTD(conn net.Conn) config.TD {
+	defer conn.Close()
+	dec := gob.NewDecoder(conn)
+	var td config.TD
+	err := dec.Decode(&td)
+	if err != nil {
+		log.Fatal("handleUpdateReq:parityNode更新数据，解码出错: ", err)
+	}
+	return td
+}
+func GetReq(conn net.Conn) config.ReqData  {
+	/****解析接收数据****/
+	defer conn.Close()
+	dec := gob.NewDecoder(conn)
+
+	var req config.ReqData
+	err := dec.Decode(&req)
+	if err != nil {
+		fmt.Printf("decode error:%v\n", err)
+	}
+
+	return req
 }
 

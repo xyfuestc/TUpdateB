@@ -1,7 +1,6 @@
 package config
 
 import (
-	//strategy "EC/policy"
 	"fmt"
 	"github.com/templexxx/reedsolomon"
 	"strconv"
@@ -11,12 +10,13 @@ const K int = 6
 const M int = 4
 const W int = 1
 const NumOfRack int = 3
-
+const MaxReqSize = 100000
 const ChunkSize int = 1024 * 1024 //1MB
 const MaxBatchSize int = 100
 const ECMode string = "RS" // or "XOR"
-
-var CurPolicy = T_Update
+const MaxNumOfBlocks int = 100000
+const MaxNumOfRequests int = 100000
+var CurPolicyVal = BASE
 
 type OPType int
 //type CMDType int
@@ -52,7 +52,7 @@ const (
 	OP_T_Update
 
 	//ack
-	ACK
+	//ACK
 )
 
 type CMDType int
@@ -113,11 +113,13 @@ type TD struct {
 	FromIP             string
 	NextIPs            []string
 	Buff               []byte
+	SID                int
 }
 
 
 //传输命令格式
 type CMD struct {
+	SID                int
 	SendSize           int
 	Type               CMDType
 	StripeID           int
@@ -127,9 +129,11 @@ type CMD struct {
 	NumRecvChunkParity int
 	PortNum            int
 	FromIP             string
-	ToIP               string
+	ToIPs              []string
+	ToOneIP            string
 }
 type ReqData struct {
+	SID      int
 	OPType   OPType
 	BlockID  int
 	AckID    int
@@ -140,15 +144,24 @@ type ReqType struct {
 	Type OPType
 }
 
-type Ack struct {
+type ACK struct {
+	SID     int
 	AckID   int
-	ChunkID int
+	BlockID int
+}
+
+type WaitingACKItem struct {
+	SID             int
+	BlockID         int
+	RequiredACK     int
+	ACKReceiverIP   string
+	ACKSenderIP     string
 }
 
 type MetaInfo struct {
 	StripeID         int
 	BlockID          int
-	ChunkStoreIndex  int //chunkID
+	ChunkStoreIndex  int
 	RelatedParityIPs []string
 	BlockIP          string
 	DataNodeID       int
@@ -194,7 +207,6 @@ func getRackID(dataNodeID int) int {
 }
 
 func Init(){
-
 	//1.init GM, get BitMatrix
 	fmt.Printf("Init GM...\n")
 	r, _ := reedsolomon.New(K, M)
@@ -231,16 +243,11 @@ func Init(){
 			GateIP:       "",
 		}
 		start+=3
-
 		fmt.Printf("Rack %d has nodes: %s, %s, %s\n", g, strIP1, strIP2, strIP3)
 	}
-
-
 }
 func GenerateBitMatrix(matrix []byte, k, m, w int) []byte {
-
 	bitMatrix := make([]byte, k*m*w*w)
-
 	rowelts := k * w
 	rowindex := 0
 
@@ -265,4 +272,3 @@ func GenerateBitMatrix(matrix []byte, k, m, w int) []byte {
 	return bitMatrix
 
 }
-

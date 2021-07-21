@@ -1,13 +1,13 @@
-package main
+package paritynode
 
 import (
 	"EC/common"
 	"EC/config"
+	"EC/ms"
 	"encoding/gob"
 	"fmt"
 	"log"
 	"net"
-	"strings"
 )
 
 
@@ -17,123 +17,34 @@ var ackNum = 0
 var neibors = (config.K+config.M)/config.M - 1
 //var nodeIPForACK string
 //var stringIDForACK int
+var SidCounter = 0
+var WaitingACKGroup = make(map[int]config.WaitingACKItem)
+
 func handleReq(conn net.Conn) {
+	td := common.GetTD(conn)
+	ms.GetCurPolicy().HandleTD(td)
+}
+func handleCMD(conn net.Conn)  {
+	cmd := GetCMD(conn)
+	ms.GetCurPolicy().HandleCMD(cmd)
+}
+func GetCMD(conn net.Conn) config.CMD  {
 	defer conn.Close()
+	//decode the req
 	dec := gob.NewDecoder(conn)
-
-	targetIP := strings.Split(conn.RemoteAddr().String(),":")[0]
-
-	var td config.TD
-	err := dec.Decode(&td)
+	var cmd config.CMD
+	err := dec.Decode(&cmd)
 	if err != nil {
-		log.Fatal("handleUpdateReq:parityNode更新数据，解码出错: ", err)
+		log.Fatal("handleReq:datanode更新数据，解码出错: ", err)
 	}
-
-	switch td.OPType {
-	case config.OP_BASE:
-		common.WriteBlock(td.BlockID, td.Buff)
-		//return ack
-		ackNum++
-		ack := &config.Ack{
-			ChunkID: td.BlockID,
-			AckID: ackNum+1,
-		}
-		common.SendData(ack, targetIP, config.NodeACKListenPort, "ack")
-	//DDU模式，rootP接收到数据
-	case config.DDURoot:
-		role = config.Role_DDURootP
-		delta := td.Buff
-		oldBuff := common.ReadBlock(td.BlockID)
-		//默认rootP为P0
-		row := 0
-		newBuff := make([]byte, config.ChunkSize)
-		//找到对应的Di
-		if config.ECMode == "RS" {
-			col := td.BlockID % config.K
-			factor := config.RS.GenMatrix[row*config.K+col]
-			for i := 0; i < len(delta); i++ {
-				newBuff[i] = oldBuff[i] ^ config.Gfmul(factor, delta[i])    //Pi`=Pi+Aij*delta
-			}
-		}else{  //XOR
-			for i := 0; i < len(delta); i++ {
-				newBuff[i] = oldBuff[i] ^ delta[i]   //Pi`=Pi+Aij*delta
-			}
-		}
-		common.WriteBlock(td.BlockID, newBuff)
-		fmt.Printf("CMD_DDU: rootP update success!\n")
-		fmt.Printf("transfer data to other leafs...\n")
-		//send update data to leafs, wait for ack
-		for _, leafIP := range td.NextIPs {
-			//send data to leaf
-			data := &config.TD{
-				OPType:  config.DDULeaf,
-				Buff:    delta,
-				BlockID: td.BlockID,
-				ToIP:    leafIP,
-			}
-			common.SendData(data, leafIP, config.ParityListenPort, "")
-		}
-		ackNum++
-		ack := &config.Ack{
-			ChunkID: td.BlockID,
-			AckID: ackNum+1,
-		}
-		fmt.Printf("return the ack of chunk %d to client...\n", td.BlockID)
-		common.SendData(ack, targetIP, config.NodeACKListenPort, "ack")
-	//2) as leaf, receive data from root
-	case config.DDULeaf:
-		role = config.Role_DDULeafP
-		//received data
-		delta := td.Buff
-		oldBuff := common.ReadBlock(td.BlockID)
-		newBuff := make([]byte, config.ChunkSize)
-		if config.ECMode == "RS" {
-			row := common.GetParityIDFromIP(td.ToIP)
-			col := td.BlockID - (td.BlockID/config.K)*config.K
-			factor := config.RS.GenMatrix[row*config.K+col]
-			for i := 0; i < len(delta); i++ {
-				newBuff[i] = config.Gfmul(factor, delta[i]) ^ oldBuff[i]
-			}
-		}else { //XOR
-			for i := 0; i < len(delta); i++ {
-				newBuff[i] = delta[i] ^ oldBuff[i]
-			}
-		}
-		common.WriteBlock(td.BlockID, newBuff)
-		fmt.Printf("CMD_DDU: leafP update success!\n")
-	//PDU mode, receive data from rootD
-	case config.PDU:
-		delta := td.Buff
-		oldBuff := common.ReadBlock(td.BlockID)
-		newBuff := make([]byte, config.ChunkSize)
-		if config.ECMode == "RS" {
-			row := common.GetParityIDFromIP(td.ToIP)
-			col := td.BlockID - (td.BlockID/config.K)*config.K
-			factor := config.RS.GenMatrix[row*config.K+col]
-			for i := 0; i < len(delta); i++ {
-				newBuff[i] = config.Gfmul(factor, delta[i]) ^ oldBuff[i]
-			}
-		}else { //XOR
-			for i := 0; i < len(delta); i++ {
-				newBuff[i] = delta[i] ^ oldBuff[i]
-			}
-		}
-		common.WriteBlock(td.BlockID, newBuff)
-		//return ack
-		ackNum++
-		ack := &config.Ack{
-			ChunkID: td.BlockID,
-			AckID: ackNum+1,
-		}
-		common.SendData(ack, targetIP, config.NodeACKListenPort, "ack")
-	}
+	return cmd
 }
 
 //func handleACK(conn net.Conn) {
 //	defer conn.Close()
 //	dec := gob.NewDecoder(conn)
 //
-//	var ack config.Ack
+//	var ack config.ACK
 //	err := dec.Decode(&ack)
 //	if err != nil {
 //		log.Fatal("parity decoded error: ", err)
@@ -143,7 +54,7 @@ func handleReq(conn net.Conn) {
 //	//return stripe ack (stripe update finished)
 //	if ackNum == neibors{
 //		//return ack
-//		ack := &config.Ack{
+//		ack := &config.ACK{
 //			BlockID: td.blockID,
 //			AckID: td.blockID+1,
 //		}

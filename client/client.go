@@ -3,6 +3,7 @@ package main
 import (
 	common "EC/common"
 	"EC/config"
+	"EC/ms"
 	"bufio"
 	"encoding/gob"
 	"fmt"
@@ -25,7 +26,6 @@ const (
 	OperatedSize    //5
 	DurationTime    //6
 )
-
 type UserRequest struct {
 	Timestamp       uint64
 	WorkloadName    string
@@ -35,14 +35,16 @@ type UserRequest struct {
 	OperatedSize    int
 	DurationTime    int
 }
-
 var numOfRequestBlocks = 0
 var isWaitingForACK = true
 var numOfUpdatedBlocks = 0
-var currentTime  = 0
+var BeginTime int64 = 0
 var numOfUserRequests = 0
+var sidCounter = 0
 func main() {
 	//go listenACK()
+	fmt.Printf("client start...\n")
+	ms.SetBeginTime(time.Now())
 	handleRequestsFromFile("./example-traces/wdev_1.csv")
 }
 func listenACK() {
@@ -64,16 +66,16 @@ func listenACK() {
 	}
 }
 func handleRequestsFromFile(fileName string) {
-	currentTime := time.Now()   //record current time
-
 	updateStreamFile, _ := openFile(fileName)
 	userRequestGroup := getUpdateRequestFromFile(updateStreamFile)
+	fmt.Printf("userRequestGroup: %v\n",userRequestGroup)
 	blockGroup := turnRequestsToBlocks(userRequestGroup)
+	fmt.Printf("blockGroup: %v\n",userRequestGroup)
 	handleBlockGroup(blockGroup)
 	//waitForACK()
 
 	fmt.Printf("Total request num is %d, request data blocks are %d, spending time is: %v,%vs\n",
-		numOfUserRequests, numOfRequestBlocks, time.Now(), currentTime )
+		numOfUserRequests, numOfRequestBlocks, time.Now(), BeginTime)
 	fmt.Printf("Client is finished.\n")
 }
 
@@ -94,7 +96,7 @@ func handleBlockGroup(blockGroup []int) {
 }
 
 func turnRequestsToBlocks(userRequestGroup []UserRequest) []int {
-	blockGroup := make([]int, 0, 100000)
+	blockGroup := make([]int, 0, config.MaxNumOfBlocks)
 	for _, userRequest := range userRequestGroup {
 		stripeID := userRequest.AccessOffset / (config.K*config.W*config.ChunkSize)
 		fmt.Printf("stripeID:%d\n",stripeID)
@@ -110,25 +112,27 @@ func turnRequestsToBlocks(userRequestGroup []UserRequest) []int {
 }
 
 func openFile(fileName string) (*os.File, error) {
-	fmt.Printf("read update stream file: %s\n", fileName)
+	fmt.Printf("reading update stream file: %s\n", fileName)
 	updateStreamFile, err := os.Open(fileName)
 	if err != nil {
 		log.Fatalln("Error: ", err)
 	}
-	defer updateStreamFile.Close()
 	return updateStreamFile, err
 }
 func getUpdateRequestFromFile(file *os.File) []UserRequest {
-	userRequestGroup := make([]UserRequest, 0, 100000)
+	userRequestGroup := make([]UserRequest, 0, config.MaxNumOfRequests)
 	/*******read the user requests line by line*********/
 	bufferReader := bufio.NewReader(file)
 	for {
 		lineData, _, err := bufferReader.ReadLine()
 		if err == io.EOF {
 			break
+		}else if err != nil {
+			log.Fatalln("getUpdateRequestFromFile error: ",err)
 		}
 		userRequestGroup = append(userRequestGroup, getOneRequestFromOneLine(lineData))
 	}
+	defer file.Close()
 	return userRequestGroup
 }
 
@@ -145,11 +149,14 @@ func getOneRequestFromOneLine(lineData []byte) UserRequest {
 func requestBlockToMS(blockID int)  {
 	fmt.Printf("connect to ms : %s\n", config.MSIP)
 	request := &config.ReqData{
+		SID:      sidCounter,
 		OPType:   config.UpdateReq,
 		BlockID:  blockID,
 		StripeID: common.GetStripeIDFromBlockID(blockID),
 	}
 	common.SendData(request, config.MSIP, config.MSListenPort, "metaInfo")
+
+	sidCounter++
 }
 /*********inform datanode to update its local data***********/
 func updateLocalData(metaInfo config.MetaInfo) {
@@ -169,17 +176,16 @@ func updateLocalData(metaInfo config.MetaInfo) {
 	fmt.Printf("send datatype to datanode %d, IP address: %s\n", metaInfo.BlockID, metaInfo.BlockIP)
 	common.SendData(td, metaInfo.BlockIP, config.NodeListenPort, "ack")
 }
-/*******cau********/
 func handleACK(conn net.Conn) {
 	defer conn.Close()
 	dec := gob.NewDecoder(conn)
 
-	var ack config.Ack
+	var ack config.ACK
 	err := dec.Decode(&ack)
 	if err != nil {
 		log.Fatal("client handleACK error: ", err)
 	}
-	fmt.Printf("client receiving ack: %d of updating chunk :%d\n",ack.AckID, ack.ChunkID)
+	fmt.Printf("client receiving ack: %d of updating chunk :%d\n",ack.AckID, ack.BlockID)
 	numOfUpdatedBlocks++
 	if numOfUpdatedBlocks == numOfRequestBlocks {
 		isWaitingForACK = false

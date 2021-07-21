@@ -1,129 +1,41 @@
-package main
+package ms
 
 import (
 	"EC/common"
 	"EC/config"
-	"EC/policy"
-	"encoding/gob"
+	"EC/schedule"
 	"fmt"
 	"log"
 	"net"
+	"time"
 )
-
-var RequestNum = 0
+var numOfReq = 0
 var ackNum = 0
-var totalReqChunks = make([]config.MetaInfo, 0, 1000000)
 var curReqChunks = make([]config.MetaInfo, config.MaxBatchSize, config.MaxBatchSize)
 var round = 0
 var actualUpdatedBlocks = 0
+var CurPolicy schedule.Policy = nil
+var beginTime = time.Now()
 //var bitMatrix = make(config.Matrix, 0, config.K * config.M * config.W * config.W)
-func handleAck(conn net.Conn) {
-	defer conn.Close()
-	dec := gob.NewDecoder(conn)
-
-	var ack config.Ack
-	err := dec.Decode(&ack)
-	if err != nil {
-		log.Fatal("ms decoded error: ", err)
-	}
+func handleACK(conn net.Conn) {
+	ack := common.GetACK(conn)
 	ackNum++
-	fmt.Printf("ms received chunk %d's ack：%d\n",ack.ChunkID, ack.AckID)
-	if ackNum == policy.NumOfCurNeedUpdateBlocks {
-		actualUpdatedBlocks += policy.NumOfCurNeedUpdateBlocks
-		fmt.Printf("CAU Round %d has been completed...\n", round)
-		fmt.Printf("Now actual updated blocks : %d.\n", actualUpdatedBlocks)
-		fmt.Printf("==================================\n")
-		round++
+	fmt.Printf("ms received chunk %d's ack：%d\n",ack.BlockID, ack.AckID)
+	GetCurPolicy().HandleACK(ack)
+	if schedule.IsEmptyInWaitingACKGroup() {
+		fmt.Printf("=====================================")
+		fmt.Printf("Simulation is done!")
+		fmt.Printf("Total request: %d, spend time: %ds\n", numOfReq,
+											time.Now().Unix() - beginTime.Unix())
 		clearUpdates()
 	}
 }
 func handleReq(conn net.Conn) {
-	res := parseAndRecordReq(conn, config.ReqData{})
-	req, _ := res.(config.ReqData)
-	handleWithOPType(req, conn)
+	req := common.GetReq(conn)
+	GetCurPolicy().HandleReq(req)
+	numOfReq++
 }
 func handleWithOPType(req config.ReqData, conn net.Conn) {
-	blockID := 0
-	switch req.OPType {
-	case config.UpdateReq:
-		blockID = req.BlockID
-		stripeID := req.StripeID
-		relatedParityIPs := common.GetRelatedParityIPs(blockID)
-		nodeID := blockID %config.K
-		nodeIP := common.GetNodeIP(nodeID)
-
-		metaInfo := &config.MetaInfo{
-			StripeID:         stripeID,
-			BlockID:          blockID,
-			ChunkStoreIndex:  blockID,
-			RelatedParityIPs: relatedParityIPs,
-			BlockIP:          common.GetChunkIP(blockID),
-			DataNodeID:       nodeID,
-		}
-		switch config.CurPolicy {
-		case config.BASE:
-			for _, ip := range relatedParityIPs {
-				cmd := config.CMD{
-					Type:     config.CMD_BASE,
-					StripeID: stripeID,
-					BlockID:  blockID,
-					ToIP:     ip,
-				}
-				fmt.Printf("发送命令给 Node %d (%s)，使其将Block %d 发送给%v\n", nodeID, nodeIP, blockID, ip)
-				common.SendData(cmd, nodeIP, config.NodeCMDListenPort, "")
-			}
-		case config.CAU:
-			fmt.Printf("Round %d: starting cau update algorithm...\n", round)
-			fmt.Printf("==================================\n")
-			policy.CAU_Update(&totalReqChunks)
-
-		case config.DPR_Forest:
-		case config.T_Update:
-			fmt.Printf("Round %d: starting T_Update algorithm...\n", round)
-			fmt.Printf("==================================\n")
-			tasks := policy.T_Update(blockID)
-			for _, task := range tasks {
-				cmd := config.CMD{BlockID: blockID, Type:config.CMD_TUpdate, FromIP: common.GetNodeIPFromNodeID(int(task.Start)),
-					ToIP: common.GetNodeIPFromNodeID(int(task.End))}
-				common.SendData(cmd, common.GetNodeIPFromNodeID(int(task.Start)), config.NodeCMDListenPort, "")
-			}
-			round++
-		}
-		totalReqChunks = append(totalReqChunks, *metaInfo)  //record total request blocks
-	default:
-		log.Println("handleReq req.OPType error")
-	}
-
-}
-
-func parseAndRecordReq(conn net.Conn, i interface{}) interface{} {
-	/****记录请求数据：+1****/
-	RequestNum++
-
-	switch i.(type) {
-	case config.ReqData:
-		/****解析接收数据****/
-		defer conn.Close()
-		dec := gob.NewDecoder(conn)
-
-		var req config.ReqData
-		err := dec.Decode(&req)
-		if err != nil {
-			fmt.Printf("decode error:%v\n", err)
-		}
-
-		return req
-
-	default:
-		log.Println("parseAndRecordReq error!")
-
-	}
-	return nil
-}
-
-
-func decodeReq(conn net.Conn, req * interface{}) {
-
 
 }
 func PrintGenMatrix(gm []byte)  {
@@ -140,25 +52,19 @@ func PrintGenMatrix(gm []byte)  {
 		fmt.Println()
 	}
 }
-
-
 func clearUpdates() {
-
 	fmt.Printf("clear all ranks info...\n")
-
 	for _, rank := range config.Racks {
 		rank.NumOfUpdates = 0
 		rank.Stripes = make(map[int][]int)
 	}
-
 	ackNum = 0
-	policy.IsRunning = false
-
+	schedule.IsRunning = false
 	// 考虑如果用户请求metainfo已经结束，无法启动CAU算法，则在每轮更新结束之后，启动CAU。
-	if len(totalReqChunks) >= config.MaxBatchSize && !policy.IsRunning {
-		policy.NumOfCurNeedUpdateBlocks = 0
-		policy.CAU_Update(&totalReqChunks)
-	}
+	//if len(CurPolicy.totalReqChunks) >= config.maxBatchSize && !schedule.IsRunning {
+	//	schedule.NumOfCurNeedUpdateBlocks = 0
+	//	schedule.CAU_Update(&totalReqChunks)
+	//}
 }
 func printUpdatedStripes()  {
 	var i = 0
@@ -170,12 +76,11 @@ func printUpdatedStripes()  {
 func main() {
 	/*init RS, nodes and racks*/
 	config.Init()
-	PolicyInit(config.CurPolicy)
 
 	fmt.Printf("the ms is listening req: %s\n",config.MSListenPort) //8787
 	l1, err := net.Listen("tcp", config.MSIP +":" + config.MSListenPort)
-	fmt.Printf("the ms is listening ack: %s\n",config.MSACKListenPort)  //8201
-	l2, err := net.Listen("tcp", config.MSIP+ ":" + config.MSACKListenPort)
+	fmt.Printf("the ms is listening ack: %s\n",config.NodeACKListenPort)  //8201
+	l2, err := net.Listen("tcp", config.MSIP+ ":" + config.NodeACKListenPort)
 
 	if err != nil {
 		log.Fatal("ms listen err: ", err)
@@ -184,7 +89,6 @@ func main() {
 	listenReq(l1)
 }
 func listenReq(listen net.Listener) {
-
 	defer listen.Close()
 	for {
 		conn, err := listen.Accept()
@@ -196,7 +100,6 @@ func listenReq(listen net.Listener) {
 	}
 }
 func listenACK(listen net.Listener) {
-
 	defer listen.Close()
 	for {
 		conn, err := listen.Accept()
@@ -204,21 +107,29 @@ func listenACK(listen net.Listener) {
 			fmt.Println("accept failed, err:%v", err)
 			continue
 		}
-		go handleAck(conn)
+		go handleACK(conn)
 	}
-
 }
-func PolicyInit(x config.PolicyType)  {
-	var p policy.Policy
-	switch x {
+func SetPolicy(policyType config.PolicyType)  {
+	switch policyType {
 	case config.BASE:
-		p = policy.Base{}
+		CurPolicy = schedule.Base{}
 	case config.CAU:
-		p = policy.CAU{}
+		CurPolicy = schedule.CAU{}
 	case config.T_Update:
-		p = policy.TUpdate{}
+		CurPolicy = schedule.TUpdate{}
 	case config.DPR_Forest:
-		p = policy.Forest{}
+		CurPolicy = schedule.Forest{}
 	}
-	p.Init()
+	CurPolicy.Init()
+}
+func GetCurPolicy() schedule.Policy {
+	//init policy
+	if CurPolicy == nil  {
+		SetPolicy(config.CurPolicyVal)
+	}
+	return CurPolicy
+}
+func SetBeginTime(t time.Time)  {
+	beginTime = t
 }
