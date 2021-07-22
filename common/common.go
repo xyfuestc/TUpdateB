@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"net"
 	"os"
@@ -334,5 +335,11 @@ func GetReq(conn net.Conn) config.ReqData  {
 	}
 
 	return req
+}
+func GetBlocksFromOneRequest(userRequest config.UserRequest) (int,int)  {
+	minBlockID := userRequest.AccessOffset / config.ChunkSize
+	maxBlockID := int(math.Ceil(float64((userRequest.AccessOffset+userRequest.OperatedSize)*1.0 / config.ChunkSize)))
+
+	return minBlockID, maxBlockID
 }
 

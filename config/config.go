@@ -15,12 +15,32 @@ const MaxReqSize = 100000
 const ChunkSize int = 1024 * 1024 //1MB
 const MaxBatchSize int = 100
 const ECMode string = "RS" // or "XOR"
-const MaxNumOfBlocks int = 100000
-const MaxNumOfRequests int = 100000
+const MaxNumOfBlocks int = 1000000
+const MaxNumOfRequests int = 1000000
 var CurPolicyVal = BASE
 
 type OPType int
 //type CMDType int
+
+/******the structure of one line for the update stream file*******/
+const (
+	Timestamp int  = iota    // default 0
+	WorkloadName    //1
+	VolumeID        //2
+	OperationType   //3
+	AccessOffset    //4
+	OperatedSize    //5
+	DurationTime    //6
+)
+type UserRequest struct {
+	Timestamp       uint64
+	WorkloadName    string
+	VolumeID        int
+	OperationType   string
+	AccessOffset    int
+	OperatedSize    int
+	DurationTime    int
+}
 
 const (
 	MSListenPort   string = "8787"   // metainfo server listening port
