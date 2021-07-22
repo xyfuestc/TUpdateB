@@ -3,7 +3,6 @@ package main
 import (
 	common "EC/common"
 	"EC/config"
-	"EC/ms"
 	"bufio"
 	"encoding/gob"
 	"fmt"
@@ -41,9 +40,8 @@ var numOfUpdatedBlocks = 0
 var numOfUserRequests = 0
 var sidCounter = 0
 func main() {
-	//go listenACK()
-	fmt.Printf("client start...\n")
-	ms.SetBeginTime(time.Now())
+	config.BeginTime = time.Now()
+	fmt.Printf("%s : simulation start...\n", config.BeginTime.Format("2010-01-02 15:04:02"))
 	handleRequestsFromFile("./example-traces/wdev_1.csv")
 }
 func listenACK() {
@@ -151,7 +149,7 @@ func requestBlockToMS(blockID int)  {
 		BlockID:  blockID,
 		StripeID: common.GetStripeIDFromBlockID(blockID),
 	}
-	common.SendData(request, config.MSIP, config.MSListenPort, "metaInfo")
+	common.SendData(request, config.MSIP, config.NodeReqListenPort, "metaInfo")
 
 	sidCounter++
 }

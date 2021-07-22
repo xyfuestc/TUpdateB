@@ -1,4 +1,4 @@
-package ms
+package main
 
 import (
 	"EC/common"
@@ -14,25 +14,25 @@ var numOfACK = 0
 var curReqChunks = make([]config.MetaInfo, config.MaxBatchSize, config.MaxBatchSize)
 var round = 0
 var actualUpdatedBlocks = 0
-var CurPolicy schedule.Policy = nil
+
 var beginTime = time.Now()
 //var bitMatrix = make(config.Matrix, 0, config.K * config.M * config.W * config.W)
 func handleACK(conn net.Conn) {
 	ack := common.GetACK(conn)
 	numOfACK++
 	fmt.Printf("ms received chunk %d's ack：%d\n",ack.BlockID, ack.AckID)
-	GetCurPolicy().HandleACK(ack)
+	schedule.GetCurPolicy().HandleACK(ack)
 	if schedule.IsEmptyInWaitingACKGroup() {
 		fmt.Printf("=====================================")
 		fmt.Printf("Simulation is done!")
 		fmt.Printf("Total request: %d, spend time: %ds\n", numOfReq,
-											time.Now().Unix() - beginTime.Unix())
+											time.Now().Unix() - config.BeginTime.Unix())
 		clearUpdates()
 	}
 }
 func handleReq(conn net.Conn) {
 	req := common.GetReq(conn)
-	GetCurPolicy().HandleReq(req)
+	schedule.GetCurPolicy().HandleReq(req)
 	numOfReq++
 }
 func PrintGenMatrix(gm []byte)  {
@@ -102,26 +102,4 @@ func listenACK(listen net.Listener) {
 		}
 		go handleACK(conn)
 	}
-}
-func SetPolicy(policyType config.PolicyType)  {
-	switch policyType {
-	case config.BASE:
-		CurPolicy = schedule.Base{}
-	case config.CAU:
-		CurPolicy = schedule.CAU{}
-	case config.T_Update:
-		CurPolicy = schedule.TUpdate{}
-	case config.DPR_Forest:
-		CurPolicy = schedule.Forest{}
-	}
-	CurPolicy.Init()
-}
-func GetCurPolicy() schedule.Policy {
-	if CurPolicy == nil  {
-		SetPolicy(config.CurPolicyVal)
-	}
-	return CurPolicy
-}
-func SetBeginTime(t time.Time)  {
-	beginTime = t
 }

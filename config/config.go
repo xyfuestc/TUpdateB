@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/templexxx/reedsolomon"
 	"strconv"
+	"time"
 )
 
 const K int = 6
@@ -84,8 +85,8 @@ const (
 //const BaseIP string = "172.19.0."
 const BaseIP string = "192.168.1."
 //const MSIP = BaseIP + "3"
-//var MSIP = BaseIP + "172"
-var MSIP = "127.0.0.1"
+var MSIP = BaseIP + "171"
+//var MSIP = "127.0.0.1"
 //var ClientIP = BaseIP + "170"
 //const DataFilePath string = "/tmp/dataFile.dt"
 const DataFilePath string = "../../test"
@@ -93,6 +94,7 @@ const StartIP int = 173
 var DataNodeIPs = [K]string{}
 var ParityNodeIPs = [M]string{}
 var Racks = [NumOfRack]Rack{}
+var BeginTime = time.Now()
 //var BitMatrix = make(Matrix, 0, K*M*W*W*K*M*W*W)
 
 //传输数据格式

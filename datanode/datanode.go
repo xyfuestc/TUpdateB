@@ -1,19 +1,19 @@
-package datanode
+package main
 
 import (
 	"EC/common"
 	"EC/config"
-	"EC/ms"
+	"EC/schedule"
 	"fmt"
 	"net"
 )
 func handleCMD(conn net.Conn)  {
 	cmd := common.GetCMD(conn)
-	ms.GetCurPolicy().HandleCMD(cmd)
+	schedule.GetCurPolicy().HandleCMD(cmd)
 }
 func handleACK(conn net.Conn) {
 	ack := common.GetACK(conn)
-	ms.GetCurPolicy().HandleACK(ack)
+	schedule.GetCurPolicy().HandleACK(ack)
 }
 func main() {
 	config.Init()

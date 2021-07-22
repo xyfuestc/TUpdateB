@@ -1,24 +1,24 @@
-package paritynode
+package main
 
 import (
 	"EC/common"
 	"EC/config"
-	"EC/ms"
+	"EC/schedule"
 	"fmt"
 	"log"
 	"net"
 )
 func handleCMD(conn net.Conn)  {
 	cmd := common.GetCMD(conn)
-	ms.GetCurPolicy().HandleCMD(cmd)
+	schedule.GetCurPolicy().HandleCMD(cmd)
 }
 func handleTD(conn net.Conn)  {
 	td := common.GetTD(conn)
-	ms.GetCurPolicy().HandleTD(td)
+	schedule.GetCurPolicy().HandleTD(td)
 }
 func handleACK(conn net.Conn) {
 	ack := common.GetACK(conn)
-	ms.GetCurPolicy().HandleACK(ack)
+	schedule.GetCurPolicy().HandleACK(ack)
 }
 func main() {
 	config.Init()

@@ -21,6 +21,26 @@ type Base struct {
 }
 
 var WaitingACKGroup = make(map[int]*config.WaitingACKItem)
+var CurPolicy Policy = nil
+func SetPolicy(policyType config.PolicyType)  {
+	switch policyType {
+	case config.BASE:
+		CurPolicy = Base{}
+	case config.CAU:
+		CurPolicy = CAU{}
+	case config.T_Update:
+		CurPolicy = TUpdate{}
+	case config.DPR_Forest:
+		CurPolicy = Forest{}
+	}
+	CurPolicy.Init()
+}
+func GetCurPolicy() Policy {
+	if CurPolicy == nil  {
+		SetPolicy(config.CurPolicyVal)
+	}
+	return CurPolicy
+}
 func (p Base) HandleCMD(cmd config.CMD) {
 	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID)
 	for _, parityIP := range cmd.ToIPs{
