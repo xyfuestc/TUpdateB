@@ -70,12 +70,12 @@ func main() {
 	/*init RS, nodes and racks*/
 	config.Init()
 	fmt.Printf("listening req in %s:%s\n", common.GetLocalIP(), config.NodeReqListenPort)
-	l1, err := net.Listen("tcp", "localhost:" + config.NodeReqListenPort)
+	l1, err := net.Listen("tcp", common.GetLocalIP() + ":" + config.NodeReqListenPort)
 	if err != nil {
 		log.Fatalln("listening req err: ", err)
 	}
 	fmt.Printf("listening ack in %s:%s\n", common.GetLocalIP(), config.NodeACKListenPort)
-	l2, err := net.Listen("tcp", "localhost:" + config.NodeACKListenPort)
+	l2, err := net.Listen("tcp", common.GetLocalIP() + ":" + config.NodeACKListenPort)
 	if err != nil {
 		log.Fatalln("listening ack err: ", err)
 	}
@@ -87,7 +87,7 @@ func listenReq(listen net.Listener) {
 	for {
 		conn, err := listen.Accept()
 		if err != nil {
-			fmt.Println("accept failed, err:%v", err)
+			fmt.Printf("accept failed, err:%v\n", err)
 			continue
 		}
 		handleReq(conn)

@@ -23,19 +23,19 @@ func handleACK(conn net.Conn) {
 func main() {
 	config.Init()
 
-	l1, err := net.Listen("tcp", "localhost:" + config.NodeTDListenPort)
+	l1, err := net.Listen("tcp", common.GetLocalIP() + ":" + config.NodeTDListenPort)
 	if err != nil {
 		log.Fatal("listening td err: ", err)
 	}
 	fmt.Printf("listening td in %s:%s\n", common.GetLocalIP(), config.NodeTDListenPort)
 
-	l2, err := net.Listen("tcp", "localhost:" + config.NodeCMDListenPort)
+	l2, err := net.Listen("tcp", common.GetLocalIP() + ":" + config.NodeCMDListenPort)
 	if err != nil {
 		log.Fatal("listening cmd err: ", err)
 	}
 	fmt.Printf("listening cmd in %s:%s\n", common.GetLocalIP(), config.NodeCMDListenPort)
 
-	l3, err := net.Listen("tcp", "localhost:" + config.NodeACKListenPort)
+	l3, err := net.Listen("tcp", common.GetLocalIP() + ":" + config.NodeACKListenPort)
 	if err != nil {
 		log.Fatal("listening ack err: ", err)
 	}
