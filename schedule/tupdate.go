@@ -46,8 +46,8 @@ func (p TUpdate) HandleReq(reqData config.ReqData)  {
 	stripeID := reqData.StripeID
 	tasks := GetTransmitTasks(blockID)
 	for _, task := range tasks{
-		fromIP := common.GetNodeIP(int(task.Start))
-		toIP := common.GetNodeIP(int(task.End))
+		fromIP := common.GetDataNodeIP(int(task.Start))
+		toIP := common.GetDataNodeIP(int(task.End))
 		toIPs := make([]string, 1)
 		toIPs = append(toIPs, toIP)
 		cmd := config.CMD{
@@ -221,7 +221,7 @@ func (p TUpdate) meetCMDNeed(td config.TD) bool  {
 	return false
 }
 func (p TUpdate) IsCMDDataExist(cmd config.CMD) bool {
-	return common.GetNodeIP(cmd.BlockID) == common.GetLocalIP()
+	return common.GetDataNodeIP(cmd.BlockID) == common.GetLocalIP()
 }
 func (p TUpdate) finishCMD(cmd config.CMD, buff []byte) {
 	for _, toIP := range cmd.ToIPs {

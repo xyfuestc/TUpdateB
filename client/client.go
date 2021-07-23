@@ -18,6 +18,8 @@ var numOfUpdatedBlocks = 0
 var numOfUserRequests = 0
 var sidCounter = 0
 func main() {
+	config.Init()
+
 	config.BeginTime = time.Now()
 	fmt.Printf("%s : simulation start\n", config.BeginTime.Format("2010-01-02 15:04:02"))
 	handleRequestsFromFile("./example-traces/hm_1_part_write.csv")

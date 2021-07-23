@@ -34,7 +34,7 @@ func GetLocalIP() string {
 
 func GetChunkIP(chunkGID int) string {
 	nodeID := chunkGID - (chunkGID/config.K)*config.K
-	return GetNodeIP(nodeID)
+	return GetDataNodeIP(nodeID)
 }
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -167,14 +167,6 @@ func GetStripeIDFromBlockID(blockID int) int {
 */
 func GetRelatedParities(blockID int) config.Matrix  {
 	parities := make(config.Matrix, 0, config.W*config.M)
-	//var j byte  //row index
-	//j = byte(config.K * config.W)
-	//for i := blockID; i < len(bitMatrix); i+=config.K*config.W {
-	//	if bitMatrix[i] == 1 {
-	//		parities = append(parities, j)
-	//	}
-	//	j++
-	//}
 	nodeID := GetNodeID(blockID)
 	switch nodeID {
 	case 0:
@@ -201,10 +193,11 @@ func GetRelatedParities(blockID int) config.Matrix  {
 func GetRelatedParityIPs(blockID int) []string {
 	parityIDs := GetRelatedParities(blockID)
 	parityIPs := make([]string, 0, len(parityIDs))
-	for _, index := range parityIDs {
-			parityIPs = append(parityIPs, config.ParityNodeIPs[(int(index))])
+	for _, parityID := range parityIDs {
+			parityIPs = append(parityIPs, config.NodeIPs[(int(parityID))])
 	}
 	return parityIPs
+
 }
 
 func ReadBlock(blockID int) []byte  {
@@ -250,16 +243,20 @@ func GetStripeID(blockID int) int  {
 	}
 	return blockID/config.K
 }
-func GetNodeIP(blockID int) string  {
+func GetDataNodeIP(blockID int) string  {
 	nodeID := GetNodeID(blockID)
-	if nodeID < 0 {
+	if nodeID < 0 || nodeID >= config.K+config.M {
+		log.Fatalln("GetDataNodeIP : nodeID out of range :", nodeID)
 		return "error"
 	}
-	if nodeID <= config.K {
-		return config.DataNodeIPs[nodeID]
-	} else {
-		return config.ParityNodeIPs[nodeID-config.K]
+	return config.NodeIPs[nodeID]
+}
+func GetNodeIP(nodeID int) string {
+	if nodeID < 0 || nodeID >= config.K+config.M {
+		log.Fatalln("GetNodeIP : nodeID out of range : ", nodeID)
+		return "error"
 	}
+	return config.NodeIPs[nodeID]
 }
 func RandWriteBlockAndRetDelta(blockID int) []byte  {
 	newDataStr := RandStringBytesMask(config.ChunkSize)

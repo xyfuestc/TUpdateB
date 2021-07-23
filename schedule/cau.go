@@ -147,7 +147,7 @@ func (p CAU) rackCompare(R1 config.Rack, R2 config.Rack) {
 			for _, blockID := range stripeBlocks {
 				//将块信息发给root
 				curNode := common.GetNodeID(blockID)
-				curNodeIP := common.GetNodeIP(curNode)
+				curNodeIP := common.GetDataNodeIP(curNode)
 				rootParityIP := common.GetRelatedParityIPs(blockID)[0] // 指定P0为rootParity（默认所有Parity都需要更新）
 				toIPs := make([]string, 1)
 				toIPs = append(toIPs, rootParityIP)

@@ -110,9 +110,10 @@ var MSIP = BaseIP + "171"
 //var ClientIP = BaseIP + "170"
 //const DataFilePath string = "/tmp/dataFile.dt"
 const DataFilePath string = "../../test"
-const StartIP int = 173
-var DataNodeIPs = [K]string{}
-var ParityNodeIPs = [M]string{}
+const StartIP int = 172
+//var DataNodeIPs = [K]string{}
+//var ParityNodeIPs = [M]string{}
+var NodeIPs =[K+M]string{}
 var Racks = [NumOfRack]Rack{}
 var BeginTime = time.Now()
 //var BitMatrix = make(Matrix, 0, K*M*W*W*K*M*W*W)
@@ -206,17 +207,17 @@ var RS *reedsolomon.RS
 type Matrix []byte
 const INFINITY = 65535
 //获取数据块（chunkID）对应的IP
-func GetRelatedParities(chunkID int) []string {
-	var relatedParities []string = make([]string, RS.ParityNum)
-	col := chunkID % RS.DataNum
-
-	for i := 0; i < RS.ParityNum; i++ {
-		if RS.GenMatrix[i*RS.DataNum+col] > 0 {
-			relatedParities = append(relatedParities, ParityNodeIPs[i])
-		}
-	}
-	return relatedParities
-}
+//func GetRelatedParities(chunkID int) []string {
+//	var relatedParities []string = make([]string, RS.ParityNum)
+//	col := chunkID % RS.DataNum
+//
+//	for i := 0; i < RS.ParityNum; i++ {
+//		if RS.GenMatrix[i*RS.DataNum+col] > 0 {
+//			relatedParities = append(relatedParities, ParityNodeIPs[i])
+//		}
+//	}
+//	return relatedParities
+//}
 func getRackID(dataNodeID int) int {
 	if dataNodeID < 3 {
 		return 0
@@ -235,20 +236,11 @@ func Init(){
 	//2.init Nodes IP and Racks IP
 	fmt.Printf("Init nodes and racks...\n")
 	var start  = StartIP
-	for g := 0; g < len(DataNodeIPs); g++ {
+	for g := 0; g < K+M; g++ {
 		strIP := BaseIP + strconv.FormatInt(int64(start), 10)
-		DataNodeIPs[g] = strIP
+		NodeIPs[g] = strIP
 		start++
 	}
-
-	for g := 0; g < len(ParityNodeIPs); g++ {
-		strIP := BaseIP + strconv.FormatInt(int64(start), 10)
-		ParityNodeIPs[g] = strIP
-		start++
-	}
-
-	start = StartIP
-
 	//3.init racks
 	for g := 0; g < len(Racks); g++ {
 		strIP1 := BaseIP + strconv.FormatInt(int64(start), 10)
