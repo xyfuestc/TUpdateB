@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"strings"
 )
 
 var kinds = map[string]func() interface{}{
@@ -229,7 +230,7 @@ func WriteBlock(blockID int, buff []byte)  {
 	}
 	defer file.Close()
 	_, err = file.WriteAt(buff, int64((index-1)*config.ChunkSize))
-
+	log.Printf("write block %d done.\n", blockID)
 }
 func GetNodeID(blockID int) int {
 	if blockID < 0 {
@@ -307,7 +308,7 @@ func GetACK(conn net.Conn) config.ACK {
 	if err != nil {
 		log.Fatalln("GetACK : Decode error: ", err)
 	}
-	fmt.Printf("datanode received block %d's ack：%d sid: %d\n",ack.BlockID, ack.AckID, ack.SID)
+	fmt.Printf("received block %d's ack from %s, sid: %d\n", ack.BlockID, GetConnIP(conn), ack.SID)
 	return ack
 }
 func GetTD(conn net.Conn) config.TD {
@@ -338,4 +339,6 @@ func GetBlocksFromOneRequest(userRequest config.UserRequest) (int,int)  {
 
 	return minBlockID, maxBlockID
 }
-
+func GetConnIP(conn net.Conn) string  {
+	return strings.Split(string(conn.RemoteAddr().String()), ":")[0]
+}

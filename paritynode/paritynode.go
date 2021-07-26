@@ -13,8 +13,8 @@ import (
 //	schedule.GetCurPolicy().HandleCMD(cmd)
 //}
 func handleTD(conn net.Conn)  {
-	fmt.Printf("received %s's td.\n", conn.RemoteAddr().String())
 	td := common.GetTD(conn)
+	log.Printf("received %s's td : %v\n", common.GetConnIP(conn), td)
 	schedule.GetCurPolicy().HandleTD(td)
 }
 func handleACK(conn net.Conn) {
