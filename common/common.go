@@ -294,7 +294,7 @@ func GetCMD(conn net.Conn) config.CMD  {
 	var cmd config.CMD
 	err := dec.Decode(&cmd)
 	if err != nil {
-		log.Fatal("handleReq:datanode更新数据，解码出错: ", err)
+		log.Fatal("GetCMD : Decode error: ", err)
 	}
 	return cmd
 }
@@ -305,7 +305,7 @@ func GetACK(conn net.Conn) config.ACK {
 	var ack config.ACK
 	err := dec.Decode(&ack)
 	if err != nil {
-		log.Fatal("ms decoded error: ", err)
+		log.Fatalln("GetACK : Decode error: ", err)
 	}
 	fmt.Printf("datanode received block %d's ack：%d sid: %d\n",ack.BlockID, ack.AckID, ack.SID)
 	return ack
@@ -316,7 +316,7 @@ func GetTD(conn net.Conn) config.TD {
 	var td config.TD
 	err := dec.Decode(&td)
 	if err != nil {
-		log.Fatal("GetTD: decode error: ", err)
+		log.Fatalln("GetTD: decode error: ", err)
 	}
 	return td
 }
@@ -328,9 +328,8 @@ func GetReq(conn net.Conn) config.ReqData  {
 	var req config.ReqData
 	err := dec.Decode(&req)
 	if err != nil {
-		fmt.Printf("decode error:%v\n", err)
+		log.Fatalln("GetReq: decode error: ", err)
 	}
-
 	return req
 }
 func GetBlocksFromOneRequest(userRequest config.UserRequest) (int,int)  {
