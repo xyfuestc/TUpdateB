@@ -51,35 +51,36 @@ func (p Base) HandleCMD(cmd config.CMD) {
 			ToIP: parityIP,
 			SID: cmd.SID,
 		}
+		fmt.Printf("send cmd(sid:%d) to %s\n", cmd.SID, parityIP)
 		common.SendData(td, parityIP, config.NodeTDListenPort, "")
 		PushWaitingACKGroup(cmd.SID, cmd.BlockID, cmd.FromIP, parityIP)
 	}
 }
 
 func PushWaitingACKGroup(sid, blockID int, ackReceiverIP, ackSenderIP string)  {
+	PrintWaitingACKGroup("Before PushWaitingACKGroup : ")
 	if _, ok := WaitingACKGroup[sid]; !ok {
 		WaitingACKGroup[sid] = &config.WaitingACKItem{BlockID: blockID, SID: sid,
 			ACKReceiverIP: ackReceiverIP, ACKSenderIP: ackSenderIP, RequiredACK: 1}
 	}else{
 		WaitingACKGroup[sid].RequiredACK = WaitingACKGroup[sid].RequiredACK + 1
 	}
-	PrintWaitingACKGroup()
+	PrintWaitingACKGroup("After PushWaitingACKGroup : ")
 }
 
 func PopWaitingACKGroup(sid int)  {
-	PrintWaitingACKGroup()
+	PrintWaitingACKGroup("Before PopWaitingACKGroup : ")
 	if _, ok := WaitingACKGroup[sid]; !ok {
 		log.Fatalln("popWaitingACKGroup error : sid is invalid. ")
 	}else{
 		WaitingACKGroup[sid].RequiredACK = WaitingACKGroup[sid].RequiredACK - 1
 	}
-	PrintWaitingACKGroup()
-
+	PrintWaitingACKGroup("After PopWaitingACKGroup : ")
 }
 
-func PrintWaitingACKGroup()  {
+func PrintWaitingACKGroup(prefix string)  {
 	for i, v := range WaitingACKGroup{
-		fmt.Printf("sid : %d, blockID :%d, still need %d ack.\n", i, v.BlockID, v.RequiredACK)
+		fmt.Printf("%s sid : %d, blockID :%d, still need %d ack.\n", prefix, i, v.BlockID, v.RequiredACK)
 	}
 }
 func IsExistInWaitingACKGroup(sid int) bool  {

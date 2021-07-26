@@ -31,8 +31,6 @@ func handleACK(conn net.Conn) {
 	}
 }
 func handleReq(conn net.Conn) {
-	//td := common.GetTD(conn)
-	//fmt.Printf("handleReq td :%v\n", td)
 	req := common.GetReq(conn)
 	schedule.GetCurPolicy().HandleReq(req)
 	numOfReq++
