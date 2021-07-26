@@ -51,6 +51,7 @@ func (p TUpdate) HandleReq(reqData config.ReqData)  {
 		toIPs := make([]string, 1)
 		toIPs = append(toIPs, toIP)
 		cmd := config.CMD{
+			CreatorIP: common.GetLocalIP(),
 			SID:      sid,
 			StripeID: stripeID,
 			BlockID:  blockID,
@@ -59,7 +60,7 @@ func (p TUpdate) HandleReq(reqData config.ReqData)  {
 		}
 		fmt.Printf("发送命令给 node: %s，使其将Block %d 发送给 %v\n", fromIP, blockID, toIP)
 		common.SendData(cmd, toIP, config.NodeCMDListenPort, "")
-		PushWaitingACKGroup(cmd.SID, cmd.BlockID, cmd.FromIP, "")
+		PushWaitingACKGroup(cmd.SID, cmd.BlockID,1, common.GetLocalIP(), "")
 	}
 }
 
@@ -227,7 +228,7 @@ func (p TUpdate) finishCMD(cmd config.CMD, buff []byte) {
 	for _, toIP := range cmd.ToIPs {
 		common.SendData(buff, cmd.FromIP, toIP, "")
 	}
-	PushWaitingACKGroup(cmd.SID, cmd.BlockID, cmd.FromIP, "")
+	PushWaitingACKGroup(cmd.SID, cmd.BlockID, 1,  cmd.FromIP, "")
 }
 func (p TUpdate) getMeetCMD(td config.TD) config.CMD {
 	for _, cmd:= range p.CMDWaitingQueue{
