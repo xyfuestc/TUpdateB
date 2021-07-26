@@ -63,18 +63,24 @@ func PushWaitingACKGroup(sid, blockID int, ackReceiverIP, ackSenderIP string)  {
 	}else{
 		WaitingACKGroup[sid].RequiredACK = WaitingACKGroup[sid].RequiredACK + 1
 	}
-	fmt.Printf("after PushWaitingACKGroup : %v\n", WaitingACKGroup)
+	PrintWaitingACKGroup()
 }
 
 func PopWaitingACKGroup(sid int)  {
-	fmt.Printf("before PopWaitingACKGroup : %v\n", WaitingACKGroup)
+	PrintWaitingACKGroup()
 	if _, ok := WaitingACKGroup[sid]; !ok {
 		log.Fatalln("popWaitingACKGroup error : sid is invalid. ")
 	}else{
 		WaitingACKGroup[sid].RequiredACK = WaitingACKGroup[sid].RequiredACK - 1
 	}
-	fmt.Printf("after PopWaitingACKGroup : %v\n", WaitingACKGroup)
+	PrintWaitingACKGroup()
 
+}
+
+func PrintWaitingACKGroup()  {
+	for i, v := range WaitingACKGroup{
+		fmt.Printf("sid : %d, blockID :%d, still need %d ack.\n", i, v.BlockID, v.RequiredACK)
+	}
 }
 func IsExistInWaitingACKGroup(sid int) bool  {
 	if WaitingACKGroup[sid].RequiredACK > 0 {
