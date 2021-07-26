@@ -85,7 +85,6 @@ func IsExistInWaitingACKGroup(sid int) bool  {
 	if WaitingACKGroup[sid].RequiredACK > 0 {
 		return true
 	}
-
 	return false
 }
 func ClearWaitingACKGroup()  {
@@ -102,16 +101,26 @@ func (p Base) HandleTD(td config.TD)  {
 }
 func (p Base) HandleACK(ack config.ACK)  {
 	PopWaitingACKGroup(ack.SID)
-	if !IsExistInWaitingACKGroup(ack.SID) {
-		ack := &config.ACK{
-			SID:     ack.SID,
-			BlockID: ack.BlockID,
-		}
-		ackReceiverIP := WaitingACKGroup[ack.SID].ACKReceiverIP
-		common.SendData(ack, ackReceiverIP, config.NodeACKListenPort, "ack")
-
-		delete(WaitingACKGroup, ack.SID)
+	if NeedReturnACK(ack) {
+		ReturnACK(ack)
 	}
+}
+func ReturnACK(ackV config.ACK) {
+	ack := &config.ACK{
+		SID:     ackV.SID,
+		BlockID: ackV.BlockID,
+	}
+	ackReceiverIP := WaitingACKGroup[ack.SID].ACKReceiverIP
+	common.SendData(ack, ackReceiverIP, config.NodeACKListenPort, "ack")
+
+	delete(WaitingACKGroup, ack.SID)
+}
+func NeedReturnACK(ack config.ACK) bool {
+	if !IsExistInWaitingACKGroup(ack.SID) &&
+		WaitingACKGroup[ack.SID].ACKReceiverIP != common.GetLocalIP() {
+			return true
+	}
+	return false
 }
 func (p Base) Init()  {
 }
