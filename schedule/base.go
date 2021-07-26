@@ -53,12 +53,11 @@ func (p Base) HandleCMD(cmd config.CMD) {
 		}
 		fmt.Printf("send td(sid:%d, blockID:%d) to %s\n", cmd.SID, cmd.BlockID, parityIP)
 		common.SendData(td, parityIP, config.NodeTDListenPort, "")
-		PushWaitingACKGroup(cmd.SID, cmd.BlockID, cmd.FromIP, parityIP)
+		PushWaitingACKGroup(cmd.SID, cmd.BlockID, cmd.CreatorIP, parityIP)
 	}
 }
 
 func PushWaitingACKGroup(sid, blockID int, ackReceiverIP, ackSenderIP string)  {
-	PrintWaitingACKGroup("Before PushWaitingACKGroup : ")
 	if _, ok := WaitingACKGroup[sid]; !ok {
 		WaitingACKGroup[sid] = &config.WaitingACKItem{BlockID: blockID, SID: sid,
 			ACKReceiverIP: ackReceiverIP, ACKSenderIP: ackSenderIP, RequiredACK: 1}
@@ -69,7 +68,6 @@ func PushWaitingACKGroup(sid, blockID int, ackReceiverIP, ackSenderIP string)  {
 }
 
 func PopWaitingACKGroup(sid int)  {
-	PrintWaitingACKGroup("Before PopWaitingACKGroup : ")
 	if _, ok := WaitingACKGroup[sid]; !ok {
 		log.Fatalln("popWaitingACKGroup error : sid is invalid. ")
 	}else{
@@ -127,16 +125,17 @@ func (p Base) HandleReq(reqData config.ReqData)  {
 	relativeParityIDs := common.GetRelatedParities(blockID)
 	toIPs := common.GetRelatedParityIPs(blockID)
 	cmd := config.CMD{
-		SID:      sid,
-		Type:     config.CMD_BASE,
-		StripeID: stripeID,
-		BlockID:  blockID,
-		ToIPs:    toIPs,
-		FromIP:   nodeIP,
+		CreatorIP: common.GetLocalIP(),
+		SID:       sid,
+		Type:      config.CMD_BASE,
+		StripeID:  stripeID,
+		BlockID:   blockID,
+		ToIPs:     toIPs,
+		FromIP:    nodeIP,
 	}
 	fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid, nodeID, nodeIP, blockID, relativeParityIDs)
 	common.SendData(cmd, nodeIP, config.NodeCMDListenPort, "")
-	PushWaitingACKGroup(cmd.SID, cmd.BlockID, cmd.FromIP, "")
+	PushWaitingACKGroup(cmd.SID, cmd.BlockID, cmd.CreatorIP, nodeIP)
 }
 
 func IsEmptyInWaitingACKGroup() bool  {

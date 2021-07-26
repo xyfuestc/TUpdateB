@@ -14,7 +14,7 @@ import (
 //}
 func handleTD(conn net.Conn)  {
 	td := common.GetTD(conn)
-	log.Printf("received %s's td : %v\n", common.GetConnIP(conn), td)
+	log.Printf("received %s's td\n", common.GetConnIP(conn))
 	schedule.GetCurPolicy().HandleTD(td)
 }
 func handleACK(conn net.Conn) {

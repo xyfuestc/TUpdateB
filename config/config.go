@@ -136,6 +136,7 @@ type TD struct {
 
 //传输命令格式
 type CMD struct {
+	CreatorIP          string
 	SID                int
 	SendSize           int
 	Type               CMDType
@@ -239,7 +240,7 @@ func Init(){
 		start++
 	}
 	//test
-	NodeIPs[5] = CurrentIP
+	//NodeIPs[5] = CurrentIP
 
 	//3.init racks
 	for g := 0; g < len(Racks); g++ {
