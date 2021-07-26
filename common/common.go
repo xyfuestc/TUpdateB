@@ -340,5 +340,5 @@ func GetBlocksFromOneRequest(userRequest config.UserRequest) (int,int)  {
 	return minBlockID, maxBlockID
 }
 func GetConnIP(conn net.Conn) string  {
-	return strings.Split(string(conn.RemoteAddr().String()), ":")[0]
+	return strings.Split(conn.RemoteAddr().String(), ":")[0]
 }

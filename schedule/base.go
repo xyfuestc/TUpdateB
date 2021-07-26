@@ -51,7 +51,7 @@ func (p Base) HandleCMD(cmd config.CMD) {
 			ToIP: parityIP,
 			SID: cmd.SID,
 		}
-		fmt.Printf("send td(sid:%d) to %s\n", cmd.SID, parityIP)
+		fmt.Printf("send td(sid:%d, blockID:%d) to %s\n", cmd.SID, cmd.BlockID, parityIP)
 		common.SendData(td, parityIP, config.NodeTDListenPort, "")
 		PushWaitingACKGroup(cmd.SID, cmd.BlockID, cmd.FromIP, parityIP)
 	}
