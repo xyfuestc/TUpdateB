@@ -22,7 +22,7 @@ func (p Forest) HandleCMD(cmd config.CMD)  {
 
 }
 func (p Forest) HandleACK(ack config.ACK)  {
-	common.GetLocalIP() + ":"WaitingACKGroup(ack.SID)
+	PopWaitingACKGroup(ack.SID)
 	if !IsExistInWaitingACKGroup(ack.SID) {
 		ack := &config.ACK{
 			SID:     ack.SID,
