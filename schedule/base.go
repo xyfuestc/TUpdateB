@@ -43,6 +43,7 @@ func GetCurPolicy() Policy {
 }
 func (p Base) HandleCMD(cmd config.CMD) {
 	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID)
+	PushWaitingACKGroup(cmd.SID, cmd.BlockID, len(cmd.ToIPs), cmd.CreatorIP, "")
 	for _, parityIP := range cmd.ToIPs{
 		td := &config.TD{
 			BlockID: cmd.BlockID,
@@ -54,7 +55,7 @@ func (p Base) HandleCMD(cmd config.CMD) {
 		fmt.Printf("send td(sid:%d, blockID:%d) to %s\n", cmd.SID, cmd.BlockID, parityIP)
 		common.SendData(td, parityIP, config.NodeTDListenPort, "")
 	}
-	PushWaitingACKGroup(cmd.SID, cmd.BlockID, len(cmd.ToIPs), cmd.CreatorIP, "")
+
 }
 
 func PushWaitingACKGroup(sid, blockID, requiredACKNum int, ackReceiverIP, ackSenderIP string)  {
