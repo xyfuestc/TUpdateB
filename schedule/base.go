@@ -53,16 +53,16 @@ func (p Base) HandleCMD(cmd config.CMD) {
 		}
 		fmt.Printf("send td(sid:%d, blockID:%d) to %s\n", cmd.SID, cmd.BlockID, parityIP)
 		common.SendData(td, parityIP, config.NodeTDListenPort, "")
-		PushWaitingACKGroup(cmd.SID, cmd.BlockID, cmd.CreatorIP, parityIP)
 	}
+	PushWaitingACKGroup(cmd.SID, cmd.BlockID, len(cmd.ToIPs), cmd.CreatorIP, "")
 }
 
-func PushWaitingACKGroup(sid, blockID int, ackReceiverIP, ackSenderIP string)  {
+func PushWaitingACKGroup(sid, blockID, requiredACKNum int, ackReceiverIP, ackSenderIP string)  {
 	if _, ok := WaitingACKGroup[sid]; !ok {
 		WaitingACKGroup[sid] = &config.WaitingACKItem{BlockID: blockID, SID: sid,
-			ACKReceiverIP: ackReceiverIP, ACKSenderIP: ackSenderIP, RequiredACK: 1}
+			ACKReceiverIP: ackReceiverIP, ACKSenderIP: ackSenderIP, RequiredACK: requiredACKNum}
 	}else{
-		WaitingACKGroup[sid].RequiredACK = WaitingACKGroup[sid].RequiredACK + 1
+		WaitingACKGroup[sid].RequiredACK = WaitingACKGroup[sid].RequiredACK + requiredACKNum
 	}
 	PrintWaitingACKGroup("After PushWaitingACKGroup : ")
 }
@@ -144,7 +144,7 @@ func (p Base) HandleReq(reqData config.ReqData)  {
 	}
 	fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid, nodeID, nodeIP, blockID, relativeParityIDs)
 	common.SendData(cmd, nodeIP, config.NodeCMDListenPort, "")
-	PushWaitingACKGroup(cmd.SID, cmd.BlockID, cmd.CreatorIP, nodeIP)
+	PushWaitingACKGroup(cmd.SID, cmd.BlockID,1, cmd.CreatorIP, nodeIP)
 }
 
 func IsEmptyInWaitingACKGroup() bool  {
