@@ -316,7 +316,7 @@ func GetTD(conn net.Conn) config.TD {
 	var td config.TD
 	err := dec.Decode(&td)
 	if err != nil {
-		log.Fatal("handleUpdateReq:parityNode更新数据，解码出错: ", err)
+		log.Fatal("GetTD: decode error: ", err)
 	}
 	return td
 }

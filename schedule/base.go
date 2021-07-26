@@ -63,14 +63,18 @@ func PushWaitingACKGroup(sid, blockID int, ackReceiverIP, ackSenderIP string)  {
 	}else{
 		WaitingACKGroup[sid].RequiredACK = WaitingACKGroup[sid].RequiredACK + 1
 	}
+	fmt.Printf("after PushWaitingACKGroup : %v\n", WaitingACKGroup)
 }
 
 func PopWaitingACKGroup(sid int)  {
+	fmt.Printf("before PopWaitingACKGroup : %v\n", WaitingACKGroup)
 	if _, ok := WaitingACKGroup[sid]; !ok {
 		log.Fatalln("popWaitingACKGroup error : sid is invalid. ")
 	}else{
 		WaitingACKGroup[sid].RequiredACK = WaitingACKGroup[sid].RequiredACK - 1
 	}
+	fmt.Printf("after PopWaitingACKGroup : %v\n", WaitingACKGroup)
+
 }
 func IsExistInWaitingACKGroup(sid int) bool  {
 	if WaitingACKGroup[sid].RequiredACK > 0 {
@@ -123,7 +127,7 @@ func (p Base) HandleReq(reqData config.ReqData)  {
 		ToIPs:    toIPs,
 		FromIP:   nodeIP,
 	}
-	fmt.Printf("发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", nodeID, nodeIP, blockID, relativeParityIDs)
+	fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid, nodeID, nodeIP, blockID, relativeParityIDs)
 	common.SendData(cmd, nodeIP, config.NodeCMDListenPort, "")
 	PushWaitingACKGroup(cmd.SID, cmd.BlockID, cmd.FromIP, "")
 }

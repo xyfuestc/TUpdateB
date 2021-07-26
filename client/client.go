@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -18,6 +19,9 @@ var numOfUpdatedBlocks = 0
 var numOfUserRequests = 0
 var sidCounter = 0
 func main() {
+	//listenTestFunc()
+
+	//TestFunc()
 	config.Init()
 
 	config.BeginTime = time.Now()
@@ -73,4 +77,33 @@ func requestBlockToMS(blockID int)  {
 	common.SendData(request, config.MSIP, config.NodeReqListenPort, "metaInfo")
 
 	sidCounter++
+}
+func TestFunc()  {
+	common.SendData("","localhost","3333","")
+}
+func listenTestFunc()  {
+	fmt.Printf("listening req in %s:%s\n", common.GetLocalIP(), "3333")
+	l1, err := net.Listen("tcp", common.GetLocalIP() + ":" + "3333")
+	if err != nil {
+		log.Fatalln("listening req err: ", err)
+	}
+	go listenReq(l1)
+
+}
+
+func listenReq(listen net.Listener) {
+	defer listen.Close()
+	for {
+		conn, err := listen.Accept()
+		if err != nil {
+			fmt.Printf("accept failed, err:%v\n", err)
+			continue
+		}
+		handleReq(conn)
+	}
+}
+
+func handleReq(conn net.Conn) {
+	td := common.GetTD(conn)
+	fmt.Printf("%v\n",td)
 }

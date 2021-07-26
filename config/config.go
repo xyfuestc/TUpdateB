@@ -106,7 +106,7 @@ const (
 const BaseIP string = "192.168.1."
 //const MSIP = BaseIP + "3"
 var MSIP = BaseIP + "171"
-//var MSIP = "127.0.0.1"
+//var MSIP = "192.168.1.100"
 //var ClientIP = BaseIP + "170"
 //const DataFilePath string = "/tmp/dataFile.dt"
 const DataFilePath string = "../../test"
@@ -124,10 +124,6 @@ type TD struct {
 	OPType             OPType
 	StripeID           int
 	BlockID            int
-	//UpdateParityID     int
-	//NumRecvChunkItem   int
-	//NumRecvChunkParity int
-	//PortNum            int
 	ToIP               string
 	SenderIP           string
 	FromIP             string
