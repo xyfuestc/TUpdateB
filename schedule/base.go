@@ -67,7 +67,7 @@ func PushWaitingACKGroup(sid, blockID, requiredACKNum int, ackReceiverIP, ackSen
 	}else{
 		WaitingACKGroup[sid].RequiredACK = WaitingACKGroup[sid].RequiredACK + requiredACKNum
 	}
-	PrintWaitingACKGroup("After PushWaitingACKGroup : ")
+	//PrintWaitingACKGroup("After PushWaitingACKGroup : ")
 }
 
 func PopWaitingACKGroup(sid int)  {
@@ -76,7 +76,7 @@ func PopWaitingACKGroup(sid int)  {
 	}else{
 		WaitingACKGroup[sid].RequiredACK = WaitingACKGroup[sid].RequiredACK - 1
 	}
-	PrintWaitingACKGroup("After PopWaitingACKGroup : ")
+	//PrintWaitingACKGroup("After PopWaitingACKGroup : ")
 }
 
 func PrintWaitingACKGroup(prefix string)  {

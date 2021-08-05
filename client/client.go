@@ -21,9 +21,20 @@ var sidCounter = 0
 func main() {
 	config.Init()
 
+	fmt.Printf("listening ack in %s:%s\n", common.GetLocalIP(), config.NodeACKListenPort)
+	l1, err := net.Listen("tcp", common.GetLocalIP() +  ":" + config.NodeACKListenPort)
+	if err != nil {
+		fmt.Printf("listening ack failed, err:%v\n", err)
+		return
+	}
+	go listenACK(l1)
+
 	config.BeginTime = time.Now()
 	fmt.Printf("%s : simulation start\n", config.BeginTime.Format("2010-01-02 15:04:02"))
-	handleRequestsFromFile("./example-traces/test.csv")
+	handleRequestsFromFile("./example-traces/wdev_1.csv")
+	for  {
+
+	}
 }
 func handleRequestsFromFile(fileName string) {
 	updateStreamFile,_ := openFile(fileName)
