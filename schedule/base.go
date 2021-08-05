@@ -96,7 +96,7 @@ func ClearWaitingACKGroup()  {
 	WaitingACKGroup = make(map[int]*config.WaitingACKItem)
 }
 func (p Base) HandleTD(td config.TD)  {
-	common.WriteBlock(td.BlockID, td.Buff)
+	go common.WriteBlock(td.BlockID, td.Buff)
 
 	ack := &config.ACK{
 		SID:     td.SID,

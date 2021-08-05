@@ -25,7 +25,7 @@ func (p CAU) HandleTD(td config.TD)  {
 	targetIP := td.FromIP
 	switch td.OPType {
 	case config.OP_BASE:
-		common.WriteBlock(td.BlockID, td.Buff)
+		go common.WriteBlock(td.BlockID, td.Buff)
 		//return ack
 		ack := &config.ACK{
 			BlockID: td.BlockID,
@@ -52,7 +52,7 @@ func (p CAU) HandleTD(td config.TD)  {
 				newBuff[i] = oldBuff[i] ^ delta[i]   //Pi`=Pi+Aij*delta
 			}
 		}
-		common.WriteBlock(td.BlockID, newBuff)
+		go common.WriteBlock(td.BlockID, newBuff)
 		fmt.Printf("CMD_DDU: rootP update success!\n")
 		fmt.Printf("transfer data to other leafs...\n")
 		//send update data to leafs, wait for ack
@@ -91,7 +91,7 @@ func (p CAU) HandleTD(td config.TD)  {
 				newBuff[i] = delta[i] ^ oldBuff[i]
 			}
 		}
-		common.WriteBlock(td.BlockID, newBuff)
+		go common.WriteBlock(td.BlockID, newBuff)
 		fmt.Printf("CMD_DDU: leafP update success!\n")
 	//PDU mode, receive data from rootD
 	case config.PDU:
@@ -110,7 +110,7 @@ func (p CAU) HandleTD(td config.TD)  {
 				newBuff[i] = delta[i] ^ oldBuff[i]
 			}
 		}
-		common.WriteBlock(td.BlockID, newBuff)
+		go common.WriteBlock(td.BlockID, newBuff)
 		//return ack
 		ack := &config.ACK{
 			SID: td.SID,

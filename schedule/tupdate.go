@@ -71,7 +71,7 @@ func (p TUpdate) HandleTD(td config.TD)  {
 		p.deleteCMD(cmd)
 	}
 	//local update
-	common.WriteDeltaBlock(td.BlockID, td.Buff)
+	go common.WriteDeltaBlock(td.BlockID, td.Buff)
 	//return ack
 	ack := &config.ACK{
 		SID:     td.SID,

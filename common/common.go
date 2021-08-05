@@ -270,7 +270,7 @@ func RandWriteBlockAndRetDelta(blockID int) []byte  {
 		deltaBuff[i] = newBuff[i] ^ oldBuff[i]
 	}
 	/*****write new data*******/
-	WriteBlock(blockID, newBuff)
+	go WriteBlock(blockID, newBuff)
 
 	return deltaBuff
 }
@@ -283,7 +283,7 @@ func WriteDeltaBlock(blockID int, deltaBuff []byte) []byte  {
 		newBuff[i] = deltaBuff[i] ^ oldBuff[i]
 	}
 	/*****write new data*******/
-	WriteBlock(blockID, newBuff)
+	go WriteBlock(blockID, newBuff)
 
 	return deltaBuff
 }
