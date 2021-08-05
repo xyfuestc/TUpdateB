@@ -32,6 +32,8 @@ func handleACK(conn net.Conn) {
 }
 func handleReq(conn net.Conn) {
 	req := common.GetReq(conn)
+	fmt.Printf("ACKReceiverIP : %s\n ", common.GetConnIP(conn))
+	schedule.GetCurPolicy().RecordSIDAndReceiverIP(req.SID, common.GetConnIP(conn))
 	schedule.GetCurPolicy().HandleReq(req)
 	numOfReq++
 }

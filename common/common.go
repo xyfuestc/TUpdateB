@@ -299,6 +299,24 @@ func GetCMD(conn net.Conn) config.CMD  {
 	}
 	return cmd
 }
+
+func GetCMDFromReqData(reqData config.ReqData) config.CMD  {
+	sid := reqData.SID
+	blockID := reqData.BlockID
+	stripeID := reqData.StripeID
+	nodeID := GetNodeID(blockID)
+	nodeIP := GetNodeIP(nodeID)
+	toIPs := GetRelatedParityIPs(blockID)
+	cmd := config.CMD{
+		SID:       sid,
+		Type:      config.CMD_BASE,
+		StripeID:  stripeID,
+		BlockID:   blockID,
+		ToIPs:     toIPs,
+		FromIP:    nodeIP,
+	}
+	return cmd
+}
 func GetACK(conn net.Conn) config.ACK {
 	defer conn.Close()
 	dec := gob.NewDecoder(conn)
@@ -340,5 +358,9 @@ func GetBlocksFromOneRequest(userRequest config.UserRequest) (int,int)  {
 	return minBlockID, maxBlockID
 }
 func GetConnIP(conn net.Conn) string  {
-	return strings.Split(conn.RemoteAddr().String(), ":")[0]
+	addr := conn.RemoteAddr().String()
+	ip := strings.Split(addr, ":")[0]
+	//port := strings.Split(addr, ":")[1]
+
+	return ip
 }

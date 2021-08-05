@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -74,32 +75,18 @@ func requestBlockToMS(blockID int)  {
 
 	sidCounter++
 }
-//func TestFunc()  {
-//	common.SendData("","localhost","3333","")
-//}
-//func listenTestFunc()  {
-//	fmt.Printf("listening req in %s:%s\n", common.GetLocalIP(), "3333")
-//	l1, err := net.Listen("tcp", common.GetLocalIP() + ":" + "3333")
-//	if err != nil {
-//		log.Fatalln("listening req err: ", err)
-//	}
-//	go listenReq(l1)
-//
-//}
-//
-//func listenReq(listen net.Listener) {
-//	defer listen.Close()
-//	for {
-//		conn, err := listen.Accept()
-//		if err != nil {
-//			fmt.Printf("accept failed, err:%v\n", err)
-//			continue
-//		}
-//		handleReq(conn)
-//	}
-//}
-//
-//func handleReq(conn net.Conn) {
-//	td := common.GetTD(conn)
-//	fmt.Printf("%v\n",td)
-//}
+func listenACK(listen net.Listener) {
+	defer listen.Close()
+	for {
+		conn, err := listen.Accept()
+		if err != nil {
+			log.Fatalln("listenACK  err: ", err)
+		}
+		go handleACK(conn)
+	}
+}
+
+func handleACK(conn net.Conn) {
+	ack := common.GetACK(conn)
+	fmt.Printf("receive ms' ack : %v\n", ack)
+}

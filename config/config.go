@@ -102,18 +102,12 @@ const (
 	DPR_Forest
 
 )
-//const BaseIP string = "172.19.0."
 const BaseIP string = "192.168.1."
-//const MSIP = BaseIP + "3"
 var MSIP = BaseIP + "171"
 var CurrentIP = BaseIP + "100"
 //var MSIP = "192.168.1.100"
-//var ClientIP = BaseIP + "170"
-//const DataFilePath string = "/tmp/dataFile.dt"
 const DataFilePath string = "../../test"
 const StartIP int = 172
-//var DataNodeIPs = [K]string{}
-//var ParityNodeIPs = [M]string{}
 var NodeIPs =[K+M]string{}
 var Racks = [NumOfRack]Rack{}
 var BeginTime = time.Now()

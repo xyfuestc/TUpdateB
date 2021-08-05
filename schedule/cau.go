@@ -225,3 +225,7 @@ func (p CAU) HandleACK(ack config.ACK)  {
 func (p CAU) Clear()  {
 
 }
+
+func (p CAU)	RecordSIDAndReceiverIP(sid int, ip string)()  {
+
+}

@@ -14,6 +14,7 @@ type Policy interface {
 	HandleTD(td config.TD)
 	HandleACK(ack config.ACK)
 	Clear()
+	RecordSIDAndReceiverIP(sid int, ip string)
 }
 
 type Base struct {
@@ -22,6 +23,7 @@ type Base struct {
 
 var WaitingACKGroup = make(map[int]*config.WaitingACKItem)
 var CurPolicy Policy = nil
+var ACKReceiverIPMap = make(map[int]string)
 func SetPolicy(policyType config.PolicyType)  {
 	switch policyType {
 	case config.BASE:
@@ -79,7 +81,9 @@ func PopWaitingACKGroup(sid int)  {
 
 func PrintWaitingACKGroup(prefix string)  {
 	for i, v := range WaitingACKGroup{
-		fmt.Printf("%s sid : %d, blockID :%d, still need %d ack.\n", prefix, i, v.BlockID, v.RequiredACK)
+		if v.RequiredACK > 0 {
+			fmt.Printf("%s sid : %d, blockID :%d, ackReceiver:%s, still need %d ack.\n", prefix, i, v.BlockID, v.ACKReceiverIP, v.RequiredACK)
+		}
 	}
 }
 func IsExistInWaitingACKGroup(sid int) bool  {
@@ -111,7 +115,7 @@ func ReturnACK(ackV config.ACK) {
 		SID:     ackV.SID,
 		BlockID: ackV.BlockID,
 	}
-	ackReceiverIP := WaitingACKGroup[ack.SID].ACKReceiverIP
+	ackReceiverIP := ACKReceiverIPMap[ackV.SID]
 	common.SendData(ack, ackReceiverIP, config.NodeACKListenPort, "ack")
 
 	delete(WaitingACKGroup, ack.SID)
@@ -127,25 +131,18 @@ func (p Base) Init()  {
 }
 
 func (p Base) HandleReq(reqData config.ReqData)  {
-	sid := reqData.SID
-	blockID := reqData.BlockID
-	stripeID := reqData.StripeID
-	nodeID := common.GetNodeID(blockID)
-	nodeIP := common.GetNodeIP(nodeID)
-	relativeParityIDs := common.GetRelatedParities(blockID)
-	toIPs := common.GetRelatedParityIPs(blockID)
-	cmd := config.CMD{
-		CreatorIP: common.GetLocalIP(),
-		SID:       sid,
-		Type:      config.CMD_BASE,
-		StripeID:  stripeID,
-		BlockID:   blockID,
-		ToIPs:     toIPs,
-		FromIP:    nodeIP,
-	}
-	fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid, nodeID, nodeIP, blockID, relativeParityIDs)
-	common.SendData(cmd, nodeIP, config.NodeCMDListenPort, "")
-	PushWaitingACKGroup(cmd.SID, cmd.BlockID,1, cmd.CreatorIP, nodeIP)
+	nodeID := common.GetNodeID(reqData.BlockID)
+	relativeParityIDs := common.GetRelatedParities(reqData.BlockID)
+	cmd := common.GetCMDFromReqData(reqData)
+
+	fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", reqData.SID,
+		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, relativeParityIDs)
+	common.SendData(cmd, common.GetNodeIP(nodeID), config.NodeCMDListenPort, "")
+	PushWaitingACKGroup(cmd.SID, cmd.BlockID,1, cmd.CreatorIP, common.GetNodeIP(nodeID))
+}
+
+func (p Base) RecordSIDAndReceiverIP(sid int, ip string)  {
+	ACKReceiverIPMap[sid] = ip
 }
 
 func IsEmptyInWaitingACKGroup() bool  {

@@ -37,3 +37,7 @@ func (p Forest) HandleACK(ack config.ACK)  {
 func (p Forest) Clear()  {
 
 }
+
+func (p Forest)	RecordSIDAndReceiverIP(sid int, ip string)()  {
+
+}

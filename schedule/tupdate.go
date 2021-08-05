@@ -262,3 +262,7 @@ func (p TUpdate) Clear()  {
 	p.ReceivedTDs = make([]config.TD, 0, 100)
 	p.CMDWaitingQueue = make([]config.CMD, 0, 100)
 }
+
+func (p TUpdate) RecordSIDAndReceiverIP(sid int, ip string)()  {
+
+}
