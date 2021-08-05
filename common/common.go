@@ -62,7 +62,7 @@ func SendData(data interface{}, targetIP string, port string, retType string) in
 	addr := fmt.Sprintf("%s:%s", targetIP, port)
 	conn, err := net.Dial("tcp", addr)
 
-	defer conn.Close()
+	//defer conn.Close()
 	if err != nil {
 		log.Fatal("common: SendData Dial error: ", err)
 	}
@@ -72,23 +72,6 @@ func SendData(data interface{}, targetIP string, port string, retType string) in
 	if err != nil {
 		log.Fatal("common: SendData gob encode error:  ", err)
 	}
-
-	//switch retType {
-	////case "metaInfo":
-	//	retData := config.MetaInfo{}
-	//
-	//	//3.接收返回数据
-	//	dec := gob.NewDecoder(conn)
-	//	err = dec.Decode(&retData)
-	//	if err != nil {
-	//		log.Fatal("common: SendData of case metaInfo gob decode error", err)
-	//	}
-	//
-	//	return retData
-	//
-	//default:
-	//	return nil
-	//}
 
 	return nil
 }
