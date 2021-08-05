@@ -18,6 +18,7 @@ var actualUpdatedBlocks = 0
 var beginTime = time.Now()
 //var bitMatrix = make(config.Matrix, 0, config.K * config.M * config.W * config.W)
 func handleACK(conn net.Conn) {
+	defer conn.Close()
 	ack := common.GetACK(conn)
 	numOfACK++
 	fmt.Printf("ms received chunk %d's ack：%d\n",ack.BlockID, ack.AckID)

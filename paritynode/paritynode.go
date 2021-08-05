@@ -13,12 +13,14 @@ import (
 //	schedule.GetCurPolicy().HandleCMD(cmd)
 //}
 func handleTD(conn net.Conn)  {
+	defer conn.Close()
 	td := common.GetTD(conn)
 	log.Printf("received %s's td\n", common.GetConnIP(conn))
 	schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
 	schedule.GetCurPolicy().HandleTD(td)
 }
 func handleACK(conn net.Conn) {
+	defer conn.Close()
 	ack := common.GetACK(conn)
 	schedule.GetCurPolicy().HandleACK(ack)
 }
@@ -30,7 +32,6 @@ func main() {
 		log.Fatal("listening td err: ", err)
 	}
 	fmt.Printf("listening td in %s:%s\n", common.GetLocalIP(), config.NodeTDListenPort)
-
 	//l2, err := net.Listen("tcp", common.GetLocalIP() + ":" + config.NodeCMDListenPort)
 	//if err != nil {
 	//	log.Fatal("listening cmd err: ", err)
@@ -42,7 +43,6 @@ func main() {
 		log.Fatal("listening ack err: ", err)
 	}
 	fmt.Printf("listening ack in %s:%s\n", common.GetLocalIP(), config.NodeACKListenPort)
-
 	//go listenCMD(l2)
 	go listenACK(l3)
 	listenTD(l1)

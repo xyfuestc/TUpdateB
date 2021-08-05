@@ -8,11 +8,13 @@ import (
 	"net"
 )
 func handleCMD(conn net.Conn)  {
+	defer conn.Close()
 	cmd := common.GetCMD(conn)
 	schedule.GetCurPolicy().RecordSIDAndReceiverIP(cmd.SID, common.GetConnIP(conn))
 	schedule.GetCurPolicy().HandleCMD(cmd)
 }
 func handleACK(conn net.Conn) {
+	defer conn.Close()
 	ack := common.GetACK(conn)
 	schedule.GetCurPolicy().HandleACK(ack)
 }
