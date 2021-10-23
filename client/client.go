@@ -31,7 +31,7 @@ func main() {
 
 	config.BeginTime = time.Now()
 	fmt.Printf("%s : simulation start\n", config.BeginTime.Format("2010-01-02 15:04:02"))
-	handleRequestsFromFile("./example-traces/wdev_1.csv")
+	handleRequestsFromFile("../example-traces/wdev_1.csv")
 	for  {
 
 	}

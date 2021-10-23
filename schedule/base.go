@@ -74,7 +74,9 @@ func PopWaitingACKGroup(sid int)  {
 	if _, ok := WaitingACKGroup[sid]; !ok {
 		log.Fatalln("popWaitingACKGroup error : sid is invalid. ")
 	}else{
-		WaitingACKGroup[sid].RequiredACK = WaitingACKGroup[sid].RequiredACK - 1
+		if WaitingACKGroup[sid].RequiredACK > 0 {
+			WaitingACKGroup[sid].RequiredACK = WaitingACKGroup[sid].RequiredACK - 1
+		}
 	}
 	//PrintWaitingACKGroup("After PopWaitingACKGroup : ")
 }
@@ -118,11 +120,11 @@ func ReturnACK(ackV config.ACK) {
 	ackReceiverIP := ACKReceiverIPMap[ackV.SID]
 	common.SendData(ack, ackReceiverIP, config.NodeACKListenPort, "ack")
 
-	delete(WaitingACKGroup, ack.SID)
+	//delete(WaitingACKGroup, ack.SID)
 }
 func NeedReturnACK(ack config.ACK) bool {
-	if !IsExistInWaitingACKGroup(ack.SID) &&
-		WaitingACKGroup[ack.SID].ACKReceiverIP != common.GetLocalIP() {
+	if !IsExistInWaitingACKGroup(ack.SID)  {
+		//WaitingACKGroup[ack.SID].ACKReceiverIP != common.GetLocalIP() {
 			return true
 	}
 	return false
