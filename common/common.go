@@ -4,6 +4,7 @@ import (
 	"EC/config"
 	"encoding/gob"
 	"fmt"
+	"github.com/wxnacy/wgo/arrays"
 	"log"
 	"math"
 	"math/rand"
@@ -206,12 +207,27 @@ func RelatedParities(blockID int) []byte {
 	}
 	return parities
 }
+func RelatedParityNodes(parities []byte) []byte {
+	nodes := make([]byte, 0, config.M)
+	for i := 0; i < len(parities); i++ {
+		nodeID := i/config.W + config.K
+		if  arrays.Contains(nodes, byte(nodeID)) < 0 {
+			nodes = append(nodes, byte(nodeID))
+		}
+	}
+	return nodes
+}
 
 func GetRelatedParityIPs(blockID int) []string {
 	parityIDs := RelatedParities(blockID)
 	parityIPs := make([]string, 0, len(parityIDs))
+	nodes := make([]byte, 0, config.M)
 	for _, parityID := range parityIDs {
-			parityIPs = append(parityIPs, config.NodeIPs[(int(parityID))])
+		nodeID := int(parityID)/config.W + config.K
+		nodeIP := config.NodeIPs[byte(nodeID)]
+		if  arrays.Contains(nodes, nodeIP) < 0 {
+			parityIPs = append(parityIPs, nodeIP)
+		}
 	}
 	return parityIPs
 
@@ -249,10 +265,7 @@ func WriteBlock(blockID int, buff []byte)  {
 	log.Printf("write block %d done.\n", blockID)
 }
 func GetNodeID(blockID int) int {
-	if blockID < 0 {
-		 return -1
-	}
-	return blockID%config.K
+	return blockID % (config.K*config.W) / config.W
 }
 func GetStripeID(blockID int) int  {
 	if blockID < 0 {
