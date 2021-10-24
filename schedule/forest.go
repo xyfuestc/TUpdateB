@@ -1,7 +1,6 @@
 package schedule
 
 import (
-	"EC/common"
 	"EC/config"
 )
 
@@ -22,17 +21,17 @@ func (p Forest) HandleCMD(cmd config.CMD)  {
 
 }
 func (p Forest) HandleACK(ack config.ACK)  {
-	popACK(ack.SID)
-	if !IsExistInWaitingACKGroup(ack.SID) {
-		ack := &config.ACK{
-			SID:     ack.SID,
-			BlockID: ack.BlockID,
-		}
-		ackReceiverIP := WaitingACKGroup[ack.SID].ACKReceiverIP
-		common.SendData(ack, ackReceiverIP, config.NodeACKListenPort, "ack")
-
-		delete(WaitingACKGroup, ack.SID)
-	}
+	//popACK(ack.SID)
+	//if !IsExistInWaitingACKGroup(ack.SID) {
+	//	ack := &config.ACK{
+	//		SID:     ack.SID,
+	//		BlockID: ack.BlockID,
+	//	}
+	//	ackReceiverIP := WaitingACKGroup[ack.SID].ACKReceiverIP
+	//	common.SendData(ack, ackReceiverIP, config.NodeACKListenPort, "ack")
+	//
+	//	delete(WaitingACKGroup, ack.SID)
+	//}
 }
 func (p Forest) Clear()  {
 

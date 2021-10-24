@@ -225,10 +225,10 @@ func (p TUpdate) IsCMDDataExist(cmd config.CMD) bool {
 	return common.GetDataNodeIP(cmd.BlockID) == common.GetLocalIP()
 }
 func (p TUpdate) finishCMD(cmd config.CMD, buff []byte) {
-	for _, toIP := range cmd.ToIPs {
-		common.SendData(buff, cmd.FromIP, toIP, "")
-	}
-	pushACK(cmd.SID, cmd.BlockID, 1,  cmd.FromIP, "")
+	//for _, toIP := range cmd.ToIPs {
+	//	common.SendData(buff, cmd.FromIP, toIP, "")
+	//}
+	//pushACK(cmd.SID, cmd.BlockID, 1,  cmd.FromIP, "")
 }
 func (p TUpdate) getMeetCMD(td config.TD) config.CMD {
 	for _, cmd:= range p.CMDWaitingQueue{
@@ -246,17 +246,17 @@ func (p TUpdate) deleteCMD(delCMD config.CMD) {
 	}
 }
 func (p TUpdate) HandleACK(ack config.ACK)  {
-	popACK(ack.SID)
-	if !IsExistInWaitingACKGroup(ack.SID) {
-		ack := &config.ACK{
-			SID:     ack.SID,
-			BlockID: ack.BlockID,
-		}
-		ackReceiverIP := WaitingACKGroup[ack.SID].ACKReceiverIP
-		common.SendData(ack, ackReceiverIP, config.NodeACKListenPort, "ack")
-
-		delete(WaitingACKGroup, ack.SID)
-	}
+	//popACK(ack.SID)
+	//if !IsExistInWaitingACKGroup(ack.SID) {
+	//	ack := &config.ACK{
+	//		SID:     ack.SID,
+	//		BlockID: ack.BlockID,
+	//	}
+	//	ackReceiverIP := WaitingACKGroup[ack.SID].ACKReceiverIP
+	//	common.SendData(ack, ackReceiverIP, config.NodeACKListenPort, "ack")
+	//
+	//	delete(WaitingACKGroup, ack.SID)
+	//}
 }
 func (p TUpdate) Clear()  {
 	p.ReceivedTDs = make([]config.TD, 0, 100)

@@ -142,30 +142,30 @@ func (p CAU) HandleCMD(cmd config.CMD)  {
 
 //R1 is a rack for datanode, R2 is a rack for paritynode
 func (p CAU) rackCompare(R1 config.Rack, R2 config.Rack) {
-	if R1.NumOfUpdates <= R2.NumOfUpdates {
-		for stripeID, stripeBlocks := range R1.Stripes {
-			fmt.Printf("CMD_DDU mode: handle Rack stripe %d...\n", stripeID)
-			for _, blockID := range stripeBlocks {
-				//将块信息发给root
-				curNode := common.GetNodeID(blockID)
-				curNodeIP := common.GetDataNodeIP(curNode)
-				rootParityIP := common.GetRelatedParityIPs(blockID)[0] // 指定P0为rootParity（默认所有Parity都需要更新）
-				toIPs := make([]string, 1)
-				toIPs = append(toIPs, rootParityIP)
-				cmd := config.CMD{
-					Type:     config.CMD_DDU,
-					StripeID: stripeID,
-					BlockID:  blockID,
-					ToIPs:    toIPs,
-				}
-				fmt.Printf("发送命令给 Node %d (%s)，使其将Block %d 发送给%s.\n", curNode, curNodeIP, blockID, rootParityIP)
-				common.SendData(cmd, curNodeIP, config.NodeCMDListenPort, "")
-				WaitingACKGroup[cmd.SID] = &config.WaitingACKItem{BlockID: blockID, RequiredACK: 1, SID: cmd.SID}
-			}
-		}
-	} else {
-		fmt.Printf(" i > j\n")
-	}
+	//if R1.NumOfUpdates <= R2.NumOfUpdates {
+	//	for stripeID, stripeBlocks := range R1.Stripes {
+	//		fmt.Printf("CMD_DDU mode: handle Rack stripe %d...\n", stripeID)
+	//		for _, blockID := range stripeBlocks {
+	//			//将块信息发给root
+	//			curNode := common.GetNodeID(blockID)
+	//			curNodeIP := common.GetDataNodeIP(curNode)
+	//			rootParityIP := common.GetRelatedParityIPs(blockID)[0] // 指定P0为rootParity（默认所有Parity都需要更新）
+	//			toIPs := make([]string, 1)
+	//			toIPs = append(toIPs, rootParityIP)
+	//			cmd := config.CMD{
+	//				Type:     config.CMD_DDU,
+	//				StripeID: stripeID,
+	//				BlockID:  blockID,
+	//				ToIPs:    toIPs,
+	//			}
+	//			fmt.Printf("发送命令给 Node %d (%s)，使其将Block %d 发送给%s.\n", curNode, curNodeIP, blockID, rootParityIP)
+	//			common.SendData(cmd, curNodeIP, config.NodeCMDListenPort, "")
+	//			WaitingACKGroup[cmd.SID] = &config.WaitingACKItem{BlockID: blockID, RequiredACK: 1, SID: cmd.SID}
+	//		}
+	//	}
+	//} else {
+	//	fmt.Printf(" i > j\n")
+	//}
 }
 /*******update R0~R2 with current update requests(curReqChunks)********/
 func (p CAU) rackUpdate(curReqChunks  []config.ReqData)  {
@@ -213,17 +213,17 @@ func (p CAU) DDU(cmd config.CMD)  {
 
 
 func (p CAU) HandleACK(ack config.ACK)  {
-	popACK(ack.SID)
-	if !IsExistInWaitingACKGroup(ack.SID) {
-		ack := &config.ACK{
-			SID:     ack.SID,
-			BlockID: ack.BlockID,
-		}
-		ackReceiverIP := WaitingACKGroup[ack.SID].ACKReceiverIP
-		common.SendData(ack, ackReceiverIP, config.NodeACKListenPort, "ack")
-
-		delete(WaitingACKGroup, ack.SID)
-	}
+	//popACK(ack.SID)
+	//if !IsExistInWaitingACKGroup(ack.SID) {
+	//	ack := &config.ACK{
+	//		SID:     ack.SID,
+	//		BlockID: ack.BlockID,
+	//	}
+	//	ackReceiverIP := WaitingACKGroup[ack.SID].ACKReceiverIP
+	//	common.SendData(ack, ackReceiverIP, config.NodeACKListenPort, "ack")
+	//
+	//	delete(WaitingACKGroup, ack.SID)
+	//}
 }
 func (p CAU) Clear()  {
 
