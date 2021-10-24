@@ -4,7 +4,6 @@ import (
 	"EC/common"
 	"EC/config"
 	"fmt"
-	"log"
 )
 
 type Policy interface {
@@ -20,11 +19,9 @@ type Policy interface {
 type Base struct {
 
 }
-
-var WaitingACKGroup = make(map[int]*config.WaitingACKItem)
 var CurPolicy Policy = nil
-var ACKReceiverIPMap = make(map[int]string)
-var requireACKs = 0
+var AckReceiverIPs = make(map[int]string)
+var RequireACKs = 0
 func SetPolicy(policyType config.PolicyType)  {
 	switch policyType {
 	case config.BASE:
@@ -46,7 +43,7 @@ func GetCurPolicy() Policy {
 }
 func (p Base) HandleCMD(cmd config.CMD) {
 	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID)
-	PushWaitingACKGroup(cmd.SID, cmd.BlockID, len(cmd.ToIPs), cmd.CreatorIP, "")
+
 	for _, parityIP := range cmd.ToIPs{
 		td := &config.TD{
 			BlockID: cmd.BlockID,
@@ -57,75 +54,42 @@ func (p Base) HandleCMD(cmd config.CMD) {
 		}
 		fmt.Printf("send td(sid:%d, blockID:%d) to %s\n", cmd.SID, cmd.BlockID, parityIP)
 		common.SendData(td, parityIP, config.NodeTDListenPort, "")
-	}
 
+		pushACK()
+	}
 }
-
-func PushWaitingACKGroup(sid, blockID, requiredACKNum int, ackReceiverIP, ackSenderIP string)  {
-	if _, ok := WaitingACKGroup[sid]; !ok {
-		WaitingACKGroup[sid] = &config.WaitingACKItem{BlockID: blockID, SID: sid,
-			ACKReceiverIP: ackReceiverIP, ACKSenderIP: ackSenderIP, RequiredACK: requiredACKNum}
-	}else{
-		WaitingACKGroup[sid].RequiredACK = WaitingACKGroup[sid].RequiredACK + requiredACKNum
-	}
-	//PrintWaitingACKGroup("After PushWaitingACKGroup : ")
+func pushACK()  {
+	RequireACKs++
 }
 
-func PopWaitingACKGroup(sid int)  {
-	if _, ok := WaitingACKGroup[sid]; !ok {
-		log.Fatalln("popWaitingACKGroup error : sid is invalid. ")
-	}else{
-		if WaitingACKGroup[sid].RequiredACK > 0 {
-			WaitingACKGroup[sid].RequiredACK = WaitingACKGroup[sid].RequiredACK - 1
-		}
-	}
-	//PrintWaitingACKGroup("After PopWaitingACKGroup : ")
+func popACK()  {
+	RequireACKs--
 }
 
-func PrintWaitingACKGroup(prefix string)  {
-	for i, v := range WaitingACKGroup{
-		if v.RequiredACK > 0 {
-			fmt.Printf("%s sid : %d, blockID :%d, ackReceiver:%s, still need %d ack.\n", prefix, i, v.BlockID, v.ACKReceiverIP, v.RequiredACK)
-		}
-	}
-}
-func IsExistInWaitingACKGroup(sid int) bool  {
-	if WaitingACKGroup[sid].RequiredACK > 0 {
-		return true
-	}
-	return false
-}
-func ClearWaitingACKGroup()  {
-	WaitingACKGroup = make(map[int]*config.WaitingACKItem)
-}
 func (p Base) HandleTD(td config.TD)  {
 	go common.WriteBlock(td.BlockID, td.Buff)
-
-	ack := &config.ACK{
+	//返回ack
+	ack := config.ACK{
 		SID:     td.SID,
 		BlockID: td.BlockID,
 	}
-	common.SendData(ack, td.FromIP, config.NodeACKListenPort, "ack")
+	ReturnACK(ack)
 }
 func (p Base) HandleACK(ack config.ACK)  {
-	PopWaitingACKGroup(ack.SID)
-	if NeedReturnACK(ack) {
+	fmt.Printf("收到ack: sid: %d, id: %d\n", ack.SID, ack.BlockID)
+	popACK()
+	if NeedReturnACK() {
 		ReturnACK(ack)
 	}
 }
-func ReturnACK(ackV config.ACK) {
-	ack := &config.ACK{
-		SID:     ackV.SID,
-		BlockID: ackV.BlockID,
-	}
-	ackReceiverIP := ACKReceiverIPMap[ackV.SID]
+func ReturnACK(ack config.ACK) {
+	ackReceiverIP := AckReceiverIPs[ack.SID]
 	common.SendData(ack, ackReceiverIP, config.NodeACKListenPort, "ack")
+	fmt.Printf("任务已完成，给上级：%s返回ack: sid: %d, id: %d\n", ackReceiverIP, ack.SID, ack.BlockID)
 
-	//delete(WaitingACKGroup, ack.SID)
 }
-func NeedReturnACK(ack config.ACK) bool {
-	if !IsExistInWaitingACKGroup(ack.SID)  {
-		//WaitingACKGroup[ack.SID].ACKReceiverIP != common.GetLocalIP() {
+func NeedReturnACK() bool {
+	if RequireACKs == 0  {
 			return true
 	}
 	return false
@@ -135,14 +99,11 @@ func (p Base) Init()  {
 
 func (p Base) HandleReq(reqs []config.ReqData)  {
 
-	requireACKs = len(reqs)
-
+	RequireACKs = len(reqs)
 	for _, req := range reqs{
 		p.handleOneBlock(req)
 	}
 }
-
-
 func (p Base) handleOneBlock(reqData config.ReqData)  {
 	nodeID := common.GetNodeID(reqData.BlockID)
 	relativeParityIDs := common.RelatedParities(reqData.BlockID)
@@ -151,22 +112,12 @@ func (p Base) handleOneBlock(reqData config.ReqData)  {
 	fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", reqData.SID,
 		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, relativeParityIDs)
 	common.SendData(cmd, common.GetNodeIP(nodeID), config.NodeCMDListenPort, "")
-	PushWaitingACKGroup(cmd.SID, cmd.BlockID,1, common.GetLocalIP(), common.GetNodeIP(nodeID))
 }
-
 func (p Base) RecordSIDAndReceiverIP(sid int, ip string)  {
-	ACKReceiverIPMap[sid] = ip
+	AckReceiverIPs[sid] = ip
 }
-
-func IsEmptyInWaitingACKGroup() bool  {
-	if len(WaitingACKGroup) == 0 {
-		return true
-	}
-	return false
-}
-
 func (p Base) Clear()  {
-
+	AckReceiverIPs = make(map[int]string)
 }
 
 

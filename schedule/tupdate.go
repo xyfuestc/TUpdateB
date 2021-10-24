@@ -60,7 +60,7 @@ func (p TUpdate) HandleReq(reqs []config.ReqData)  {
 	//	}
 	//	fmt.Printf("发送命令给 node: %s，使其将Block %d 发送给 %v\n", fromIP, blockID, toIP)
 	//	common.SendData(cmd, toIP, config.NodeCMDListenPort, "")
-	//	PushWaitingACKGroup(cmd.SID, cmd.BlockID,1, common.GetLocalIP(), "")
+	//	pushACK(cmd.SID, cmd.BlockID,1, common.GetLocalIP(), "")
 	//}
 }
 
@@ -228,7 +228,7 @@ func (p TUpdate) finishCMD(cmd config.CMD, buff []byte) {
 	for _, toIP := range cmd.ToIPs {
 		common.SendData(buff, cmd.FromIP, toIP, "")
 	}
-	PushWaitingACKGroup(cmd.SID, cmd.BlockID, 1,  cmd.FromIP, "")
+	pushACK(cmd.SID, cmd.BlockID, 1,  cmd.FromIP, "")
 }
 func (p TUpdate) getMeetCMD(td config.TD) config.CMD {
 	for _, cmd:= range p.CMDWaitingQueue{
@@ -246,7 +246,7 @@ func (p TUpdate) deleteCMD(delCMD config.CMD) {
 	}
 }
 func (p TUpdate) HandleACK(ack config.ACK)  {
-	PopWaitingACKGroup(ack.SID)
+	popACK(ack.SID)
 	if !IsExistInWaitingACKGroup(ack.SID) {
 		ack := &config.ACK{
 			SID:     ack.SID,

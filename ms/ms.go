@@ -30,9 +30,9 @@ func handleACK(conn net.Conn) {
 	numOfACK++
 	fmt.Printf("ms received chunk %d's ack：%d\n",ack.BlockID, ack.AckID)
 	schedule.GetCurPolicy().HandleACK(ack)
-	if schedule.IsEmptyInWaitingACKGroup() {
+	if schedule.RequireACKs == 0 {
 		fmt.Printf("=====================================")
-		fmt.Printf("Simulation is done!")
+		fmt.Printf("结束!")
 		endTime = time.Now()
 		fmt.Printf("Total request: %d, spend time: %ds\n", numOfReq,
 											endTime.Unix() - beginTime.Unix())
@@ -57,7 +57,6 @@ func clearUpdates() {
 	fmt.Printf("clear ack, req...\n")
 	numOfACK = 0
 	numOfReq = 0
-	schedule.ClearWaitingACKGroup()
 }
 func main() {
 	beginTime = time.Now()

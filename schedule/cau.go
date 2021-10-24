@@ -213,7 +213,7 @@ func (p CAU) DDU(cmd config.CMD)  {
 
 
 func (p CAU) HandleACK(ack config.ACK)  {
-	PopWaitingACKGroup(ack.SID)
+	popACK(ack.SID)
 	if !IsExistInWaitingACKGroup(ack.SID) {
 		ack := &config.ACK{
 			SID:     ack.SID,
