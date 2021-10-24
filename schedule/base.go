@@ -9,7 +9,7 @@ import (
 
 type Policy interface {
 	Init()
-	HandleReq(reqData config.ReqData)
+	HandleReq(reqs []config.ReqData)
 	HandleCMD(cmd config.CMD)
 	HandleTD(td config.TD)
 	HandleACK(ack config.ACK)
@@ -24,6 +24,7 @@ type Base struct {
 var WaitingACKGroup = make(map[int]*config.WaitingACKItem)
 var CurPolicy Policy = nil
 var ACKReceiverIPMap = make(map[int]string)
+var requireACKs = 0
 func SetPolicy(policyType config.PolicyType)  {
 	switch policyType {
 	case config.BASE:
@@ -132,15 +133,25 @@ func NeedReturnACK(ack config.ACK) bool {
 func (p Base) Init()  {
 }
 
-func (p Base) HandleReq(reqData config.ReqData)  {
+func (p Base) HandleReq(reqs []config.ReqData)  {
+
+	requireACKs = len(reqs)
+
+	for _, req := range reqs{
+		p.handleOneBlock(req)
+	}
+}
+
+
+func (p Base) handleOneBlock(reqData config.ReqData)  {
 	nodeID := common.GetNodeID(reqData.BlockID)
-	relativeParityIDs := common.GetRelatedParities(reqData.BlockID)
+	relativeParityIDs := common.RelatedParities(reqData.BlockID)
 	cmd := common.GetCMDFromReqData(reqData)
 
 	fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", reqData.SID,
 		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, relativeParityIDs)
 	common.SendData(cmd, common.GetNodeIP(nodeID), config.NodeCMDListenPort, "")
-	PushWaitingACKGroup(cmd.SID, cmd.BlockID,1, cmd.CreatorIP, common.GetNodeIP(nodeID))
+	PushWaitingACKGroup(cmd.SID, cmd.BlockID,1, common.GetLocalIP(), common.GetNodeIP(nodeID))
 }
 
 func (p Base) RecordSIDAndReceiverIP(sid int, ip string)  {

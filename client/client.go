@@ -17,7 +17,6 @@ var numOfRequestBlocks = 0
 var isWaitingForACK = true
 var numOfUpdatedBlocks = 0
 var numOfUserRequests = 0
-var sidCounter = 0
 func main() {
 	config.Init()
 
@@ -75,16 +74,15 @@ func getOneRequestFromOneLine(lineData []byte) config.UserRequest {
 	return userRequest
 }
 func requestBlockToMS(blockID int)  {
-	fmt.Printf("sid %d : request block %d to ms : %s\n", sidCounter, blockID, config.MSIP)
+	//fmt.Printf("sid %d : request block %d to ms : %s\n", sidCounter, blockID, config.MSIP)
 	request := &config.ReqData{
-		SID:      sidCounter,
-		OPType:   config.UpdateReq,
+		//SID:      sidCounter,
 		BlockID:  blockID,
 		StripeID: common.GetStripeIDFromBlockID(blockID),
 	}
 	common.SendData(request, config.MSIP, config.NodeReqListenPort, "metaInfo")
 
-	sidCounter++
+	//sidCounter++
 }
 func listenACK(listen net.Listener) {
 	defer listen.Close()

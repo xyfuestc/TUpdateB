@@ -4,9 +4,14 @@ import (
 	"EC/common"
 	"EC/config"
 	"EC/schedule"
+	"bufio"
 	"fmt"
+	"io"
 	"log"
 	"net"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 )
 var numOfReq = 0
@@ -14,9 +19,11 @@ var numOfACK = 0
 var curReqChunks = make([]config.MetaInfo, config.MaxBatchSize, config.MaxBatchSize)
 var round = 0
 var actualUpdatedBlocks = 0
+var sidCounter = 0
+var beginTime time.Time
+var endTime time.Time
+var totalBlocks = make([]config.ReqData, 0, 1000000)
 
-var beginTime = time.Now()
-//var bitMatrix = make(config.Matrix, 0, config.K * config.M * config.W * config.W)
 func handleACK(conn net.Conn) {
 	defer conn.Close()
 	ack := common.GetACK(conn)
@@ -26,17 +33,11 @@ func handleACK(conn net.Conn) {
 	if schedule.IsEmptyInWaitingACKGroup() {
 		fmt.Printf("=====================================")
 		fmt.Printf("Simulation is done!")
+		endTime = time.Now()
 		fmt.Printf("Total request: %d, spend time: %ds\n", numOfReq,
-											time.Now().Unix() - config.BeginTime.Unix())
+											endTime.Unix() - beginTime.Unix())
 		clearUpdates()
 	}
-}
-func handleReq(conn net.Conn) {
-	req := common.GetReq(conn)
-	fmt.Printf("ACKReceiverIP : %s\n ", common.GetConnIP(conn))
-	schedule.GetCurPolicy().RecordSIDAndReceiverIP(req.SID, common.GetConnIP(conn))
-	schedule.GetCurPolicy().HandleReq(req)
-	numOfReq++
 }
 func PrintGenMatrix(gm []byte)  {
 
@@ -57,44 +58,56 @@ func clearUpdates() {
 	numOfACK = 0
 	numOfReq = 0
 	schedule.ClearWaitingACKGroup()
-	//for _, rank := range config.Racks {
-	//	rank.NumOfUpdates = 0
-	//	rank.Stripes = make(map[int][]int)
-	//}
-	//numOfACK = 0
-	//schedule.IsRunning = false
-	// 考虑如果用户请求metainfo已经结束，无法启动CAU算法，则在每轮更新结束之后，启动CAU。
-	//if len(CurPolicy.totalReqChunks) >= config.maxBatchSize && !schedule.IsRunning {
-	//	schedule.NumOfCurNeedUpdateBlocks = 0
-	//	schedule.CAU_Update(&totalReqChunks)
-	//}
 }
 func main() {
-	/*init RS, nodes and racks*/
+	beginTime = time.Now()
+	//初始化
 	config.Init()
-	fmt.Printf("listening req in %s:%s\n", common.GetLocalIP(), config.NodeReqListenPort)
-	l1, err := net.Listen("tcp", common.GetLocalIP() + ":" + config.NodeReqListenPort)
-	if err != nil {
-		log.Fatalln("listening req err: ", err)
-	}
-	fmt.Printf("listening ack in %s:%s\n", common.GetLocalIP(), config.NodeACKListenPort)
+
+	//监听ack
+	fmt.Printf("ms启动...")
+	fmt.Printf("监听ack: %s:%s\n", common.GetLocalIP(), config.NodeACKListenPort)
 	l2, err := net.Listen("tcp", common.GetLocalIP() + ":" + config.NodeACKListenPort)
 	if err != nil {
 		log.Fatalln("listening ack err: ", err)
 	}
 	go listenACK(l2)
-	listenReq(l1)
-}
-func listenReq(listen net.Listener) {
-	defer listen.Close()
-	for {
-		conn, err := listen.Accept()
-		if err != nil {
-			fmt.Printf("accept failed, err:%v\n", err)
-			continue
-		}
-		handleReq(conn)
+
+	//处理block请求
+	blockFile, err := os.Open(config.OutFilePath)
+	if err != nil {
+		log.Fatalln("Error: ", err)
 	}
+
+	bufferReader := bufio.NewReader(blockFile)
+	for {
+		lineData, _, err := bufferReader.ReadLine()
+		if err == io.EOF {
+			break
+		}else if err != nil {
+			log.Fatalln("handleReqFile error: ",err)
+		}
+		userRequestStr := strings.Split(string(lineData), ",")
+		blockID, _ := strconv.Atoi(userRequestStr[0])
+		request := config.ReqData{
+			SID:      sidCounter,
+			BlockID:  blockID,
+			StripeID: common.GetStripeIDFromBlockID(blockID),
+		}
+		totalBlocks = append(totalBlocks, request)
+
+
+		sidCounter++
+	}
+	defer blockFile.Close()
+
+	fmt.Printf("总共block请求数量为：%d\n", sidCounter)
+	schedule.GetCurPolicy().HandleReq(totalBlocks)
+	//保证主线程运行
+	for  {
+		
+	}
+	
 }
 func listenACK(listen net.Listener) {
 	defer listen.Close()

@@ -121,18 +121,19 @@ func (p CAU) HandleTD(td config.TD)  {
 	}
 }
 
-func (p CAU) HandleReq(reqData config.ReqData)  {
-	totalReqChunks = append(totalReqChunks, reqData)
-	if len(totalReqChunks) >= maxBatchSize && !IsRunning {
-		fmt.Printf("Starting cau update algorithm...\n")
-		fmt.Printf("==================================\n")
-		IsRunning = true
-		curReqChunks := totalReqChunks[:maxBatchSize]
-		totalReqChunks = totalReqChunks[maxBatchSize:]
-		p.rackUpdate(curReqChunks)
-		p.rackCompare(config.Racks[0], config.Racks[2])
-		p.rackCompare(config.Racks[1], config.Racks[2])
-	}
+func (p CAU) HandleReq(reqs []config.ReqData)  {
+
+	//totalReqChunks = append(totalReqChunks, reqData)
+	//if len(totalReqChunks) >= maxBatchSize && !IsRunning {
+	//	fmt.Printf("Starting cau update algorithm...\n")
+	//	fmt.Printf("==================================\n")
+	//	IsRunning = true
+	//	curReqChunks := totalReqChunks[:maxBatchSize]
+	//	totalReqChunks = totalReqChunks[maxBatchSize:]
+	//	p.rackUpdate(curReqChunks)
+	//	p.rackCompare(config.Racks[0], config.Racks[2])
+	//	p.rackCompare(config.Racks[1], config.Racks[2])
+	//}
 }
 
 func (p CAU) HandleCMD(cmd config.CMD)  {
@@ -209,6 +210,8 @@ func (p CAU) DDU(cmd config.CMD)  {
 	}
 
 }
+
+
 func (p CAU) HandleACK(ack config.ACK)  {
 	PopWaitingACKGroup(ack.SID)
 	if !IsExistInWaitingACKGroup(ack.SID) {

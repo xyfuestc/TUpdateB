@@ -1,27 +1,24 @@
 package config
 
 import (
+	"EC/common"
 	"fmt"
 	"github.com/templexxx/reedsolomon"
-	"strconv"
 	"time"
 )
 
-const K int = 6
+const K int = 8
 const M int = 4
-const W int = 1
-const NumOfRack int = 5
-const MaxReqSize = 100000
+const W int = 3
+const NumOfRack int = 3
 const ChunkSize int = 1024 * 1024 //1MB
 const MaxBatchSize int = 100
 const ECMode string = "RS" // or "XOR"
-const MaxNumOfBlocks int = 1000000
-const MaxNumOfRequests int = 1000000
 var CurPolicyVal = BASE
+var OutFilePath = "../request/proj_4.csv.txt"
+
 
 type OPType int
-//type CMDType int
-
 /******the structure of one line for the update stream file*******/
 const (
 	Timestamp int  = iota    // default 0
@@ -43,13 +40,10 @@ type UserRequest struct {
 }
 
 const (
-	MSListenPort   string = "8787"   // metainfo server listening port
-	MSACKListenPort   string = "8201"   // metainfo server ack listening port
 	NodeReqListenPort   string = "8300" // datanode or paritynode listening port
 	NodeACKListenPort   string = "8301"   // metainfo server ack listening port
 	NodeCMDListenPort   string = "8302"   // metainfo server ack listening port
 	NodeTDListenPort   string = "8304"   // metainfo server ack listening port
-	ClientACKListenPort string = "8400"
 )
 
 //DataNode操作
@@ -63,14 +57,7 @@ const (
 	DDULeaf
 
 	PDU
-	/*********forest data operation**********/
-	OP_DPR
 
-	/*********T_Update data operation**********/
-	OP_T_Update
-
-	//ack
-	//ACK
 )
 
 type CMDType int
@@ -80,16 +67,11 @@ const (
 	CMD_DDU CMDType = iota //client update, 0
 	CMD_BASE
 
-	//tupdate
-	CMD_TUpdate
 )
 
 type Role int
 const (
 	Role_Uknown Role = iota
-	Role_DDURootP
-	Role_DDULeafP
-
 )
 
 
@@ -103,15 +85,17 @@ const (
 
 )
 const BaseIP string = "192.168.1."
-var MSIP = BaseIP + "171"
-var CurrentIP = BaseIP + "100"
-//var MSIP = "192.168.1.100"
+var MSIP = BaseIP + "108"
+var ClientIP = BaseIP + "109"
 const DataFilePath string = "../../test"
 const StartIP int = 172
-var NodeIPs =[K+M]string{}
+var NodeIPs =[K+M]string{
+	BaseIP+"110", BaseIP+"111", BaseIP+"112", BaseIP+"113",     //rack0
+	BaseIP+"120", BaseIP+"121", BaseIP+"122", BaseIP+"123",     //rack1
+	BaseIP+"140", BaseIP+"141", BaseIP+"142", BaseIP+"143",     //rack2
+}
 var Racks = [NumOfRack]Rack{}
 var BeginTime = time.Now()
-//var BitMatrix = make(Matrix, 0, K*M*W*W*K*M*W*W)
 
 //传输数据格式
 type TD struct {
@@ -126,7 +110,6 @@ type TD struct {
 	Buff               []byte
 	SID                int
 }
-
 
 //传输命令格式
 type CMD struct {
@@ -146,7 +129,7 @@ type CMD struct {
 }
 type ReqData struct {
 	SID      int
-	OPType   OPType
+	//OPType   OPType
 	BlockID  int
 	AckID    int
 	StripeID int
@@ -198,83 +181,29 @@ var RS *reedsolomon.RS
 
 type Matrix []byte
 const INFINITY = 65535
-//获取数据块（chunkID）对应的IP
-//func GetRelatedParities(chunkID int) []string {
-//	var relatedParities []string = make([]string, RS.ParityNum)
-//	col := chunkID % RS.DataNum
-//
-//	for i := 0; i < RS.ParityNum; i++ {
-//		if RS.GenMatrix[i*RS.DataNum+col] > 0 {
-//			relatedParities = append(relatedParities, ParityNodeIPs[i])
-//		}
-//	}
-//	return relatedParities
-//}
-func getRackID(dataNodeID int) int {
-	if dataNodeID < 3 {
-		return 0
-	} else {
-		return 1
-	}
-}
+var BitMatrix = make([]byte, K*M*W*W)
 
 func Init(){
 	//1.init GM, get BitMatrix
 	fmt.Printf("Init GM...\n")
 	r, _ := reedsolomon.New(K, M)
 	RS = r
-	//BitMatrix = GenerateBitMatrix(RS.GenMatrix, K, M, W)
+	BitMatrix = common.GenerateBitMatrix(RS.GenMatrix, K, M, W)
 
-	//2.init Nodes IP and Racks IP
-	fmt.Printf("Init nodes and racks...\n")
-	var start  = StartIP
-	for g := 0; g < K+M; g++ {
-		strIP := BaseIP + strconv.FormatInt(int64(start), 10)
-		NodeIPs[g] = strIP
-		start++
-	}
-	//test
-	//NodeIPs[5] = CurrentIP
-
-	//3.init racks
-	for g := 0; g < len(Racks); g++ {
-		strIP1 := BaseIP + strconv.FormatInt(int64(start), 10)
-		strIP2 := BaseIP + strconv.FormatInt(int64(start+1), 10)
-		strIP3 := BaseIP + strconv.FormatInt(int64(start+2), 10)
-		Racks[g] = Rack{
-			Nodes:        []string{strIP1, strIP2, strIP3},
-			NodeNum:      3,
-			NumOfUpdates: 0,
-			Stripes:      map[int][]int{},
-			GateIP:       "",
-		}
-		start+=3
-		fmt.Printf("Rack %d has nodes: %s, %s, %s\n", g, strIP1, strIP2, strIP3)
-	}
+	////3.init racks
+	//for g := 0; g < len(Racks); g++ {
+	//	strIP1 := BaseIP + strconv.FormatInt(int64(start), 10)
+	//	strIP2 := BaseIP + strconv.FormatInt(int64(start+1), 10)
+	//	strIP3 := BaseIP + strconv.FormatInt(int64(start+2), 10)
+	//	Racks[g] = Rack{
+	//		Nodes:        []string{strIP1, strIP2, strIP3},
+	//		NodeNum:      3,
+	//		NumOfUpdates: 0,
+	//		Stripes:      map[int][]int{},
+	//		GateIP:       "",
+	//	}
+	//	start+=3
+	//	fmt.Printf("Rack %d has nodes: %s, %s, %s\n", g, strIP1, strIP2, strIP3)
+	//}
 }
-func GenerateBitMatrix(matrix []byte, k, m, w int) []byte {
-	bitMatrix := make([]byte, k*m*w*w)
-	rowelts := k * w
-	rowindex := 0
 
-	for i := 0; i < m; i++ {
-		colindex := rowindex
-		for j := 0; j < k; j++ {
-			elt := matrix[i*k+j]
-			for x := 0; x < w; x++ {
-				for l := 0; l < w; l++ {
-					if (elt & (1 << l)) > 0 {
-						bitMatrix[colindex+x+l*rowelts] = 1
-					} else {
-						bitMatrix[colindex+x+l*rowelts] = 0
-					}
-				}
-				elt = Gfmul(elt, 2)
-			}
-			colindex += w
-		}
-		rowindex += rowelts * w
-	}
-	return bitMatrix
-
-}

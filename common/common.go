@@ -195,8 +195,20 @@ func GetRelatedParities(blockID int) config.Matrix  {
 
 	return parities
 }
+//从0开始编号，一直到M*W-1
+func RelatedParities(blockID int) []byte {
+	parities := make([]byte, 0, config.M * config.W)
+	col := blockID % (config.K * config.W)
+	for i := col; i < len(config.BitMatrix); i += config.K * config.W {
+		if config.BitMatrix[i] == 1 {
+			parities = append(parities, (byte)(i/(config.K*config.W)))
+		}
+	}
+	return parities
+}
+
 func GetRelatedParityIPs(blockID int) []string {
-	parityIDs := GetRelatedParities(blockID)
+	parityIDs := RelatedParities(blockID)
 	parityIPs := make([]string, 0, len(parityIDs))
 	for _, parityID := range parityIDs {
 			parityIPs = append(parityIPs, config.NodeIPs[(int(parityID))])
@@ -257,10 +269,6 @@ func GetDataNodeIP(blockID int) string  {
 	return config.NodeIPs[nodeID]
 }
 func GetNodeIP(nodeID int) string {
-	if nodeID < 0 || nodeID >= config.K+config.M {
-		log.Fatalln("GetNodeIP : nodeID out of range : ", nodeID)
-		return "error"
-	}
 	return config.NodeIPs[nodeID]
 }
 func RandWriteBlockAndRetDelta(blockID int) []byte  {
@@ -369,4 +377,30 @@ func GetConnIP(conn net.Conn) string  {
 	//port := strings.Split(addr, ":")[1]
 
 	return ip
+}
+func GenerateBitMatrix(matrix []byte, k, m, w int) []byte {
+	bitMatrix := make([]byte, k*m*w*w)
+	rowelts := k * w
+	rowindex := 0
+
+	for i := 0; i < m; i++ {
+		colindex := rowindex
+		for j := 0; j < k; j++ {
+			elt := matrix[i*k+j]
+			for x := 0; x < w; x++ {
+				for l := 0; l < w; l++ {
+					if (elt & (1 << l)) > 0 {
+						bitMatrix[colindex+x+l*rowelts] = 1
+					} else {
+						bitMatrix[colindex+x+l*rowelts] = 0
+					}
+				}
+				elt = config.Gfmul(elt, 2)
+			}
+			colindex += w
+		}
+		rowindex += rowelts * w
+	}
+	return bitMatrix
+
 }

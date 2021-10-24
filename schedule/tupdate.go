@@ -40,28 +40,28 @@ func (p TUpdate) Init()  {
 	p.CMDWaitingQueue = make([]config.CMD, 0, 100)
 }
 
-func (p TUpdate) HandleReq(reqData config.ReqData)  {
-	sid := reqData.SID
-	blockID := reqData.BlockID
-	stripeID := reqData.StripeID
-	tasks := GetTransmitTasks(blockID)
-	for _, task := range tasks{
-		fromIP := common.GetDataNodeIP(int(task.Start))
-		toIP := common.GetDataNodeIP(int(task.End))
-		toIPs := make([]string, 1)
-		toIPs = append(toIPs, toIP)
-		cmd := config.CMD{
-			CreatorIP: common.GetLocalIP(),
-			SID:      sid,
-			StripeID: stripeID,
-			BlockID:  blockID,
-			ToIPs:    toIPs,
-			FromIP:   fromIP,
-		}
-		fmt.Printf("发送命令给 node: %s，使其将Block %d 发送给 %v\n", fromIP, blockID, toIP)
-		common.SendData(cmd, toIP, config.NodeCMDListenPort, "")
-		PushWaitingACKGroup(cmd.SID, cmd.BlockID,1, common.GetLocalIP(), "")
-	}
+func (p TUpdate) HandleReq(reqs []config.ReqData)  {
+	//sid := reqData.SID
+	//blockID := reqData.BlockID
+	//stripeID := reqData.StripeID
+	//tasks := GetTransmitTasks(blockID)
+	//for _, task := range tasks{
+	//	fromIP := common.GetDataNodeIP(int(task.Start))
+	//	toIP := common.GetDataNodeIP(int(task.End))
+	//	toIPs := make([]string, 1)
+	//	toIPs = append(toIPs, toIP)
+	//	cmd := config.CMD{
+	//		CreatorIP: common.GetLocalIP(),
+	//		SID:      sid,
+	//		StripeID: stripeID,
+	//		BlockID:  blockID,
+	//		ToIPs:    toIPs,
+	//		FromIP:   fromIP,
+	//	}
+	//	fmt.Printf("发送命令给 node: %s，使其将Block %d 发送给 %v\n", fromIP, blockID, toIP)
+	//	common.SendData(cmd, toIP, config.NodeCMDListenPort, "")
+	//	PushWaitingACKGroup(cmd.SID, cmd.BlockID,1, common.GetLocalIP(), "")
+	//}
 }
 
 func (p TUpdate) HandleTD(td config.TD)  {
@@ -160,7 +160,7 @@ func GetMSTPath(matrix, nodeIndexs config.Matrix) config.Matrix   {
 	return path
 }
 func GetTransmitTasks(blockID int) []Task {
-	parities :=	common.GetRelatedParities(blockID)
+	parities :=	common.RelatedParities(blockID)
 	nodeID := common.GetNodeID(blockID)
 	relatedParityMatrix, nodeIndexs := getAdjacentMatrix(parities, nodeID, nodeMatrix)
 	path := GetMSTPath(relatedParityMatrix, nodeIndexs)

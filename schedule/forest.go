@@ -12,7 +12,7 @@ type Forest struct {
 func (p Forest) Init()  {
 
 }
-func (p Forest) HandleReq(reqData config.ReqData)  {
+func (p Forest) HandleReq(reqs []config.ReqData)  {
 
 }
 func (p Forest) HandleTD(td config.TD)  {
