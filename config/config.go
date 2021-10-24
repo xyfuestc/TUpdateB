@@ -1,7 +1,6 @@
 package config
 
 import (
-	"EC/common"
 	"fmt"
 	"github.com/templexxx/reedsolomon"
 	"time"
@@ -16,7 +15,7 @@ const MaxBatchSize int = 100
 const ECMode string = "RS" // or "XOR"
 var CurPolicyVal = BASE
 var OutFilePath = "../request/proj_4.csv.txt"
-
+var BitMatrix = make([]byte, K*M*W*W)
 
 type OPType int
 /******the structure of one line for the update stream file*******/
@@ -180,30 +179,39 @@ type Rack struct {
 var RS *reedsolomon.RS
 
 type Matrix []byte
-const INFINITY = 65535
-var BitMatrix = make([]byte, K*M*W*W)
+
 
 func Init(){
-	//1.init GM, get BitMatrix
 	fmt.Printf("Init GM...\n")
 	r, _ := reedsolomon.New(K, M)
 	RS = r
-	BitMatrix = common.GenerateBitMatrix(RS.GenMatrix, K, M, W)
+	BitMatrix = GenerateBitMatrix(RS.GenMatrix, K, M, W)
 
-	////3.init racks
-	//for g := 0; g < len(Racks); g++ {
-	//	strIP1 := BaseIP + strconv.FormatInt(int64(start), 10)
-	//	strIP2 := BaseIP + strconv.FormatInt(int64(start+1), 10)
-	//	strIP3 := BaseIP + strconv.FormatInt(int64(start+2), 10)
-	//	Racks[g] = Rack{
-	//		Nodes:        []string{strIP1, strIP2, strIP3},
-	//		NodeNum:      3,
-	//		NumOfUpdates: 0,
-	//		Stripes:      map[int][]int{},
-	//		GateIP:       "",
-	//	}
-	//	start+=3
-	//	fmt.Printf("Rack %d has nodes: %s, %s, %s\n", g, strIP1, strIP2, strIP3)
-	//}
 }
 
+func GenerateBitMatrix(matrix []byte, k, m, w int) []byte {
+	bitMatrix := make([]byte, k*m*w*w)
+	rowelts := k * w
+	rowindex := 0
+
+	for i := 0; i < m; i++ {
+		colindex := rowindex
+		for j := 0; j < k; j++ {
+			elt := matrix[i*k+j]
+			for x := 0; x < w; x++ {
+				for l := 0; l < w; l++ {
+					if (elt & (1 << l)) > 0 {
+						bitMatrix[colindex+x+l*rowelts] = 1
+					} else {
+						bitMatrix[colindex+x+l*rowelts] = 0
+					}
+				}
+				elt = Gfmul(elt, 2)
+			}
+			colindex += w
+		}
+		rowindex += rowelts * w
+	}
+	return bitMatrix
+
+}

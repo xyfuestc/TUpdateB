@@ -378,29 +378,3 @@ func GetConnIP(conn net.Conn) string  {
 
 	return ip
 }
-func GenerateBitMatrix(matrix []byte, k, m, w int) []byte {
-	bitMatrix := make([]byte, k*m*w*w)
-	rowelts := k * w
-	rowindex := 0
-
-	for i := 0; i < m; i++ {
-		colindex := rowindex
-		for j := 0; j < k; j++ {
-			elt := matrix[i*k+j]
-			for x := 0; x < w; x++ {
-				for l := 0; l < w; l++ {
-					if (elt & (1 << l)) > 0 {
-						bitMatrix[colindex+x+l*rowelts] = 1
-					} else {
-						bitMatrix[colindex+x+l*rowelts] = 0
-					}
-				}
-				elt = config.Gfmul(elt, 2)
-			}
-			colindex += w
-		}
-		rowindex += rowelts * w
-	}
-	return bitMatrix
-
-}
