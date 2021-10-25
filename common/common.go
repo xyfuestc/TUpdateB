@@ -221,16 +221,14 @@ func RelatedParityNodes(parities []byte) []byte {
 func GetRelatedParityIPs(blockID int) []string {
 	parityIDs := RelatedParities(blockID)
 	parityIPs := make([]string, 0, len(parityIDs))
-	nodes := make([]byte, 0, config.M)
 	for _, parityID := range parityIDs {
 		nodeID := int(parityID)/config.W + config.K
 		nodeIP := config.NodeIPs[byte(nodeID)]
-		if  arrays.Contains(nodes, nodeIP) < 0 {
+		if  arrays.Contains(parityIPs, nodeIP) < 0 {
 			parityIPs = append(parityIPs, nodeIP)
 		}
 	}
 	return parityIPs
-
 }
 
 func ReadBlock(blockID int) []byte  {

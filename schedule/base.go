@@ -109,8 +109,8 @@ func (p Base) handleOneBlock(reqData config.ReqData)  {
 	relativeParityIDs := common.RelatedParities(reqData.BlockID)
 	cmd := common.GetCMDFromReqData(reqData)
 
-	fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", reqData.SID,
-		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, relativeParityIDs)
+	fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v (%v)\n", reqData.SID,
+		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, relativeParityIDs, cmd.ToIPs)
 	common.SendData(cmd, common.GetNodeIP(nodeID), config.NodeCMDListenPort, "")
 }
 func (p Base) RecordSIDAndReceiverIP(sid int, ip string)  {
