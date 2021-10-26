@@ -14,7 +14,7 @@ const ChunkSize int = 1024 * 1024 //1MB
 const MaxBatchSize int = 100
 const ECMode string = "RS" // or "XOR"
 var CurPolicyVal = BASE
-var OutFilePath = "../request/proj_4.csv.txt"
+var OutFilePath = "../request/proj_4.csv.bak.txt"
 var BitMatrix = make([]byte, K*M*W*W)
 
 type OPType int
