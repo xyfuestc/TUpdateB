@@ -232,7 +232,7 @@ func GetRelatedParityIPs(blockID int) []string {
 }
 
 func ReadBlock(blockID int) []byte  {
-	index := blockID /config.K
+	index := GetIndex(blockID)
 	//read data from disk
 	var buff = make([]byte, config.ChunkSize, config.ChunkSize)
 	file, err := os.OpenFile(config.DataFilePath, os.O_RDONLY, 0)
@@ -252,7 +252,7 @@ func ReadBlock(blockID int) []byte  {
 	return buff
 }
 func WriteBlock(blockID int, buff []byte)  {
-	index := blockID / config.K
+	index := GetIndex(blockID)
 	file, err := os.OpenFile(config.DataFilePath, os.O_WRONLY, 0)
 
 	if err != nil {
@@ -388,4 +388,7 @@ func GetConnIP(conn net.Conn) string  {
 	//port := strings.Split(addr, ":")[1]
 
 	return ip
+}
+func GetIndex(blockID int) int {
+	return blockID / (config.K * config.W)
 }
