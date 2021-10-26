@@ -46,6 +46,8 @@ func (p Base) HandleCMD(cmd config.CMD) {
 	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID)
 
 	for _, parityIP := range cmd.ToIPs{
+		pushACK()
+
 		td := &config.TD{
 			BlockID: cmd.BlockID,
 			Buff: buff,
@@ -58,7 +60,7 @@ func (p Base) HandleCMD(cmd config.CMD) {
 		end := time.Now().UnixNano() / 1e6
 		fmt.Printf("发送td(sid:%d, blockID:%d),从%s到%s, 用时：%vms \n", cmd.SID, cmd.BlockID, common.GetLocalIP(), parityIP, end-begin)
 
-		pushACK()
+
 	}
 }
 func pushACK()  {
@@ -79,6 +81,7 @@ func (p Base) HandleTD(td config.TD)  {
 	ReturnACK(ack)
 }
 func (p Base) HandleACK(ack config.ACK)  {
+	fmt.Printf("当前剩余ack：%d\n", RequireACKs)
 	popACK()
 	if NeedReturnACK() {
 		ReturnACK(ack)
