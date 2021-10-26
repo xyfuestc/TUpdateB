@@ -14,7 +14,10 @@ var NumOfCurNeedUpdateBlocks = 0
 var round = 0
 var IsRunning = false   //check CAU is running or not
 const maxBatchSize = 100
-var totalReqChunks = make([]config.ReqData, config.MaxBatchSize, config.MaxBatchSize)
+var totalBlocks = make([]int, config.MaxBatchSize, config.MaxBatchSize)
+var NumOfBlocks = 0
+var Now float32 = 0
+var curDistinctBlocks = make([]int, 0, 100)
 
 func (p CAU) Init()  {
 
@@ -39,7 +42,7 @@ func (p CAU) HandleTD(td config.TD)  {
 		oldBuff := common.ReadBlock(td.BlockID)
 		//默认rootP为P0
 		row := 0
-		newBuff := make([]byte, config.ChunkSize)
+		newBuff := make([]byte, config.BlockSize)
 		//找到对应的Di
 		if config.ECMode == "RS" {
 			col := td.BlockID % config.K
@@ -78,7 +81,7 @@ func (p CAU) HandleTD(td config.TD)  {
 		//received data
 		delta := td.Buff
 		oldBuff := common.ReadBlock(td.BlockID)
-		newBuff := make([]byte, config.ChunkSize)
+		newBuff := make([]byte, config.BlockSize)
 		if config.ECMode == "RS" {
 			row := common.GetParityIDFromIP(td.ToIP)
 			col := td.BlockID - (td.BlockID/config.K)*config.K
@@ -97,7 +100,7 @@ func (p CAU) HandleTD(td config.TD)  {
 	case config.PDU:
 		delta := td.Buff
 		oldBuff := common.ReadBlock(td.BlockID)
-		newBuff := make([]byte, config.ChunkSize)
+		newBuff := make([]byte, config.BlockSize)
 		if config.ECMode == "RS" {
 			row := common.GetParityIDFromIP(td.ToIP)
 			col := td.BlockID - (td.BlockID/config.K)*config.K
@@ -121,19 +124,55 @@ func (p CAU) HandleTD(td config.TD)  {
 	}
 }
 
-func (p CAU) HandleReq(reqs []config.ReqData)  {
+func (p CAU) HandleReq(blocks []int)  {
+	totalBlocks = blocks
+	NumOfBlocks = len(totalBlocks)
+	fmt.Printf("一共接收到%d个请求...\n", len(totalBlocks))
+	curMatchBlocks := make([]int, 0, 100)
+	for len(totalBlocks) > 0 {
+		//获取curDistinctBlocks
+		if len(totalBlocks) > 100 {
+			curMatchBlocks = totalBlocks[:100]
+			for _, b := range curMatchBlocks{
+				if arrays.Contains(curDistinctBlocks, b) < 0 {
+					curDistinctBlocks = append(curDistinctBlocks, b)
+				}
+			}
+			totalBlocks = totalBlocks[100:]
+			//fmt.Printf("剩余请求数量：%d\n",len(totalBlocks))
 
-	//totalReqChunks = append(totalReqChunks, reqData)
-	//if len(totalReqChunks) >= maxBatchSize && !IsRunning {
-	//	fmt.Printf("Starting cau update algorithm...\n")
-	//	fmt.Printf("==================================\n")
-	//	IsRunning = true
-	//	curReqChunks := totalReqChunks[:maxBatchSize]
-	//	totalReqChunks = totalReqChunks[maxBatchSize:]
-	//	p.rackUpdate(curReqChunks)
-	//	p.rackCompare(config.Racks[0], config.Racks[2])
-	//	p.rackCompare(config.Racks[1], config.Racks[2])
-	//}
+		}else {
+			curMatchBlocks = totalBlocks
+			//fmt.Printf("最后处理%d个请求...\n", len(curMatchBlocks))
+			for _, b := range curMatchBlocks{
+				if arrays.Contains(curDistinctBlocks, b) < 0 {
+					curDistinctBlocks = append(curDistinctBlocks, b)
+				}
+			}
+			totalBlocks = make([]int, 0, 1000000)
+		}
+		//执行cau
+		fmt.Printf("第%d轮 CAU：获取%d个请求，实际处理%d个block\n", round, len(curMatchBlocks), len(curDistinctBlocks))
+
+		cau()
+		round++
+
+		p.Clear()
+	}
+
+	sumTime := float32(Now)*1.0/1000
+	averageOneUpdateSpeed := sumTime / float32(NumOfBlocks)
+	throughput :=  float32(NumOfBlocks) * ( float32(config.BlockSize) / config.Megabyte) / sumTime
+
+	fmt.Printf("CAU 总耗时: %0.2fs, 完成更新任务: %d, 单个更新速度: %0.4fs, 吞吐量: %0.2f个/s",
+		sumTime, NumOfBlocks, averageOneUpdateSpeed, throughput)
+
+	p.Clear()
+
+}
+
+func cau() {
+
 }
 
 func (p CAU) HandleCMD(cmd config.CMD)  {
@@ -226,9 +265,12 @@ func (p CAU) HandleACK(ack config.ACK)  {
 	//}
 }
 func (p CAU) Clear()  {
-
+	curDistinctBlocks = make([]int, 0, 100)
+	sid = 0
+	AckReceiverIPs = make(map[int]string)
+	RequireACKs = make(map[int]int)
 }
 
-func (p CAU)	RecordSIDAndReceiverIP(sid int, ip string)()  {
+func (p CAU) RecordSIDAndReceiverIP(sid int, ip string)()  {
 
 }

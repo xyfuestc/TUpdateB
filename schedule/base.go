@@ -9,7 +9,7 @@ import (
 
 type Policy interface {
 	Init()
-	HandleReq(reqs []config.ReqData)
+	HandleReq(blocks []int)
 	HandleCMD(cmd config.CMD)
 	HandleTD(td config.TD)
 	HandleACK(ack config.ACK)
@@ -23,6 +23,7 @@ type Base struct {
 var CurPolicy Policy = nil
 var AckReceiverIPs = make(map[int]string)
 var RequireACKs = make(map[int]int)
+var sid = 0
 func SetPolicy(policyType config.PolicyType)  {
 	switch policyType {
 	case config.BASE:
@@ -109,14 +110,21 @@ func ReturnACK(ack config.ACK) {
 func (p Base) Init()  {
 }
 
-func (p Base) HandleReq(reqs []config.ReqData)  {
+func (p Base) HandleReq(blocks []int)  {
 
-	for _, req := range reqs{
-		pushACK(req.SID)
+	for _, _ = range blocks {
+		pushACK(sid)
+		sid++
 	}
 
-	for _, req := range reqs{
+	sid = 0
+	for _, b := range blocks {
+		req := config.ReqData{
+			BlockID: b,
+			SID: sid,
+		}
 		p.handleOneBlock(req)
+		sid++
 	}
 }
 func (p Base) handleOneBlock(reqData config.ReqData)  {
@@ -132,6 +140,7 @@ func (p Base) RecordSIDAndReceiverIP(sid int, ip string)  {
 	AckReceiverIPs[sid] = ip
 }
 func (p Base) Clear()  {
+	sid = 0
 	AckReceiverIPs = make(map[int]string)
 	RequireACKs = make(map[int]int)
 }

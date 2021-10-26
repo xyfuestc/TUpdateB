@@ -21,8 +21,9 @@ var actualUpdatedBlocks = 0
 var sidCounter = 0
 var beginTime time.Time
 var endTime time.Time
-var totalBlocks = make([]config.ReqData, 0, 1000000)
+var totalBlocks = make([]int, 0, 1000000)
 var finished bool = false
+
 func handleACK(conn net.Conn) {
 	defer conn.Close()
 	ack := common.GetACK(conn)
@@ -34,6 +35,7 @@ func handleACK(conn net.Conn) {
 		fmt.Printf("总请求数: %d, 用时: %ds\n", numOfReq,
 											endTime.Unix() - beginTime.Unix())
 		clearUpdates()
+		schedule.GetCurPolicy().Clear()
 
 	}
 }
@@ -54,7 +56,7 @@ func PrintGenMatrix(gm []byte)  {
 func clearUpdates() {
 	numOfReq = 0
 	finished = true
-	totalBlocks = make([]config.ReqData, 0, 1000000)
+	totalBlocks = make([]int, 0, 1000000)
 }
 func main() {
 	beginTime = time.Now()
@@ -86,12 +88,8 @@ func main() {
 		}
 		userRequestStr := strings.Split(string(lineData), ",")
 		blockID, _ := strconv.Atoi(userRequestStr[0])
-		request := config.ReqData{
-			SID:      sidCounter,
-			BlockID:  blockID,
-			StripeID: common.GetStripeIDFromBlockID(blockID),
-		}
-		totalBlocks = append(totalBlocks, request)
+
+		totalBlocks = append(totalBlocks, blockID)
 
 
 		sidCounter++

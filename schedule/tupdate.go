@@ -40,7 +40,7 @@ func (p TUpdate) Init()  {
 	p.CMDWaitingQueue = make([]config.CMD, 0, 100)
 }
 
-func (p TUpdate) HandleReq(reqs []config.ReqData)  {
+func (p TUpdate) HandleReq(blocks []int)  {
 	//sid := reqData.SID
 	//blockID := reqData.BlockID
 	//stripeID := reqData.StripeID

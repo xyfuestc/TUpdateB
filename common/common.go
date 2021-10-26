@@ -234,19 +234,19 @@ func GetRelatedParityIPs(blockID int) []string {
 func ReadBlock(blockID int) []byte  {
 	index := GetIndex(blockID)
 	//read data from disk
-	var buff = make([]byte, config.ChunkSize, config.ChunkSize)
+	var buff = make([]byte, config.BlockSize, config.BlockSize)
 	file, err := os.OpenFile(config.DataFilePath, os.O_RDONLY, 0)
 
 	if err != nil {
 		log.Fatalln("打开文件出错: ", err)
 	}
 	defer file.Close()
-	readSize, err := file.ReadAt(buff, int64(index*config.ChunkSize))
+	readSize, err := file.ReadAt(buff, int64(index*config.BlockSize))
 
 	if err != nil {
 		log.Fatal("读取文件失败：", err)
 	}
-	if readSize != config.ChunkSize {
+	if readSize != config.BlockSize {
 		log.Fatal("读取数据块失败！读取大小为：", readSize)
 	}
 	return buff
@@ -259,7 +259,7 @@ func WriteBlock(blockID int, buff []byte)  {
 		log.Fatalln("打开文件出错: ", err)
 	}
 	defer file.Close()
-	_, err = file.WriteAt(buff, int64(index*config.ChunkSize))
+	_, err = file.WriteAt(buff, int64(index*config.BlockSize))
 	log.Printf("write block %d done.\n", blockID)
 }
 func GetNodeID(blockID int) int {
@@ -283,14 +283,14 @@ func GetNodeIP(nodeID int) string {
 	return config.NodeIPs[nodeID]
 }
 func RandWriteBlockAndRetDelta(blockID int) []byte  {
-	//newDataStr := RandStringBytesMaskImpr(config.ChunkSize)
-	newDataStr := uniuri.NewLen(config.ChunkSize)
+	//newDataStr := RandStringBytesMaskImpr(config.BlockSize)
+	newDataStr := uniuri.NewLen(config.BlockSize)
 
 	newBuff := []byte(newDataStr)
 	/*****read old data*******/
 	oldBuff := ReadBlock(blockID)
 	/*****compute new delta data*******/
-	deltaBuff := make([]byte, config.ChunkSize, config.ChunkSize)
+	deltaBuff := make([]byte, config.BlockSize, config.BlockSize)
 	for i := 0; i < len(newBuff); i++ {
 		deltaBuff[i] = newBuff[i] ^ oldBuff[i]
 	}
@@ -303,7 +303,7 @@ func WriteDeltaBlock(blockID int, deltaBuff []byte) []byte  {
 	/*****read old data*******/
 	oldBuff := ReadBlock(blockID)
 	/*****compute new delta data*******/
-	newBuff := make([]byte, config.ChunkSize, config.ChunkSize)
+	newBuff := make([]byte, config.BlockSize, config.BlockSize)
 	for i := 0; i < len(newBuff); i++ {
 		newBuff[i] = deltaBuff[i] ^ oldBuff[i]
 	}
@@ -377,8 +377,8 @@ func GetReq(conn net.Conn) config.ReqData  {
 	return req
 }
 func GetBlocksFromOneRequest(userRequest config.UserRequest) (int,int)  {
-	minBlockID := userRequest.AccessOffset / config.ChunkSize
-	maxBlockID := int(math.Ceil(float64((userRequest.AccessOffset+userRequest.OperatedSize)*1.0 / config.ChunkSize)))
+	minBlockID := userRequest.AccessOffset / config.BlockSize
+	maxBlockID := int(math.Ceil(float64((userRequest.AccessOffset+userRequest.OperatedSize)*1.0 / config.BlockSize)))
 
 	return minBlockID, maxBlockID
 }
