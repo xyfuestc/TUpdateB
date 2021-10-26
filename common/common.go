@@ -83,15 +83,19 @@ func SendData(data interface{}, targetIP string, port string, retType string) in
 	conn, err := net.Dial("tcp", addr)
 
 	if err != nil {
-		conn.Close()
-		log.Fatal("common: SendData Dial error: ", err)
+		if conn != nil {
+			conn.Close()
+		}
+		log.Fatal("common: SendData Dial error: ", err, " target: ", addr)
 	}
 	//2.发送数据
 	enc := gob.NewEncoder(conn)
 	err = enc.Encode(data)
 	if err != nil {
-		conn.Close()
-		log.Fatal("common: SendData gob encode error:  ", err)
+		if conn != nil {
+			conn.Close()
+		}
+		log.Fatal("common: SendData gob encode error:  ", err, " target: ", addr)
 	}
 
 	return nil
@@ -315,13 +319,15 @@ func WriteDeltaBlock(blockID int, deltaBuff []byte) []byte  {
 }
 
 func GetCMD(conn net.Conn) config.CMD  {
-	defer conn.Close()
+	//defer conn.Close()
 	//decode the req
 	dec := gob.NewDecoder(conn)
 	var cmd config.CMD
 	err := dec.Decode(&cmd)
 	if err != nil {
-		conn.Close()
+		if conn != nil {
+			conn.Close()
+		}
 		log.Fatal("GetCMD : Decode error: ", err)
 
 	}
@@ -353,7 +359,9 @@ func GetACK(conn net.Conn) config.ACK {
 	var ack config.ACK
 	err := dec.Decode(&ack)
 	if err != nil {
-		conn.Close()
+		if conn != nil {
+			conn.Close()
+		}
 		log.Fatalln("GetACK : Decode error: ", err)
 
 	}
@@ -367,7 +375,9 @@ func GetTD(conn net.Conn) config.TD {
 	var td config.TD
 	err := dec.Decode(&td)
 	if err != nil {
-		conn.Close()
+		if conn != nil {
+			conn.Close()
+		}
 		log.Fatalln("GetTD from ", GetConnIP(conn), "result in decoding error: ", err, "blockID: ", td.BlockID, "sid: ", td.SID)
 	}
 	conn.Close()
@@ -381,7 +391,9 @@ func GetReq(conn net.Conn) config.ReqData  {
 	var req config.ReqData
 	err := dec.Decode(&req)
 	if err != nil {
-		conn.Close()
+		if conn != nil {
+			conn.Close()
+		}
 		log.Fatalln("GetReq: decode error: ", err)
 	}
 	conn.Close()
