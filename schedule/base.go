@@ -87,8 +87,12 @@ func (p Base) HandleTD(td config.TD)  {
 func (p Base) HandleACK(ack config.ACK)  {
 	fmt.Printf("当前剩余ack：%d\n", RequireACKs)
 	popACK()
-	if NeedReturnACK() {
-		ReturnACK(ack)
+	if NeedReturnACK()  {
+		//ms不需要反馈ack
+		if common.GetLocalIP() != config.MSIP {
+			ReturnACK(ack)
+		}
+
 	}
 }
 func ReturnACK(ack config.ACK) {
