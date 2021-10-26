@@ -70,8 +70,11 @@ func (p Base) HandleCMD(cmd config.CMD) {
 func pushACK(sid int)  {
 	if _, ok := RequireACKs[sid]; !ok {
 		RequireACKs[sid] = 1
+	}else{
+		RequireACKs[sid]++
 	}
-	RequireACKs[sid]++
+
+
 }
 
 func popACK(sid int)  {
