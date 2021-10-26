@@ -4,6 +4,7 @@ import (
 	"EC/common"
 	"EC/config"
 	"fmt"
+	"github.com/wxnacy/wgo/arrays"
 	"time"
 )
 
@@ -68,6 +69,9 @@ func (p Base) HandleCMD(cmd config.CMD) {
 	}
 }
 func pushACK(sid int)  {
+	if arrays.Contains(RequireACKs, sid) < 0 {
+		RequireACKs = append(RequireACKs, sid)
+	}
 	RequireACKs[sid]++
 }
 
