@@ -45,8 +45,12 @@ func GetCurPolicy() Policy {
 func (p Base) HandleCMD(cmd config.CMD) {
 	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID)
 
-	for _, parityIP := range cmd.ToIPs{
+	for _, _ = range cmd.ToIPs {
 		pushACK()
+	}
+
+	for _, parityIP := range cmd.ToIPs{
+
 
 		td := &config.TD{
 			BlockID: cmd.BlockID,
