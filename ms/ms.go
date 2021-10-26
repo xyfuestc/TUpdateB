@@ -28,7 +28,6 @@ func handleACK(conn net.Conn) {
 	defer conn.Close()
 	ack := common.GetACK(conn)
 	numOfACK++
-	fmt.Printf("ms received chunk %d's ack：%d\n",ack.BlockID, ack.AckID)
 	schedule.GetCurPolicy().HandleACK(ack)
 	if schedule.RequireACKs == 0 {
 		fmt.Printf("=====================================")

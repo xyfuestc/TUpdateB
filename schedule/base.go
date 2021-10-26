@@ -4,6 +4,7 @@ import (
 	"EC/common"
 	"EC/config"
 	"fmt"
+	"time"
 )
 
 type Policy interface {
@@ -52,8 +53,10 @@ func (p Base) HandleCMD(cmd config.CMD) {
 			ToIP: parityIP,
 			SID: cmd.SID,
 		}
-		fmt.Printf("send td(sid:%d, blockID:%d) to %s\n", cmd.SID, cmd.BlockID, parityIP)
+		begin := time.Now().UnixNano() / 1e6
 		common.SendData(td, parityIP, config.NodeTDListenPort, "")
+		end := time.Now().UnixNano() / 1e6
+		fmt.Printf("发送td(sid:%d, blockID:%d),从%s到%s, 用时：%vms \n", cmd.SID, cmd.BlockID, common.GetLocalIP(), parityIP, end-begin)
 
 		pushACK()
 	}
@@ -76,7 +79,6 @@ func (p Base) HandleTD(td config.TD)  {
 	ReturnACK(ack)
 }
 func (p Base) HandleACK(ack config.ACK)  {
-	fmt.Printf("收到ack: sid: %d, id: %d\n", ack.SID, ack.BlockID)
 	popACK()
 	if NeedReturnACK() {
 		ReturnACK(ack)
