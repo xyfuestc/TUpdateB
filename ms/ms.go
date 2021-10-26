@@ -27,7 +27,7 @@ func handleACK(conn net.Conn) {
 	defer conn.Close()
 	ack := common.GetACK(conn)
 	schedule.GetCurPolicy().HandleACK(ack)
-	if schedule.RequireACKs == 0 {
+	if isFinished() {
 		fmt.Printf("=====================================\n")
 		fmt.Printf("结束!\n")
 		endTime = time.Now()
@@ -119,4 +119,8 @@ func listenACK(listen net.Listener) {
 		}
 		go handleACK(conn)
 	}
+}
+
+func isFinished() bool {
+	return schedule.ACKIsEmpty()
 }

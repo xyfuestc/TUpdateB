@@ -22,7 +22,7 @@ type Base struct {
 }
 var CurPolicy Policy = nil
 var AckReceiverIPs = make(map[int]string)
-var RequireACKs = 0
+var RequireACKs = make([]int, 0, 1000000)
 func SetPolicy(policyType config.PolicyType)  {
 	switch policyType {
 	case config.BASE:
@@ -46,7 +46,7 @@ func (p Base) HandleCMD(cmd config.CMD) {
 	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID)
 
 	for _, _ = range cmd.ToIPs {
-		pushACK()
+		pushACK(cmd.SID)
 	}
 
 	for _, parityIP := range cmd.ToIPs{
@@ -67,12 +67,12 @@ func (p Base) HandleCMD(cmd config.CMD) {
 
 	}
 }
-func pushACK()  {
-	RequireACKs++
+func pushACK(sid int)  {
+	RequireACKs[sid]++
 }
 
-func popACK()  {
-	RequireACKs--
+func popACK(sid int)  {
+	RequireACKs[sid]--
 }
 
 func (p Base) HandleTD(td config.TD)  {
@@ -86,33 +86,29 @@ func (p Base) HandleTD(td config.TD)  {
 }
 func (p Base) HandleACK(ack config.ACK)  {
 	fmt.Printf("当前剩余ack：%d\n", RequireACKs)
-	popACK()
-	if NeedReturnACK()  {
+	popACK(ack.SID)
+	if RequireACKs[ack.SID] == 0 {
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)
 		}
-
 	}
 }
 func ReturnACK(ack config.ACK) {
 	ackReceiverIP := AckReceiverIPs[ack.SID]
 	common.SendData(ack, ackReceiverIP, config.NodeACKListenPort, "ack")
-	fmt.Printf("任务已完成，给上级：%s返回ack: sid: %d, id: %d\n", ackReceiverIP, ack.SID, ack.BlockID)
+	fmt.Printf("任务已完成，给上级：%s返回ack: sid: %d, blockID: %d\n", ackReceiverIP, ack.SID, ack.BlockID)
+}
 
-}
-func NeedReturnACK() bool {
-	if RequireACKs == 0  {
-			return true
-	}
-	return false
-}
 func (p Base) Init()  {
 }
 
 func (p Base) HandleReq(reqs []config.ReqData)  {
 
-	RequireACKs = len(reqs)
+	for _, req := range reqs{
+		RequireACKs[req.SID]++
+	}
+
 	for _, req := range reqs{
 		p.handleOneBlock(req)
 	}
@@ -131,6 +127,15 @@ func (p Base) RecordSIDAndReceiverIP(sid int, ip string)  {
 }
 func (p Base) Clear()  {
 	AckReceiverIPs = make(map[int]string)
+	RequireACKs = make([]int, 0, 1000000)
+}
+func ACKIsEmpty() bool {
+	for _, num := range RequireACKs {
+		if num > 0 {
+			return false
+		}
+	}
+	return true
 }
 
 
