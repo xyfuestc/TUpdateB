@@ -360,7 +360,7 @@ func GetTD(conn net.Conn) config.TD {
 	var td config.TD
 	err := dec.Decode(&td)
 	if err != nil {
-		log.Fatalln("GetTD: decode error: ", err)
+		log.Fatalln("GetTD from ", GetConnIP(conn), "result in decoding error: ", err, "blockID: ", td.BlockID, "sid: ", td.SID)
 	}
 	return td
 }
