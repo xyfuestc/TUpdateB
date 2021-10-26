@@ -241,7 +241,7 @@ func ReadBlock(blockID int) []byte  {
 		log.Fatalln("打开文件出错: ", err)
 	}
 	defer file.Close()
-	readSize, err := file.ReadAt(buff, int64((index-1)*config.ChunkSize))
+	readSize, err := file.ReadAt(buff, int64(index*config.ChunkSize))
 
 	if err != nil {
 		log.Fatal("读取文件失败：", err)
@@ -259,7 +259,7 @@ func WriteBlock(blockID int, buff []byte)  {
 		log.Fatalln("打开文件出错: ", err)
 	}
 	defer file.Close()
-	_, err = file.WriteAt(buff, int64((index-1)*config.ChunkSize))
+	_, err = file.WriteAt(buff, int64(index*config.ChunkSize))
 	log.Printf("write block %d done.\n", blockID)
 }
 func GetNodeID(blockID int) int {
