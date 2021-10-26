@@ -15,7 +15,6 @@ import (
 	"time"
 )
 var numOfReq = 0
-var numOfACK = 0
 var curReqChunks = make([]config.MetaInfo, config.MaxBatchSize, config.MaxBatchSize)
 var round = 0
 var actualUpdatedBlocks = 0
@@ -23,19 +22,19 @@ var sidCounter = 0
 var beginTime time.Time
 var endTime time.Time
 var totalBlocks = make([]config.ReqData, 0, 1000000)
-
+var finished bool = false
 func handleACK(conn net.Conn) {
 	defer conn.Close()
 	ack := common.GetACK(conn)
-	numOfACK++
 	schedule.GetCurPolicy().HandleACK(ack)
 	if schedule.RequireACKs == 0 {
-		fmt.Printf("=====================================")
-		fmt.Printf("结束!")
+		fmt.Printf("=====================================\n")
+		fmt.Printf("结束!\n")
 		endTime = time.Now()
-		fmt.Printf("Total request: %d, spend time: %ds\n", numOfReq,
+		fmt.Printf("总请求数: %d, 用时: %ds\n", numOfReq,
 											endTime.Unix() - beginTime.Unix())
 		clearUpdates()
+
 	}
 }
 func PrintGenMatrix(gm []byte)  {
@@ -53,9 +52,9 @@ func PrintGenMatrix(gm []byte)  {
 	}
 }
 func clearUpdates() {
-	fmt.Printf("clear ack, req...\n")
-	numOfACK = 0
 	numOfReq = 0
+	finished = true
+	totalBlocks = make([]config.ReqData, 0, 1000000)
 }
 func main() {
 	beginTime = time.Now()
@@ -98,12 +97,16 @@ func main() {
 		sidCounter++
 	}
 	defer blockFile.Close()
-
+	numOfReq = sidCounter
 	fmt.Printf("总共block请求数量为：%d\n", sidCounter)
 	schedule.GetCurPolicy().HandleReq(totalBlocks)
 	//保证主线程运行
+
+
 	for  {
-		
+		if finished {
+			break
+		}
 	}
 	
 }
