@@ -4,7 +4,6 @@ import (
 	"EC/common"
 	"EC/config"
 	"fmt"
-	"github.com/wxnacy/wgo/arrays"
 	"time"
 )
 
@@ -23,7 +22,7 @@ type Base struct {
 }
 var CurPolicy Policy = nil
 var AckReceiverIPs = make(map[int]string)
-var RequireACKs = make([]int, 0, 1000000)
+var RequireACKs = make(map[int]int)
 func SetPolicy(policyType config.PolicyType)  {
 	switch policyType {
 	case config.BASE:
@@ -69,8 +68,8 @@ func (p Base) HandleCMD(cmd config.CMD) {
 	}
 }
 func pushACK(sid int)  {
-	if arrays.Contains(RequireACKs, sid) < 0 {
-		RequireACKs = append(RequireACKs, sid)
+	if _, ok := RequireACKs[sid]; !ok {
+		RequireACKs[sid] = 1
 	}
 	RequireACKs[sid]++
 }
@@ -110,7 +109,7 @@ func (p Base) Init()  {
 func (p Base) HandleReq(reqs []config.ReqData)  {
 
 	for _, req := range reqs{
-		RequireACKs[req.SID]++
+		pushACK(req.SID)
 	}
 
 	for _, req := range reqs{
@@ -131,7 +130,7 @@ func (p Base) RecordSIDAndReceiverIP(sid int, ip string)  {
 }
 func (p Base) Clear()  {
 	AckReceiverIPs = make(map[int]string)
-	RequireACKs = make([]int, 0, 1000000)
+	RequireACKs = make(map[int]int)
 }
 func ACKIsEmpty() bool {
 	for _, num := range RequireACKs {
