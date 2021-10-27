@@ -10,9 +10,9 @@ import (
 type Policy interface {
 	Init()
 	HandleReq(blocks []int)
-	HandleCMD(cmd config.CMD)
-	HandleTD(td config.TD)
-	HandleACK(ack config.ACK)
+	HandleCMD(cmd *config.CMD)
+	HandleTD(td *config.TD)
+	HandleACK(ack *config.ACK)
 	Clear()
 	RecordSIDAndReceiverIP(sid int, ip string)
 }
@@ -43,16 +43,16 @@ func GetCurPolicy() Policy {
 	}
 	return CurPolicy
 }
-func (p Base) HandleCMD(cmd config.CMD) {
-	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID)
+func (p Base) HandleCMD(cmd *config.CMD) {
+	handlOneCMD(cmd)
+}
 
+func handlOneCMD(cmd *config.CMD)  {
+	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID)
 	for _, _ = range cmd.ToIPs {
 		pushACK(cmd.SID)
 	}
-
 	for _, parityIP := range cmd.ToIPs{
-
-
 		td := &config.TD{
 			BlockID: cmd.BlockID,
 			Buff: buff,
@@ -64,10 +64,9 @@ func (p Base) HandleCMD(cmd config.CMD) {
 		common.SendData(td, parityIP, config.NodeTDListenPort, "")
 		end := time.Now().UnixNano() / 1e6
 		fmt.Printf("发送td(sid:%d, blockID:%d),从%s到%s, 用时：%vms \n", cmd.SID, cmd.BlockID, common.GetLocalIP(), parityIP, end-begin)
-
-
 	}
 }
+
 func pushACK(sid int)  {
 	if _, ok := RequireACKs[sid]; !ok {
 		RequireACKs[sid] = 1
@@ -82,16 +81,19 @@ func popACK(sid int)  {
 	RequireACKs[sid]--
 }
 
-func (p Base) HandleTD(td config.TD)  {
+func (p Base) HandleTD(td *config.TD)  {
+	handleOneTD(td)
+}
+func handleOneTD(td *config.TD)  {
 	go common.WriteBlock(td.BlockID, td.Buff)
 	//返回ack
-	ack := config.ACK{
+	ack := &config.ACK{
 		SID:     td.SID,
 		BlockID: td.BlockID,
 	}
 	ReturnACK(ack)
 }
-func (p Base) HandleACK(ack config.ACK)  {
+func (p Base) HandleACK(ack *config.ACK)  {
 	fmt.Printf("当前剩余ack：%d\n", RequireACKs)
 	popACK(ack.SID)
 	if RequireACKs[ack.SID] == 0 {
@@ -101,7 +103,7 @@ func (p Base) HandleACK(ack config.ACK)  {
 		}
 	}
 }
-func ReturnACK(ack config.ACK) {
+func ReturnACK(ack *config.ACK) {
 	ackReceiverIP := AckReceiverIPs[ack.SID]
 	common.SendData(ack, ackReceiverIP, config.NodeACKListenPort, "ack")
 	fmt.Printf("任务已完成，给上级：%s返回ack: sid: %d, blockID: %d\n", ackReceiverIP, ack.SID, ack.BlockID)
@@ -129,13 +131,15 @@ func (p Base) HandleReq(blocks []int)  {
 }
 func (p Base) handleOneBlock(reqData config.ReqData)  {
 	nodeID := common.GetNodeID(reqData.BlockID)
-	relativeParityIDs := common.RelatedParities(reqData.BlockID)
-	cmd := common.GetCMDFromReqData(reqData)
+	fromIP := common.GetNodeIP(nodeID)
+	toIPs := common.GetRelatedParityIPs(reqData.BlockID)
+	common.SendCMD(fromIP, toIPs, reqData.SID, reqData.BlockID)
 
-	fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v (%v)\n", reqData.SID,
-		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, relativeParityIDs, cmd.ToIPs)
-	common.SendData(cmd, common.GetNodeIP(nodeID), config.NodeCMDListenPort, "")
+	fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", reqData.SID,
+		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, toIPs)
 }
+
+
 func (p Base) RecordSIDAndReceiverIP(sid int, ip string)  {
 	AckReceiverIPs[sid] = ip
 }

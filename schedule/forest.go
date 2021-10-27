@@ -14,13 +14,13 @@ func (p Forest) Init()  {
 func (p Forest) HandleReq(blocks []int)  {
 
 }
-func (p Forest) HandleTD(td config.TD)  {
+func (p Forest) HandleTD(td *config.TD)  {
 
 }
-func (p Forest) HandleCMD(cmd config.CMD)  {
+func (p Forest) HandleCMD(cmd *config.CMD)  {
 
 }
-func (p Forest) HandleACK(ack config.ACK)  {
+func (p Forest) HandleACK(ack *config.ACK)  {
 	//popACK(ack.SID)
 	//if !IsExistInWaitingACKGroup(ack.SID) {
 	//	ack := &config.ACK{

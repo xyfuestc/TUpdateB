@@ -12,12 +12,12 @@ func handleCMD(conn net.Conn)  {
 	cmd := common.GetCMD(conn)
 	schedule.GetCurPolicy().RecordSIDAndReceiverIP(cmd.SID, common.GetConnIP(conn))
 	fmt.Printf("收到来自%s的命令...\n", common.GetConnIP(conn))
-	schedule.GetCurPolicy().HandleCMD(cmd)
+	schedule.GetCurPolicy().HandleCMD(&cmd)
 }
 func handleACK(conn net.Conn) {
 	defer conn.Close()
 	ack := common.GetACK(conn)
-	schedule.GetCurPolicy().HandleACK(ack)
+	schedule.GetCurPolicy().HandleACK(&ack)
 }
 func main() {
 	config.Init()

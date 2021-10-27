@@ -334,24 +334,33 @@ func GetCMD(conn net.Conn) config.CMD  {
 	conn.Close()
 	return cmd
 }
-
-func GetCMDFromReqData(reqData config.ReqData) config.CMD  {
-	sid := reqData.SID
-	blockID := reqData.BlockID
-	stripeID := reqData.StripeID
-	nodeID := GetNodeID(blockID)
-	nodeIP := GetNodeIP(nodeID)
-	toIPs := GetRelatedParityIPs(blockID)
-	cmd := config.CMD{
-		SID:       sid,
-		Type:      config.CMD_BASE,
-		StripeID:  stripeID,
-		BlockID:   blockID,
-		ToIPs:     toIPs,
-		FromIP:    nodeIP,
+func SendCMD(fromIP string, toIPs []string, sid, blockID int)  {
+	cmd := &config.CMD{
+		SID: sid,
+		BlockID: blockID,
+		ToIPs: toIPs,
+		FromIP: fromIP,
 	}
-	return cmd
+	SendData(cmd, fromIP, config.NodeCMDListenPort, "")
 }
+
+//func GetCMDFromReqData(reqData config.ReqData) config.CMD  {
+//	sid := reqData.SID
+//	blockID := reqData.BlockID
+//	stripeID := reqData.StripeID
+//	nodeID := GetNodeID(blockID)
+//	nodeIP := GetNodeIP(nodeID)
+//	toIPs := GetRelatedParityIPs(blockID)
+//	cmd := config.CMD{
+//		SID:       sid,
+//		Type:      config.CMD_BASE,
+//		StripeID:  stripeID,
+//		BlockID:   blockID,
+//		ToIPs:     toIPs,
+//		FromIP:    nodeIP,
+//	}
+//	return cmd
+//}
 func GetACK(conn net.Conn) config.ACK {
 	//defer conn.Close()
 	dec := gob.NewDecoder(conn)
@@ -414,4 +423,25 @@ func GetConnIP(conn net.Conn) string  {
 }
 func GetIndex(blockID int) int {
 	return blockID / (config.K * config.W)
+}
+//求并集
+func Union(slice1, slice2 []int) []int {
+	m := make(map[int]int)
+	for _, v := range slice1 {
+		m[v]++
+	}
+
+	for _, v := range slice2 {
+		times, _ := m[v]
+		if times == 0 {
+			slice1 = append(slice1, v)
+		}
+	}
+	return slice1
+}
+func GetParityIDFromIndex(i int) int {
+	return config.K + i / config.W
+}
+func GetDataNodeIDFromIndex(rackID, i int) int {
+	return rackID * config.RackSize + i
 }

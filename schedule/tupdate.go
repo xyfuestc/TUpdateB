@@ -30,14 +30,14 @@ func TaskAdjust(taskGroup []Task)  {
 }
 
 type TUpdate struct {
-	ReceivedTDs []config.TD
-	CMDWaitingQueue []config.CMD
+	ReceivedTDs []*config.TD
+	CMDWaitingQueue []*config.CMD
 }
 
 func (p TUpdate) Init()  {
 	InitNetworkDistance()
-	p.ReceivedTDs = make([]config.TD, 0, 100)
-	p.CMDWaitingQueue = make([]config.CMD, 0, 100)
+	p.ReceivedTDs = make([]*config.TD, 0, 100)
+	p.CMDWaitingQueue = make([]*config.CMD, 0, 100)
 }
 
 func (p TUpdate) HandleReq(blocks []int)  {
@@ -64,7 +64,7 @@ func (p TUpdate) HandleReq(blocks []int)  {
 	//}
 }
 
-func (p TUpdate) HandleTD(td config.TD)  {
+func (p TUpdate) HandleTD(td *config.TD)  {
 	if p.meetCMDNeed(td) {
 		cmd := p.getMeetCMD(td)
 		p.finishCMD(cmd, td.Buff)
@@ -196,7 +196,7 @@ func getAdjacentMatrix(parities []byte, nodeID int, allMatrix []byte) (config.Ma
 	}
 	return newMatrix, nodeIndexes
 }
-func (p TUpdate) HandleCMD(cmd config.CMD)  {
+func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 	if p.IsCMDDataExist(cmd) {
 		fmt.Printf("block %d is local\n", cmd.BlockID)
 		buff := common.ReadBlock(cmd.BlockID)
@@ -213,7 +213,7 @@ func (p TUpdate) meetCMDNeedAndReturnIndex(td config.TD) int {
 	}
 	return -1
 }
-func (p TUpdate) meetCMDNeed(td config.TD) bool  {
+func (p TUpdate) meetCMDNeed(td *config.TD) bool  {
 	for _, cmd:= range p.CMDWaitingQueue{
 		if cmd.SID == td.SID{
 			return true
@@ -221,31 +221,31 @@ func (p TUpdate) meetCMDNeed(td config.TD) bool  {
 	}
 	return false
 }
-func (p TUpdate) IsCMDDataExist(cmd config.CMD) bool {
+func (p TUpdate) IsCMDDataExist(cmd *config.CMD) bool {
 	return common.GetDataNodeIP(cmd.BlockID) == common.GetLocalIP()
 }
-func (p TUpdate) finishCMD(cmd config.CMD, buff []byte) {
+func (p TUpdate) finishCMD(cmd *config.CMD, buff []byte) {
 	//for _, toIP := range cmd.ToIPs {
 	//	common.SendData(buff, cmd.FromIP, toIP, "")
 	//}
 	//pushACK(cmd.SID, cmd.BlockID, 1,  cmd.FromIP, "")
 }
-func (p TUpdate) getMeetCMD(td config.TD) config.CMD {
+func (p TUpdate) getMeetCMD(td *config.TD) *config.CMD {
 	for _, cmd:= range p.CMDWaitingQueue{
 		if cmd.SID == td.SID{
 			return cmd
 		}
 	}
-	return config.CMD{}
+	return &config.CMD{}
 }
-func (p TUpdate) deleteCMD(delCMD config.CMD) {
+func (p TUpdate) deleteCMD(delCMD *config.CMD) {
 	for i, cmd:= range p.CMDWaitingQueue{
 		if cmd.SID == delCMD.SID{
 			p.CMDWaitingQueue = append(p.CMDWaitingQueue[:i], p.CMDWaitingQueue[i:]...)
 		}
 	}
 }
-func (p TUpdate) HandleACK(ack config.ACK)  {
+func (p TUpdate) HandleACK(ack *config.ACK)  {
 	//popACK(ack.SID)
 	//if !IsExistInWaitingACKGroup(ack.SID) {
 	//	ack := &config.ACK{
@@ -259,8 +259,8 @@ func (p TUpdate) HandleACK(ack config.ACK)  {
 	//}
 }
 func (p TUpdate) Clear()  {
-	p.ReceivedTDs = make([]config.TD, 0, 100)
-	p.CMDWaitingQueue = make([]config.CMD, 0, 100)
+	p.ReceivedTDs = make([]*config.TD, 0, 100)
+	p.CMDWaitingQueue = make([]*config.CMD, 0, 100)
 }
 
 func (p TUpdate) RecordSIDAndReceiverIP(sid int, ip string)()  {

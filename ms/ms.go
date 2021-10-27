@@ -27,7 +27,7 @@ var finished bool = false
 func handleACK(conn net.Conn) {
 	defer conn.Close()
 	ack := common.GetACK(conn)
-	schedule.GetCurPolicy().HandleACK(ack)
+	schedule.GetCurPolicy().HandleACK(&ack)
 	if isFinished() {
 		fmt.Printf("=====================================\n")
 		fmt.Printf("结束!\n")

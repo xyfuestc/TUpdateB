@@ -17,12 +17,12 @@ func handleTD(conn net.Conn)  {
 	td := common.GetTD(conn)
 	log.Printf("received %s's td\n", common.GetConnIP(conn))
 	schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
-	schedule.GetCurPolicy().HandleTD(td)
+	schedule.GetCurPolicy().HandleTD(&td)
 }
 func handleACK(conn net.Conn) {
 	defer conn.Close()
 	ack := common.GetACK(conn)
-	schedule.GetCurPolicy().HandleACK(ack)
+	schedule.GetCurPolicy().HandleACK(&ack)
 }
 func main() {
 	config.Init()

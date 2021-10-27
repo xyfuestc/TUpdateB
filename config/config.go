@@ -9,6 +9,7 @@ import (
 const K int = 8
 const M int = 4
 const W int = 3
+const N int = K + M
 const NumOfRack int = 3
 const BlockSize int = 1024 * 1024 //1MB
 const Megabyte = 1024 * 1024      //1MB
@@ -17,7 +18,8 @@ const ECMode string = "RS" // or "XOR"
 var CurPolicyVal = BASE
 var OutFilePath = "../request/proj_4.csv.bak.txt"
 var BitMatrix = make([]byte, K*M*W*W)
-
+const RackSize = M
+const NumOfRacks = N / RackSize
 type OPType int
 /******the structure of one line for the update stream file*******/
 const (
