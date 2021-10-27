@@ -116,10 +116,11 @@ func dataUpdate(rackID int, stripe []int)  {
 		if byte(rackID) != getRackIDFromNodeID(byte(nodeID)) {
 			continue
 		}
+		fmt.Printf("blockID: %d, nodeID: %d, rackID: %d\n", blockID, nodeID, rackID)
 		curRackNodes[nodeID-rackID*config.RackSize] = append(curRackNodes[nodeID-rackID*config.RackSize], blockID)
 		for _, p := range common.RelatedParities(blockID){
-			if arrays.Contains(parities[p], GetBlockColumn(blockID)) < 0 {
-				parities[p] = append(parities[p], GetBlockColumn(blockID))
+			if arrays.Contains(parities[p], blockID) < 0 {
+				parities[p] = append(parities[p], blockID)
 			}
 		}
 	}
@@ -163,7 +164,7 @@ func dataUpdate(rackID int, stripe []int)  {
 		}
 	}
 	sort.Ints(unionParities)
-	fmt.Printf("ParityUpdate: stripe: %v, parities: %v, unionParities: %v, curRackNodes: %v\n",
+	fmt.Printf("DataUpdate: stripe: %v, parities: %v, unionParities: %v, curRackNodes: %v\n",
 		stripe, parities, unionParities, curRackNodes)
 }
 
