@@ -290,9 +290,11 @@ func (p CAU) HandleACK(ack *config.ACK)  {
 func (p CAU) Clear()  {
 	curDistinctBlocks = make([]int, 0, 100)
 	sid = 0
-	AckReceiverIPs = make(map[int]string)
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
+	}
+	ackIPMaps = &ACKIPMap{
+		ACKReceiverIPs: map[int]string{},
 	}
 }
 

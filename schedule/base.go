@@ -59,9 +59,25 @@ func (M *ACKMap) isEmpty() bool {
 	return true
 }
 
+type ACKIPMap struct {
+	sync.RWMutex
+	ACKReceiverIPs map[int]string
+}
+func (M *ACKIPMap) getIP(sid int) (string, bool)  {
+	M.RLock()
+	ip, ok := M.ACKReceiverIPs[sid]
+	M.RUnlock()
+	return ip, ok
+}
+func (M *ACKIPMap) recordIP(sid int, ip string)  {
+	M.Lock()
+	M.ACKReceiverIPs[sid] = ip
+	M.Unlock()
+}
+
 var CurPolicy Policy = nil
-var AckReceiverIPs = make(map[int]string)
 var ackMaps *ACKMap
+var ackIPMaps *ACKIPMap
 var sid = 0
 func SetPolicy(policyType config.PolicyType)  {
 	switch policyType {
@@ -138,7 +154,7 @@ func (p Base) HandleACK(ack *config.ACK)  {
 	}
 }
 func ReturnACK(ack *config.ACK) {
-	ackReceiverIP := AckReceiverIPs[ack.SID]
+	ackReceiverIP,_ := ackIPMaps.getIP(ack.SID)
 	common.SendData(ack, ackReceiverIP, config.NodeACKListenPort, "ack")
 	fmt.Printf("任务已完成，给上级：%s返回ack: sid: %d, blockID: %d\n", ackReceiverIP, ack.SID, ack.BlockID)
 }
@@ -176,16 +192,17 @@ func (p Base) handleOneBlock(reqData config.ReqData)  {
 		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, toIPs)
 }
 func (p Base) RecordSIDAndReceiverIP(sid int, ip string)  {
-	AckReceiverIPs[sid] = ip
+	ackIPMaps.recordIP(sid, ip)
 }
 func (p Base) Clear()  {
 	sid = 0
-	AckReceiverIPs = make(map[int]string)
 	//RequireACKs = make(map[int]int)
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
 	}
-
+	ackIPMaps = &ACKIPMap{
+		ACKReceiverIPs: map[int]string{},
+	}
 }
 func ACKIsEmpty() bool {
 	return ackMaps.isEmpty()
