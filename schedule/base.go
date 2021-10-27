@@ -4,6 +4,7 @@ import (
 	"EC/common"
 	"EC/config"
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -20,9 +21,47 @@ type Policy interface {
 type Base struct {
 
 }
+
+type ACKMap struct {
+	sync.RWMutex
+	RequireACKs map[int]int
+}
+func (M *ACKMap) getACK(sid int) (int, bool)  {
+	M.RLock()
+	num, ok := M.RequireACKs[sid]
+	M.RUnlock()
+	return num, ok
+}
+func (M *ACKMap) pushACK(sid int)  {
+	M.Lock()
+	if _, ok := M.RequireACKs[sid]; !ok {
+		M.RequireACKs[sid] = 1
+	}else{
+		M.RequireACKs[sid]++
+	}
+	M.Unlock()
+}
+func (M *ACKMap) popACK(sid int)  {
+	M.Lock()
+	M.RequireACKs[sid]--
+	M.Unlock()
+}
+
+func (M *ACKMap) isEmpty() bool {
+	M.RLock()
+	for _, num := range M.RequireACKs {
+		if num > 0 {
+			M.RUnlock()
+			return false
+		}
+	}
+	M.RUnlock()
+	return true
+}
+
 var CurPolicy Policy = nil
 var AckReceiverIPs = make(map[int]string)
-var RequireACKs = make(map[int]int)
+var ackMaps *ACKMap
 var sid = 0
 func SetPolicy(policyType config.PolicyType)  {
 	switch policyType {
@@ -50,7 +89,7 @@ func (p Base) HandleCMD(cmd *config.CMD) {
 func handlOneCMD(cmd *config.CMD)  {
 	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID)
 	for _, _ = range cmd.ToIPs {
-		pushACK(cmd.SID)
+		ackMaps.pushACK(cmd.SID)
 	}
 	for _, parityIP := range cmd.ToIPs{
 		td := &config.TD{
@@ -68,18 +107,13 @@ func handlOneCMD(cmd *config.CMD)  {
 }
 
 func pushACK(sid int)  {
-	if _, ok := RequireACKs[sid]; !ok {
-		RequireACKs[sid] = 1
-	}else{
-		RequireACKs[sid]++
-	}
 
 
 }
 
-func popACK(sid int)  {
-	RequireACKs[sid]--
-}
+//func popACK(pushACKsid int)  {
+//	RequireACKs[sid]--
+//}
 
 func (p Base) HandleTD(td *config.TD)  {
 	handleOneTD(td)
@@ -94,9 +128,9 @@ func handleOneTD(td *config.TD)  {
 	ReturnACK(ack)
 }
 func (p Base) HandleACK(ack *config.ACK)  {
-	fmt.Printf("当前剩余ack：%d\n", RequireACKs)
-	popACK(ack.SID)
-	if RequireACKs[ack.SID] == 0 {
+	//fmt.Printf("当前剩余ack：%d\n", RequireACKs)
+	ackMaps.popACK(ack.SID)
+	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)
@@ -110,12 +144,15 @@ func ReturnACK(ack *config.ACK) {
 }
 
 func (p Base) Init()  {
+	ackMaps = &ACKMap{
+		RequireACKs: make(map[int]int),
+	}
 }
 
 func (p Base) HandleReq(blocks []int)  {
 
 	for _, _ = range blocks {
-		pushACK(sid)
+		ackMaps.pushACK(sid)
 		sid++
 	}
 
@@ -138,23 +175,20 @@ func (p Base) handleOneBlock(reqData config.ReqData)  {
 	fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", reqData.SID,
 		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, toIPs)
 }
-
-
 func (p Base) RecordSIDAndReceiverIP(sid int, ip string)  {
 	AckReceiverIPs[sid] = ip
 }
 func (p Base) Clear()  {
 	sid = 0
 	AckReceiverIPs = make(map[int]string)
-	RequireACKs = make(map[int]int)
+	//RequireACKs = make(map[int]int)
+	ackMaps = &ACKMap{
+		RequireACKs: make(map[int]int),
+	}
+
 }
 func ACKIsEmpty() bool {
-	for _, num := range RequireACKs {
-		if num > 0 {
-			return false
-		}
-	}
-	return true
+	return ackMaps.isEmpty()
 }
 
 

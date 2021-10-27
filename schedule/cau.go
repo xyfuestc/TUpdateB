@@ -277,9 +277,10 @@ func (p CAU) HandleCMD(cmd *config.CMD)  {
 }
 
 func (p CAU) HandleACK(ack *config.ACK)  {
-	fmt.Printf("当前剩余ack：%d\n", RequireACKs)
-	popACK(ack.SID)
-	if RequireACKs[ack.SID] == 0 {
+	//fmt.Printf("当前剩余ack：%d\n", RequireACKs)
+	//popACK(ack.SID)
+	ackMaps.popACK(ack.SID)
+	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)
@@ -290,7 +291,9 @@ func (p CAU) Clear()  {
 	curDistinctBlocks = make([]int, 0, 100)
 	sid = 0
 	AckReceiverIPs = make(map[int]string)
-	RequireACKs = make(map[int]int)
+	ackMaps = &ACKMap{
+		RequireACKs: make(map[int]int),
+	}
 }
 
 func (p CAU) RecordSIDAndReceiverIP(sid int, ip string)()  {
