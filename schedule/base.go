@@ -4,6 +4,7 @@ import (
 	"EC/common"
 	"EC/config"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 )
@@ -155,9 +156,12 @@ func (p Base) HandleACK(ack *config.ACK)  {
 	}
 }
 func ReturnACK(ack *config.ACK) {
-	ackReceiverIP,_ := ackIPMaps.getIP(ack.SID)
-	common.SendData(ack, ackReceiverIP, config.NodeACKListenPort, "ack")
-	fmt.Printf("任务已完成，给上级：%s返回ack: sid: %d, blockID: %d\n", ackReceiverIP, ack.SID, ack.BlockID)
+	if ackReceiverIP, ok := ackIPMaps.getIP(ack.SID); ok{
+		common.SendData(ack, ackReceiverIP, config.NodeACKListenPort, "ack")
+		fmt.Printf("任务已完成，给上级：%s返回ack: sid: %d, blockID: %d\n", ackReceiverIP, ack.SID, ack.BlockID)
+	}else{
+		log.Fatal("returnACK error! ack: ", ack, " ackReceiverIPs: ", ackIPMaps)
+	}
 }
 
 func (p Base) Init()  {

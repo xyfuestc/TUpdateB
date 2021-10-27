@@ -155,6 +155,8 @@ func dataUpdate(rackID int, stripe []int)  {
 		nodeID := common.GetDataNodeIDFromIndex(rackID, i)
 		//传输blocks到rootP
 		for _, b := range blocks{
+			fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
+				nodeID, common.GetNodeIP(nodeID), b, common.GetNodeIP(rootP))
 			common.SendCMD(common.GetNodeIP(nodeID), []string{common.GetNodeIP(rootP)}, sid, b)
 			sid++
 		}
@@ -177,6 +179,8 @@ func dataUpdate(rackID int, stripe []int)  {
 			//传输blocks到rootD
 			for _, b := range blocks{
 				//省略了合并操作，直接只发一条
+				fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
+					rootP, common.GetNodeIP(rootP), b, common.GetNodeIP(parityID))
 				common.SendCMD(common.GetNodeIP(rootP), []string{common.GetNodeIP(parityID)}, sid, b)
 				sid++
 				break

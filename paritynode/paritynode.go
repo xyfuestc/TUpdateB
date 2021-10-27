@@ -12,13 +12,13 @@ func handleCMD(conn net.Conn)  {
 	defer conn.Close()
 	cmd := common.GetCMD(conn)
 	schedule.GetCurPolicy().RecordSIDAndReceiverIP(cmd.SID, common.GetConnIP(conn))
-	fmt.Printf("收到来自%s的命令...\n", common.GetConnIP(conn))
+	fmt.Printf("收到来自 %s 的命令: 将 sid: %d, block: %d 的更新数据发送给 %v.\n", common.GetConnIP(conn), cmd.SID, cmd.BlockID, cmd.ToIPs)
 	schedule.GetCurPolicy().HandleCMD(&cmd)
 }
 func handleTD(conn net.Conn)  {
 	defer conn.Close()
 	td := common.GetTD(conn)
-	log.Printf("received %s's td\n", common.GetConnIP(conn))
+	log.Printf("收到来自 %s 的TD，sid: %d, blockID: %d.\n", common.GetConnIP(conn), td.SID, td.BlockID)
 	schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
 	schedule.GetCurPolicy().HandleTD(&td)
 }
