@@ -17,15 +17,19 @@ const ParityRackIndex = config.RackSize - 1
 //var curReqChunks = make([]config.MetaInfo, config.MaxBatchSize, config.MaxBatchSize)
 var NumOfCurNeedUpdateBlocks = 0
 var round = 0
-var IsRunning = false   //check CAU is running or not
-const maxBatchSize = 100
+var IsRunning = true   //check CAU is running or not
 var totalBlocks = make([]int, config.MaxBatchSize, config.MaxBatchSize)
 var NumOfBlocks = 0
 var Now float32 = 0
-var curDistinctBlocks = make([]int, 0, 100)
-
+var curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
 func (p CAU) Init()  {
+	ackMaps = &ACKMap{
+		RequireACKs: make(map[int]int),
+	}
 
+	ackIPMaps = &ACKIPMap{
+		ACKReceiverIPs: map[int]string{},
+	}
 }
 
 func (p CAU) HandleTD(td *config.TD)  {
@@ -36,35 +40,37 @@ func (p CAU) HandleReq(blocks []int)  {
 	totalBlocks = blocks
 	NumOfBlocks = len(totalBlocks)
 	fmt.Printf("一共接收到%d个请求...\n", len(totalBlocks))
-	curMatchBlocks := make([]int, 0, 100)
+	curMatchBlocks := make([]int, 0, config.MaxBatchSize)
 	for len(totalBlocks) > 0 {
 		//获取curDistinctBlocks
-		if len(totalBlocks) > 100 {
-			curMatchBlocks = totalBlocks[:100]
+		if len(totalBlocks) > config.MaxBatchSize {
+			curMatchBlocks = totalBlocks[:config.MaxBatchSize]
 			for _, b := range curMatchBlocks{
 				if arrays.Contains(curDistinctBlocks, b) < 0 {
 					curDistinctBlocks = append(curDistinctBlocks, b)
 				}
 			}
-			totalBlocks = totalBlocks[100:]
-			//fmt.Printf("剩余请求数量：%d\n",len(totalBlocks))
-
-		}else {
+			totalBlocks = totalBlocks[config.MaxBatchSize:]
+		}else { //处理最后不到100个请求
 			curMatchBlocks = totalBlocks
-			//fmt.Printf("最后处理%d个请求...\n", len(curMatchBlocks))
 			for _, b := range curMatchBlocks{
 				if arrays.Contains(curDistinctBlocks, b) < 0 {
 					curDistinctBlocks = append(curDistinctBlocks, b)
 				}
 			}
-			totalBlocks = make([]int, 0, 1000000)
+			totalBlocks = make([]int, 0, config.MaxBlockSize)
 		}
 		//执行cau
 		fmt.Printf("第%d轮 CAU：获取%d个请求，实际处理%d个block\n", round, len(curMatchBlocks), len(curDistinctBlocks))
 
 		cau()
-		round++
 
+		fmt.Printf("等待本轮任务结束...\n")
+		for IsRunning {
+			
+		}
+		fmt.Printf("本轮任务结束!\n")
+		round++
 		p.Clear()
 	}
 
@@ -75,12 +81,16 @@ func (p CAU) HandleReq(blocks []int)  {
 	fmt.Printf("CAU 总耗时: %0.2fs, 完成更新任务: %d, 单个更新速度: %0.4fs, 吞吐量: %0.2f个/s",
 		sumTime, NumOfBlocks, averageOneUpdateSpeed, throughput)
 
-	p.Clear()
+	//p.Clear()
 
 }
 
 func cau() {
-	fmt.Println(curDistinctBlocks)
+	fmt.Printf("curDistinctBlocks: %v", curDistinctBlocks)
+	for _, b := range curDistinctBlocks {
+		ackMaps.pushACK(b)
+	}
+
 	stripes := turnBlocksToStripes()
 	for _, stripe := range stripes{
 		for i := 0; i < config.NumOfRacks; i++ {
@@ -131,20 +141,24 @@ func dataUpdate(rackID int, stripe []int)  {
 
 	/****汇聚*****/
 	for i, blocks := range curRackNodes {
-		curID := common.GetDataNodeIDFromIndex(rackID, i)
-		//传输blocks到rootD
+		nodeID := common.GetDataNodeIDFromIndex(rackID, i)
+		//传输blocks到rootP
 		for _, b := range blocks{
-			common.SendCMD(common.GetNodeIP(curID), []string{common.GetNodeIP(rootP)}, b, b)
+			common.SendCMD(common.GetNodeIP(nodeID), []string{common.GetNodeIP(rootP)}, sid, b)
+			sid++
 		}
 	}
 
 	/****分发*****/
-	for i, blocks := range parities{
-		pID := common.GetParityIDFromIndex(i)
-		if pID != rootP {
+	parityNodeBlocks := GetParityNodeBlocks(parities)
+	fmt.Printf("DataUpdate: parityNodeBlocks: %v\n", parityNodeBlocks)
+	for i, blocks := range parityNodeBlocks {
+		parityID := i + config.K
+		if parityID != rootP {
 			//传输blocks到rootD
 			for _, b := range blocks{
-				common.SendCMD(common.GetNodeIP(rootP), []string{common.GetNodeIP(pID)}, b, b)
+				common.SendCMD(common.GetNodeIP(rootP), []string{common.GetNodeIP(parityID)}, sid, b)
+				sid++
 			}
 		}
 	}
@@ -188,20 +202,37 @@ func parityUpdate(rackID int, stripe []int) {
 		if curID != rootD {
 			//传输blocks到rootD
 			for _, b := range blocks{
-				common.SendCMD(common.GetNodeIP(curID), []string{common.GetNodeIP(rootD)}, b, b)
+				common.SendCMD(common.GetNodeIP(curID), []string{common.GetNodeIP(rootD)}, sid, b)
+				sid++
 			}
 		}
 	}
 	/****分发*****/
-	for _, blocks := range parities {
+	parityNodeBlocks := GetParityNodeBlocks(parities)
+	fmt.Printf("PataUpdate: parityNodeBlocks: %v\n", parityNodeBlocks)
+	for i, blocks := range parityNodeBlocks {
+		parityID := i + config.K
 		for _, b := range blocks {
-			common.SendCMD(common.GetNodeIP(rootD), []string{common.GetNodeIP(rootD)}, b, b)
+			common.SendCMD(common.GetNodeIP(rootD), []string{common.GetNodeIP(parityID)}, sid, b)
+			sid++
 		}
-
 	}
 	sort.Ints(unionParities)
 	fmt.Printf("ParityUpdate: stripe: %v, parities: %v, unionParities: %v, curRackNodes: %v\n",
 											stripe, parities, unionParities, curRackNodes)
+}
+
+func GetParityNodeBlocks(parities [][]int) [][]int {
+	parityNodeBlocks := make([][]int, config.M)
+	for i, blocks := range parities {
+		parityIndex := i / config.W
+		for _, b := range blocks {
+			if arrays.Contains(parityNodeBlocks[parityIndex], b) < 0 {
+				parityNodeBlocks[parityIndex] = append(parityNodeBlocks[parityIndex], b)
+			}
+		}
+	}
+	return parityNodeBlocks
 }
 
 func GetRootDataNodeID(blocksOfNodes [][]int, rackID int) int {
@@ -262,7 +293,6 @@ func getParityRackUpdateNum(blocks []int) int {
 	return len(parityIDs)
 }
 
-
 func turnBlocksToStripes() map[int][]int {
 	stripes := map[int][]int{}
 	for _, b := range curDistinctBlocks{
@@ -277,18 +307,18 @@ func (p CAU) HandleCMD(cmd *config.CMD)  {
 }
 
 func (p CAU) HandleACK(ack *config.ACK)  {
-	//fmt.Printf("当前剩余ack：%d\n", RequireACKs)
-	//popACK(ack.SID)
 	ackMaps.popACK(ack.SID)
 	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)
+		}else if ACKIsEmpty() { //ms检查是否全部完成，若完成，进入下一轮
+			IsRunning = false
 		}
 	}
 }
 func (p CAU) Clear()  {
-	curDistinctBlocks = make([]int, 0, 100)
+	curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
 	sid = 0
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
@@ -309,3 +339,7 @@ func GetRootParityID(parities [][]int) int {
 	}
 	return -1
 }
+func (p CAU) IsFinished() bool {
+	return len(totalBlocks) == 0
+}
+

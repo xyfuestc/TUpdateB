@@ -266,3 +266,7 @@ func (p TUpdate) Clear()  {
 func (p TUpdate) RecordSIDAndReceiverIP(sid int, ip string)()  {
 
 }
+
+func (p TUpdate) IsFinished() bool {
+	return ackMaps.isEmpty()
+}

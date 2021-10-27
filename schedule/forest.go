@@ -40,3 +40,7 @@ func (p Forest) Clear()  {
 func (p Forest)	RecordSIDAndReceiverIP(sid int, ip string)()  {
 
 }
+
+func (p Forest) IsFinished() bool {
+	return ackMaps.isEmpty()
+}

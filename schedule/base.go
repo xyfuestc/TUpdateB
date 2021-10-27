@@ -16,6 +16,7 @@ type Policy interface {
 	HandleACK(ack *config.ACK)
 	Clear()
 	RecordSIDAndReceiverIP(sid int, ip string)
+	IsFinished() bool
 }
 
 type Base struct {
@@ -211,4 +212,7 @@ func ACKIsEmpty() bool {
 	return ackMaps.isEmpty()
 }
 
+func (p Base) IsFinished() bool {
+	return ackMaps.isEmpty()
+}
 

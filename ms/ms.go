@@ -21,14 +21,14 @@ var actualUpdatedBlocks = 0
 var sidCounter = 0
 var beginTime time.Time
 var endTime time.Time
-var totalBlocks = make([]int, 0, 1000000)
+var totalBlocks = make([]int, 0, config.MaxBlockSize)
 var finished bool = false
 
 func handleACK(conn net.Conn) {
 	defer conn.Close()
 	ack := common.GetACK(conn)
 	schedule.GetCurPolicy().HandleACK(&ack)
-	if isFinished() {
+	if schedule.GetCurPolicy().IsFinished() {
 		fmt.Printf("=====================================\n")
 		fmt.Printf("结束!\n")
 		endTime = time.Now()
@@ -56,7 +56,7 @@ func PrintGenMatrix(gm []byte)  {
 func clearUpdates() {
 	numOfReq = 0
 	finished = true
-	totalBlocks = make([]int, 0, 1000000)
+	totalBlocks = make([]int, 0, config.MaxBlockSize)
 }
 func main() {
 	beginTime = time.Now()
@@ -119,6 +119,3 @@ func listenACK(listen net.Listener) {
 	}
 }
 
-func isFinished() bool {
-	return schedule.ACKIsEmpty()
-}
