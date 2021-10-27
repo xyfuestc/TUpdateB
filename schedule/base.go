@@ -163,6 +163,9 @@ func (p Base) Init()  {
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
 	}
+	ackIPMaps = &ACKIPMap{
+		ACKReceiverIPs: map[int]string{},
+	}
 }
 
 func (p Base) HandleReq(blocks []int)  {
