@@ -87,9 +87,9 @@ func (p CAU) HandleReq(blocks []int)  {
 
 func cau() {
 	fmt.Printf("curDistinctBlocks: %v", curDistinctBlocks)
-	for _, b := range curDistinctBlocks {
-		ackMaps.pushACK(b)
-	}
+	//for _, b := range curDistinctBlocks {
+	//	ackMaps.pushACK(b)
+	//}
 
 	stripes := turnBlocksToStripes()
 	for _, stripe := range stripes{
@@ -109,7 +109,7 @@ func GetBlockColumn(blockID int) int {
 }
 
 func dataUpdate(rackID int, stripe []int)  {
-	curRackNodes := make([][]int, config.N / config.RackSize)
+	curRackNodes := make([][]int, config.RackSize)
 	parities := make([][]int, config.M * config.W)
 	for _, blockID := range stripe{
 		nodeID := common.GetNodeID(blockID)
@@ -140,6 +140,16 @@ func dataUpdate(rackID int, stripe []int)  {
 	}
 	fmt.Println("rootP: ", rootP)
 
+
+	/****记录ack*****/
+	curSid := sid
+	for _, blocks := range curRackNodes {
+		//传输blocks到rootP
+		for _, _ = range blocks {
+			ackMaps.pushACK(curSid)
+			curSid++
+		}
+	}
 	/****汇聚*****/
 	for i, blocks := range curRackNodes {
 		nodeID := common.GetDataNodeIDFromIndex(rackID, i)
@@ -150,16 +160,26 @@ func dataUpdate(rackID int, stripe []int)  {
 		}
 	}
 
-	/****分发*****/
+	/****记录ack*****/
 	parityNodeBlocks := GetParityNodeBlocks(parities)
+	for i, _ := range parityNodeBlocks {
+		parityID := i + config.K
+		if parityID != rootP {
+			ackMaps.pushACK(curSid)
+			curSid++
+		}
+	}
+	/****分发*****/
 	fmt.Printf("DataUpdate: parityNodeBlocks: %v\n", parityNodeBlocks)
 	for i, blocks := range parityNodeBlocks {
 		parityID := i + config.K
 		if parityID != rootP {
 			//传输blocks到rootD
 			for _, b := range blocks{
+				//省略了合并操作，直接只发一条
 				common.SendCMD(common.GetNodeIP(rootP), []string{common.GetNodeIP(parityID)}, sid, b)
 				sid++
+				break
 			}
 		}
 	}
@@ -169,7 +189,7 @@ func dataUpdate(rackID int, stripe []int)  {
 }
 
 func parityUpdate(rackID int, stripe []int) {
-	curRackNodes := make([][]int, config.N / config.RackSize)
+	curRackNodes := make([][]int, config.RackSize)
 	parities := make([][]int, config.M * config.W)
 	for _, blockID := range stripe{
 		nodeID := common.GetNodeID(blockID)
@@ -197,6 +217,17 @@ func parityUpdate(rackID int, stripe []int) {
 		log.Fatal("找不到rootParity")
 		return
 	}
+	curSid := sid
+	/****记录ack*****/
+	for i, blocks := range curRackNodes {
+		curID := rackID*config.RackSize + i
+		if curID != rootD {
+			for _, _ = range blocks {
+				ackMaps.pushACK(curSid)
+				curSid++
+			}
+		}
+	}
 	/****汇聚*****/
 	for i, blocks := range curRackNodes {
 		curID := rackID*config.RackSize + i
@@ -208,14 +239,20 @@ func parityUpdate(rackID int, stripe []int) {
 			}
 		}
 	}
-	/****分发*****/
+	/****记录ack*****/
 	parityNodeBlocks := GetParityNodeBlocks(parities)
 	fmt.Printf("PataUpdate: parityNodeBlocks: %v\n", parityNodeBlocks)
+	for _, _ = range parityNodeBlocks {
+		ackMaps.pushACK(curSid)
+		curSid++
+	}
+	/****分发*****/
 	for i, blocks := range parityNodeBlocks {
 		parityID := i + config.K
-		for _, b := range blocks {
+		for _, b := range blocks {//省略了合并操作，直接只发一条
 			common.SendCMD(common.GetNodeIP(rootD), []string{common.GetNodeIP(parityID)}, sid, b)
 			sid++
+			break
 		}
 	}
 	sort.Ints(unionParities)
@@ -341,6 +378,6 @@ func GetRootParityID(parities [][]int) int {
 	return -1
 }
 func (p CAU) IsFinished() bool {
-	return len(totalBlocks) == 0
+	return len(totalBlocks) == 0 && ackMaps.isEmpty()
 }
 
