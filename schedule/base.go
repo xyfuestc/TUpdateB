@@ -53,7 +53,7 @@ func (M *ACKMap) isEmpty() bool {
 	M.RLock()
 	for _, num := range M.RequireACKs {
 		if num > 0 {
-			fmt.Printf("ACKMap非空：%v\n", M.RequireACKs)
+			//fmt.Printf("ACKMap非空：%v\n", M.RequireACKs)
 			M.RUnlock()
 			return false
 		}

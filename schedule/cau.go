@@ -13,14 +13,9 @@ type CAU struct {
 }
 
 const ParityRackIndex = config.RackSize - 1
-
-//var curReqChunks = make([]config.MetaInfo, config.MaxBatchSize, config.MaxBatchSize)
-var NumOfCurNeedUpdateBlocks = 0
 var round = 0
-var IsRunning = true   //check CAU is running or not
+var IsRunning = true   //标志是否进入下一轮迭代
 var totalBlocks = make([]int, config.MaxBatchSize, config.MaxBatchSize)
-var NumOfBlocks = 0
-var Now float32 = 0
 var curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
 var actualBlocks = 0
 func (p CAU) Init()  {
@@ -39,7 +34,6 @@ func (p CAU) HandleTD(td *config.TD)  {
 
 func (p CAU) HandleReq(blocks []int)  {
 	totalBlocks = blocks
-	NumOfBlocks = len(totalBlocks)
 	fmt.Printf("一共接收到%d个请求...\n", len(totalBlocks))
 	curMatchBlocks := make([]int, 0, config.MaxBatchSize)
 	for len(totalBlocks) > 0 {
@@ -78,11 +72,7 @@ func (p CAU) HandleReq(blocks []int)  {
 }
 
 func cau() {
-	fmt.Printf("curDistinctBlocks: %v", curDistinctBlocks)
-	//for _, b := range curDistinctBlocks {
-	//	ackMaps.pushACK(b)
-	//}
-
+	//fmt.Printf("curDistinctBlocks: %v", curDistinctBlocks)
 	stripes := turnBlocksToStripes()
 	for _, stripe := range stripes{
 		for i := 0; i < config.NumOfRacks; i++ {
@@ -108,7 +98,7 @@ func dataUpdate(rackID int, stripe []int)  {
 		if byte(rackID) != getRackIDFromNodeID(byte(nodeID)) {
 			continue
 		}
-		fmt.Printf("blockID: %d, nodeID: %d, rackID: %d\n", blockID, nodeID, rackID)
+		//fmt.Printf("blockID: %d, nodeID: %d, rackID: %d\n", blockID, nodeID, rackID)
 		curRackNodes[nodeID-rackID*config.RackSize] = append(curRackNodes[nodeID-rackID*config.RackSize], blockID)
 		for _, p := range common.RelatedParities(blockID){
 			if arrays.Contains(parities[p], blockID) < 0 {
@@ -130,7 +120,7 @@ func dataUpdate(rackID int, stripe []int)  {
 		log.Fatal("找不到rootParity")
 		return
 	}
-	fmt.Println("rootP: ", rootP)
+	//fmt.Println("rootP: ", rootP)
 
 
 	/****记录ack*****/
