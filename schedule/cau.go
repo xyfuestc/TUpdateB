@@ -67,22 +67,12 @@ func (p CAU) HandleReq(blocks []int)  {
 
 		cau()
 
-		fmt.Printf("等待本轮任务结束...\n")
 		for IsRunning {
 			
 		}
-		fmt.Printf("本轮任务结束!\n")
 		round++
 		p.Clear()
 	}
-
-	sumTime := float32(Now)*1.0/1000
-	averageOneUpdateSpeed := sumTime / float32(NumOfBlocks)
-	throughput :=  float32(NumOfBlocks) * ( float32(config.BlockSize) / config.Megabyte) / sumTime
-
-	fmt.Printf("CAU 总耗时: %0.2fs, 完成更新任务: %d, 单个更新速度: %0.4fs, 吞吐量: %0.2f个/s",
-		sumTime, NumOfBlocks, averageOneUpdateSpeed, throughput)
-
 	//p.Clear()
 
 }

@@ -35,8 +35,8 @@ func handleACK(conn net.Conn) {
 		averageOneUpdateSpeed := float32(sumTime) / float32(numOfReq)
 		throughput :=  float32(numOfReq) * ( float32(config.BlockSize) / config.Megabyte) / float32(sumTime)
 		actualUpdatedBlocks = schedule.GetActualBlocks()
-		fmt.Printf("%s 总耗时: %ds, 完成更新任务: %d, 实际处理任务数: %d, 单个更新速度: %0.4fs, 吞吐量: %0.2f个/s",
-			config.CurPolicyVal, sumTime, numOfReq, actualUpdatedBlocks, averageOneUpdateSpeed, throughput)
+		fmt.Printf("%s 总耗时: %ds, 完成更新任务: %d, 实际处理任务数: %d, 单个更新速度: %0.4fs, 吞吐量: %0.2f个/s\n",
+			config.CurPolicyStr[config.CurPolicyVal], sumTime, numOfReq, actualUpdatedBlocks, averageOneUpdateSpeed, throughput)
 
 		clearUpdates()
 		schedule.GetCurPolicy().Clear()
