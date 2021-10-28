@@ -30,13 +30,16 @@ func handleACK(conn net.Conn) {
 	schedule.GetCurPolicy().HandleACK(&ack)
 	if schedule.GetCurPolicy().IsFinished() {
 		fmt.Printf("=====================================\n")
-		fmt.Printf("结束!\n")
 		endTime = time.Now()
-		fmt.Printf("总请求数: %d, 用时: %ds\n", numOfReq,
-											endTime.Unix() - beginTime.Unix())
+		sumTime := endTime.Unix() - beginTime.Unix()
+		averageOneUpdateSpeed := float32(sumTime) / float32(numOfReq)
+		throughput :=  float32(numOfReq) * ( float32(config.BlockSize) / config.Megabyte) / float32(sumTime)
+		actualUpdatedBlocks = schedule.GetActualBlocks()
+		fmt.Printf("%s 总耗时: %ds, 完成更新任务: %d, 实际处理任务数: %d, 单个更新速度: %0.4fs, 吞吐量: %0.2f个/s",
+			config.CurPolicyVal, sumTime, numOfReq, actualUpdatedBlocks, averageOneUpdateSpeed, throughput)
+
 		clearUpdates()
 		schedule.GetCurPolicy().Clear()
-
 	}
 }
 func PrintGenMatrix(gm []byte)  {
@@ -54,6 +57,7 @@ func PrintGenMatrix(gm []byte)  {
 	}
 }
 func clearUpdates() {
+	actualUpdatedBlocks = 0
 	numOfReq = 0
 	finished = true
 	totalBlocks = make([]int, 0, config.MaxBlockSize)

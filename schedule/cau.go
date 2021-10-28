@@ -22,6 +22,7 @@ var totalBlocks = make([]int, config.MaxBatchSize, config.MaxBatchSize)
 var NumOfBlocks = 0
 var Now float32 = 0
 var curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
+var actualBlocks = 0
 func (p CAU) Init()  {
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
@@ -61,6 +62,7 @@ func (p CAU) HandleReq(blocks []int)  {
 			totalBlocks = make([]int, 0, config.MaxBlockSize)
 		}
 		//执行cau
+		actualBlocks += len(curDistinctBlocks)
 		fmt.Printf("第%d轮 CAU：获取%d个请求，实际处理%d个block\n", round, len(curMatchBlocks), len(curDistinctBlocks))
 
 		cau()
@@ -387,5 +389,8 @@ func GetRootParityID(parities [][]int) int {
 }
 func (p CAU) IsFinished() bool {
 	return len(totalBlocks) == 0 && ackMaps.isEmpty()
+}
+func GetActualBlocks() int {
+	return actualBlocks
 }
 
