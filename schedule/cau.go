@@ -371,7 +371,7 @@ func (p CAU) Clear()  {
 }
 
 func (p CAU) RecordSIDAndReceiverIP(sid int, ip string)()  {
-
+	ackIPMaps.recordIP(sid, ip)
 }
 func GetRootParityID(parities [][]int) int {
 	for i, parity := range parities {
