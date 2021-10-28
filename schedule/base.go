@@ -51,8 +51,9 @@ func (M *ACKMap) popACK(sid int)  {
 
 func (M *ACKMap) isEmpty() bool {
 	M.RLock()
-	for _, num := range M.RequireACKs {
+	for sid, num := range M.RequireACKs {
 		if num > 0 {
+			fmt.Printf("ACKMap非空：sid: %d, ack: %d", sid, num)
 			M.RUnlock()
 			return false
 		}
