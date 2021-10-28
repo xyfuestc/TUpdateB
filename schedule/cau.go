@@ -346,6 +346,7 @@ func (p CAU) HandleACK(ack *config.ACK)  {
 	}
 }
 func (p CAU) Clear()  {
+	IsRunning = true
 	curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
 	sid = 0
 	ackMaps = &ACKMap{
