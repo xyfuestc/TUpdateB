@@ -167,7 +167,7 @@ func dataUpdate(rackID int, stripe []int)  {
 	parityNodeBlocks := GetParityNodeBlocks(parities)
 	for i, b := range parityNodeBlocks {
 		parityID := i + config.K
-		if parityID != rootP {
+		if parityID != rootP && len(b) > 0 {
 			fmt.Printf("pushACK: sid: %d, blockID: %v\n", curSid, b)
 			ackMaps.pushACK(curSid)
 			curSid++
