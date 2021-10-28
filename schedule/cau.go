@@ -145,7 +145,8 @@ func dataUpdate(rackID int, stripe []int)  {
 	curSid := sid
 	for _, blocks := range curRackNodes {
 		//传输blocks到rootP
-		for _, _ = range blocks {
+		for _, b := range blocks {
+			fmt.Printf("pushACK: sid: %d, blockID: %v\n", curSid, b)
 			ackMaps.pushACK(curSid)
 			curSid++
 		}
@@ -164,9 +165,10 @@ func dataUpdate(rackID int, stripe []int)  {
 
 	/****记录ack*****/
 	parityNodeBlocks := GetParityNodeBlocks(parities)
-	for i, _ := range parityNodeBlocks {
+	for i, b := range parityNodeBlocks {
 		parityID := i + config.K
 		if parityID != rootP {
+			fmt.Printf("pushACK: sid: %d, blockID: %v\n", curSid, b)
 			ackMaps.pushACK(curSid)
 			curSid++
 		}
@@ -226,7 +228,8 @@ func parityUpdate(rackID int, stripe []int) {
 	for i, blocks := range curRackNodes {
 		curID := rackID*config.RackSize + i
 		if curID != rootD {
-			for _, _ = range blocks {
+			for _, b := range blocks {
+				fmt.Printf("pushACK: sid: %d, blockID: %v\n", curSid, b)
 				ackMaps.pushACK(curSid)
 				curSid++
 			}
@@ -246,7 +249,8 @@ func parityUpdate(rackID int, stripe []int) {
 	/****记录ack*****/
 	parityNodeBlocks := GetParityNodeBlocks(parities)
 	fmt.Printf("PataUpdate: parityNodeBlocks: %v\n", parityNodeBlocks)
-	for _, _ = range parityNodeBlocks {
+	for _, b := range parityNodeBlocks {
+		fmt.Printf("pushACK: sid: %d, blockID: %v\n", curSid, b)
 		ackMaps.pushACK(curSid)
 		curSid++
 	}
