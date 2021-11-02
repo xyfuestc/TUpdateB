@@ -35,10 +35,6 @@ func GetLocalIP() string {
 	return "IP获取失败"
 }
 
-func GetChunkIP(chunkGID int) string {
-	nodeID := chunkGID - (chunkGID/config.K)*config.K
-	return GetDataNodeIP(nodeID)
-}
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 const (
@@ -176,31 +172,7 @@ func GetStripeIDFromBlockID(blockID int) int {
 	P2 = [0 1 3 4]
 	P3 = [0 2 3 5]
 */
-func GetRelatedParities(blockID int) config.Matrix  {
-	parities := make(config.Matrix, 0, config.W*config.M)
-	nodeID := GetNodeID(blockID)
-	switch nodeID {
-	case 0:
-		parities = append(parities, 1, 2, 3)
-	case 1:
-		parities = append(parities, 0, 1, 2)
-	case 2:
-		parities = append(parities, 0, 1, 3)
-	case 3:
-		parities = append(parities, 0, 2, 3)
-	case 4:
-		parities = append(parities, 0, 2)
-	case 5:
-		parities = append(parities, 1, 3)
-	default:
-		log.Fatal("GetRelatedParities error: nodeID < 0")
-	}
-	for i := 0; i < len(parities); i++ {
-		parities[i] += byte(config.K)
-	}
 
-	return parities
-}
 //从0开始编号，一直到M*W-1
 func RelatedParities(blockID int) []byte {
 	parities := make([]byte, 0, config.M * config.W)
@@ -215,7 +187,7 @@ func RelatedParities(blockID int) []byte {
 func RelatedParityNodes(parities []byte) []byte {
 	nodes := make([]byte, 0, config.M)
 	for i := 0; i < len(parities); i++ {
-		nodeID := i/config.W + config.K
+		nodeID := int(parities[i])/config.W + config.K
 		if  arrays.Contains(nodes, byte(nodeID)) < 0 {
 			nodes = append(nodes, byte(nodeID))
 		}
@@ -276,14 +248,7 @@ func GetStripeID(blockID int) int  {
 	}
 	return blockID/config.K
 }
-func GetDataNodeIP(blockID int) string  {
-	nodeID := GetNodeID(blockID)
-	if nodeID < 0 || nodeID >= config.K+config.M {
-		log.Fatalln("GetDataNodeIP : nodeID out of range :", nodeID)
-		return "error"
-	}
-	return config.NodeIPs[nodeID]
-}
+
 func GetNodeIP(nodeID int) string {
 	return config.NodeIPs[nodeID]
 }

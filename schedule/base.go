@@ -138,7 +138,7 @@ func (p Base) HandleTD(td *config.TD)  {
 	handleOneTD(td)
 }
 func handleOneTD(td *config.TD)  {
-	go common.WriteBlock(td.BlockID, td.Buff)
+	go common.WriteDeltaBlock(td.BlockID, td.Buff)
 	//返回ack
 	ack := &config.ACK{
 		SID:     td.SID,

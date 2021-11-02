@@ -7,19 +7,24 @@ import (
 	"github.com/wxnacy/wgo/arrays"
 	"sort"
 )
-
 type Graph struct {
 	N   int //顶点数
 	M   int //边数
 	Arc [][]byte
 }
-
 type Task struct {
 	Start byte
 	End   byte
+	SID   int
 	BlockID int
 }
 
+type TUpdate struct {
+	CMDWaitingQueue []*config.CMD
+}
+const MAX_COUNT int = 9
+const INFINITY byte = 255
+var NodeMatrix = make(config.Matrix, (config.N)*(config.N))
 func TaskAdjust(taskGroup []Task)  {
 	for _, t := range taskGroup {
 		s, e :=  t.Start, t.End
@@ -28,82 +33,97 @@ func TaskAdjust(taskGroup []Task)  {
 		}
 	}
 }
-
-type TUpdate struct {
-	ReceivedTDs []*config.TD
-	CMDWaitingQueue []*config.CMD
-}
-
 func (p TUpdate) Init()  {
 	InitNetworkDistance()
-	p.ReceivedTDs = make([]*config.TD, 0, 100)
+	ackMaps = &ACKMap{
+		RequireACKs: make(map[int]int),
+	}
+	ackIPMaps = &ACKIPMap{
+		ACKReceiverIPs: map[int]string{},
+	}
 	p.CMDWaitingQueue = make([]*config.CMD, 0, 100)
 }
 
 func (p TUpdate) HandleReq(blocks []int)  {
-	//sid := reqData.SID
-	//blockID := reqData.BlockID
-	//stripeID := reqData.StripeID
-	//tasks := GetTransmitTasks(blockID)
-	//for _, task := range tasks{
-	//	fromIP := common.GetDataNodeIP(int(task.Start))
-	//	toIP := common.GetDataNodeIP(int(task.End))
-	//	toIPs := make([]string, 1)
-	//	toIPs = append(toIPs, toIP)
-	//	cmd := config.CMD{
-	//		CreatorIP: common.GetLocalIP(),
-	//		SID:      sid,
-	//		StripeID: stripeID,
-	//		BlockID:  blockID,
-	//		ToIPs:    toIPs,
-	//		FromIP:   fromIP,
-	//	}
-	//	fmt.Printf("发送命令给 node: %s，使其将Block %d 发送给 %v\n", fromIP, blockID, toIP)
-	//	common.SendData(cmd, toIP, config.NodeCMDListenPort, "")
-	//	pushACK(cmd.SID, cmd.BlockID,1, common.GetLocalIP(), "")
-	//}
+	for _, _ = range blocks {
+		ackMaps.pushACK(sid)
+		sid++
+	}
+
+	sid = 0
+	for _, b := range blocks {
+		req := &config.ReqData{
+			BlockID: b,
+			SID: sid,
+		}
+		p.handleOneBlock(req)
+		sid++
+	}
+}
+
+func (p TUpdate) handleOneBlock(reqData * config.ReqData)  {
+	tasks := GetTransmitTasks(reqData)
+	fmt.Printf("tasks: %v\n", tasks)
+	for _, task := range tasks {
+		fromIP := common.GetNodeIP(int(task.Start))
+		toIPs := []string{common.GetNodeIP(int(task.End))}
+		common.SendCMD(fromIP, toIPs, task.SID, task.BlockID)
+	}
 }
 
 func (p TUpdate) HandleTD(td *config.TD)  {
-	if p.meetCMDNeed(td) {
-		cmd := p.getMeetCMD(td)
-		p.finishCMD(cmd, td.Buff)
-		p.deleteCMD(cmd)
-	}
-	//local update
+	//本地数据更新
 	go common.WriteDeltaBlock(td.BlockID, td.Buff)
-	//return ack
-	ack := &config.ACK{
-		SID:     td.SID,
-		BlockID: td.BlockID,
+
+	//没有等待任务，返回ack
+	if n, ok := ackMaps.getACK(td.SID); !ok || n == 0 {
+		//返回ack
+		ack := &config.ACK{
+			SID:     td.SID,
+			BlockID: td.BlockID,
+		}
+		ReturnACK(ack)
 	}
-	common.SendData(ack, td.FromIP, config.NodeACKListenPort, "ack")
+	//有等待任务
+	indexes := p.meetCMDNeed(td)
+	//添加ack监听
+	for _, i := range indexes {
+		cmd := p.CMDWaitingQueue[i]
+		for _, _ = range cmd.ToIPs {
+			ackMaps.pushACK(cmd.SID)
+		}
+	}
+	for _, i := range indexes {
+		cmd := p.CMDWaitingQueue[i]
+		for _, toIP := range cmd.ToIPs {
+			common.SendData(td.Buff, toIP, config.NodeTDListenPort, "")
+		}
+		p.CMDWaitingQueue = append(p.CMDWaitingQueue[:i], p.CMDWaitingQueue[i:]...)
+	}
 }
 
-const MAX_COUNT int = 9
-const INFINITY byte = 255
-var nodeMatrix = make(config.Matrix, (config.K+config.M)*(config.K+config.M))
 func InitNetworkDistance()  {
-	//缺一个网络距离矩阵
-	for i := 0; i < config.K+config.M; i++ {
-		for j := 0; j < config.K+config.M; j++ {
+	for i := 0; i < config.N; i++ {
+		for j := 0; j < config.N; j++ {
 			if i == j {
-				nodeMatrix[i*(config.K+config.M)+j] = 0
+				NodeMatrix[i*config.N+j] = 0
 			}else{
-				nodeMatrix[i*(config.K+config.M)+j] = 5
+				NodeMatrix[i*config.N+j] = 2
 			}
 		}
 	}
-	nodeMatrix[0*(config.K+config.M)+1] = 1
-	nodeMatrix[1*(config.K+config.M)+0] = 1
-	nodeMatrix[2*(config.K+config.M)+3] = 1
-	nodeMatrix[3*(config.K+config.M)+2] = 1
-	nodeMatrix[4*(config.K+config.M)+5] = 1
-	nodeMatrix[5*(config.K+config.M)+4] = 1
-	nodeMatrix[6*(config.K+config.M)+7] = 1
-	nodeMatrix[7*(config.K+config.M)+6] = 1
-	nodeMatrix[8*(config.K+config.M)+9] = 1
-	nodeMatrix[9*(config.K+config.M)+8] = 1
+	//初始化Rack内部网络距离
+	for r := 0; r < config.N / config.RackSize; r++ {
+		curRackMinNode := config.RackSize * r
+		curRackMaxNode := config.RackSize * r + config.RackSize
+		for i := curRackMinNode; i < curRackMaxNode; i++ {
+			for j := curRackMinNode; j < curRackMaxNode; j++ {
+				if i != j {
+					NodeMatrix[i*config.N+j] = 1
+				}
+			}
+		}
+	}
 }
 /*Prim算法*/
 func Prim(G Graph) config.Matrix{
@@ -123,8 +143,6 @@ func Prim(G Graph) config.Matrix{
 				k = j
 			}
 		}
-		fmt.Printf("(%d, %d) ", vertex[k], k)
-
 		lowCost[k] = 0
 		for j := 0; j < G.N; j++ {
 			if lowCost[j] != 0 && G.Arc[k][j] < lowCost[j] {
@@ -159,77 +177,74 @@ func GetMSTPath(matrix, nodeIndexs config.Matrix) config.Matrix   {
 	path := Prim(G)
 	return path
 }
-func GetTransmitTasks(blockID int) []Task {
-	parities :=	common.RelatedParities(blockID)
-	nodeID := common.GetNodeID(blockID)
-	relatedParityMatrix, nodeIndexs := getAdjacentMatrix(parities, nodeID, nodeMatrix)
+func GetTransmitTasks(reqData *config.ReqData) []Task {
+	parities :=	common.RelatedParities(reqData.BlockID)
+	parityNodes := common.RelatedParityNodes(parities)
+	nodeID := common.GetNodeID(reqData.BlockID)
+	relatedParityMatrix, nodeIndexs := getAdjacentMatrix(parityNodes, nodeID, NodeMatrix)
 	path := GetMSTPath(relatedParityMatrix, nodeIndexs)
 	taskGroup := make([]Task, 0, len(nodeIndexs)-1)
 	for i := 1; i < len(nodeIndexs); i++ {
-		taskGroup = append(taskGroup, Task{Start: nodeIndexs[path[i]], BlockID: blockID, End:nodeIndexs[i]})
+		taskGroup = append(taskGroup, Task{Start: nodeIndexs[path[i]], SID: reqData.SID, BlockID: reqData.BlockID, End:nodeIndexs[i]})
 	}
 	TaskAdjust(taskGroup)
 	sort.SliceStable(taskGroup, func(i, j int) bool {
 		return taskGroup[i].Start < taskGroup[j].Start
 	})
 
-	fmt.Printf("GetTransmitTasks :%v\n", taskGroup)
+	//fmt.Printf("GetTransmitTasks :%v\n", taskGroup)
 
 	return taskGroup
 
 }
 func getAdjacentMatrix(parities []byte, nodeID int, allMatrix []byte) (config.Matrix, config.Matrix) {
-	nodeIndexes := make(config.Matrix, 0, (1+config.M)*(1+config.M))
-	nodeIndexes = append(nodeIndexes, (byte)(nodeID/config.W))
+	nodeIDs := make(config.Matrix, 0, (1+config.M)*(1+config.M))
+	nodeIDs = append(nodeIDs, (byte)(nodeID))
 	for i := 0; i < len(parities); i++ {
-		if arrays.Contains(nodeIndexes, parities[i]/(byte)(config.W)) < 0 {
-			nodeIndexes = append(nodeIndexes, parities[i]/(byte)(config.W))
+		if arrays.Contains(nodeIDs, parities[i]) < 0 {
+			nodeIDs = append(nodeIDs, parities[i])
 		}
 	}
-	len := len(nodeIndexes) //[0 4 5]
+	len := len(nodeIDs) //[0 4 5]
 	newMatrix := make(config.Matrix, len*len)
 	for i := 0; i < len; i++ {
 		for j := 0; j < len; j++ {
-			value :=  nodeIndexes[i]*(byte)(config.K+config.M)+ nodeIndexes[j]
+			value :=  nodeIDs[i]*(byte)(config.N)+ nodeIDs[j]
 			newMatrix[i*len+j] = allMatrix[value]
 		}
 	}
-	return newMatrix, nodeIndexes
+	return newMatrix, nodeIDs
 }
 func (p TUpdate) HandleCMD(cmd *config.CMD)  {
-	if p.IsCMDDataExist(cmd) {
+	if IsCMDDataExist(cmd) {
+		//添加ack监听
+		for _, _ = range cmd.ToIPs {
+			ackMaps.pushACK(cmd.SID)
+		}
 		fmt.Printf("block %d is local\n", cmd.BlockID)
 		buff := common.ReadBlock(cmd.BlockID)
-		p.finishCMD(cmd, buff)
+
+		for _, toIP := range cmd.ToIPs {
+			common.SendData(buff, toIP, config.NodeTDListenPort, "")
+		}
 	}else{
 		p.CMDWaitingQueue = append(p.CMDWaitingQueue, cmd)
+
 	}
 }
-func (p TUpdate) meetCMDNeedAndReturnIndex(td config.TD) int {
-	for i, cmd:= range p.CMDWaitingQueue{
+func (p TUpdate) meetCMDNeed(td *config.TD) []int  {
+	indexes := make([]int, 0, config.M)
+	for i, cmd := range p.CMDWaitingQueue{
 		if cmd.SID == td.SID{
-			return i
+			indexes = append(indexes, i)
 		}
 	}
-	return -1
+	return indexes
 }
-func (p TUpdate) meetCMDNeed(td *config.TD) bool  {
-	for _, cmd:= range p.CMDWaitingQueue{
-		if cmd.SID == td.SID{
-			return true
-		}
-	}
-	return false
+func IsCMDDataExist(cmd *config.CMD) bool {
+	return common.GetNodeIP(common.GetNodeID(cmd.BlockID)) == common.GetLocalIP()
 }
-func (p TUpdate) IsCMDDataExist(cmd *config.CMD) bool {
-	return common.GetDataNodeIP(cmd.BlockID) == common.GetLocalIP()
-}
-func (p TUpdate) finishCMD(cmd *config.CMD, buff []byte) {
-	//for _, toIP := range cmd.ToIPs {
-	//	common.SendData(buff, cmd.FromIP, toIP, "")
-	//}
-	//pushACK(cmd.SID, cmd.BlockID, 1,  cmd.FromIP, "")
-}
+
 func (p TUpdate) getMeetCMD(td *config.TD) *config.CMD {
 	for _, cmd:= range p.CMDWaitingQueue{
 		if cmd.SID == td.SID{
@@ -238,29 +253,19 @@ func (p TUpdate) getMeetCMD(td *config.TD) *config.CMD {
 	}
 	return &config.CMD{}
 }
-func (p TUpdate) deleteCMD(delCMD *config.CMD) {
-	for i, cmd:= range p.CMDWaitingQueue{
-		if cmd.SID == delCMD.SID{
-			p.CMDWaitingQueue = append(p.CMDWaitingQueue[:i], p.CMDWaitingQueue[i:]...)
+
+func (p TUpdate) HandleACK(ack *config.ACK)  {
+	ackMaps.popACK(ack.SID)
+	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
+		//ms不需要反馈ack
+		if common.GetLocalIP() != config.MSIP {
+			ReturnACK(ack)
 		}
 	}
 }
-func (p TUpdate) HandleACK(ack *config.ACK)  {
-	//popACK(ack.SID)
-	//if !IsExistInWaitingACKGroup(ack.SID) {
-	//	ack := &config.ACK{
-	//		SID:     ack.SID,
-	//		BlockID: ack.BlockID,
-	//	}
-	//	ackReceiverIP := WaitingACKGroup[ack.SID].ACKReceiverIP
-	//	common.SendData(ack, ackReceiverIP, config.NodeACKListenPort, "ack")
-	//
-	//	delete(WaitingACKGroup, ack.SID)
-	//}
-}
 func (p TUpdate) Clear()  {
-	p.ReceivedTDs = make([]*config.TD, 0, 100)
 	p.CMDWaitingQueue = make([]*config.CMD, 0, 100)
+	NodeMatrix = make(config.Matrix, (config.N)*(config.N))
 }
 
 func (p TUpdate) RecordSIDAndReceiverIP(sid int, ip string)()  {
@@ -270,3 +275,4 @@ func (p TUpdate) RecordSIDAndReceiverIP(sid int, ip string)()  {
 func (p TUpdate) IsFinished() bool {
 	return ackMaps.isEmpty()
 }
+
