@@ -74,14 +74,13 @@ func (p TUpdate) handleOneBlock(reqData * config.ReqData)  {
 func (p TUpdate) HandleTD(td *config.TD)  {
 	//本地数据更新
 	go common.WriteDeltaBlock(td.BlockID, td.Buff)
-
-
 	//有等待任务
 	indexes := p.meetCMDNeed(td)
 	if len(indexes) > 0 {
 		//添加ack监听
 		for _, i := range indexes {
 			cmd := p.CMDWaitingQueue[i]
+			fmt.Printf("cmd : %v\n", cmd)
 			for _, _ = range cmd.ToIPs {
 				ackMaps.pushACK(cmd.SID)
 			}
@@ -94,6 +93,7 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 			p.CMDWaitingQueue = append(p.CMDWaitingQueue[:i], p.CMDWaitingQueue[i:]...)
 		}
 	}else{
+		fmt.Printf("CMDWaitingQueue: %v\n", p.CMDWaitingQueue)
 		//没有等待任务，返回ack
 		if n, ok := ackMaps.getACK(td.SID); !ok || n == 0 {
 			//返回ack
@@ -280,7 +280,7 @@ func (p TUpdate) Clear()  {
 }
 
 func (p TUpdate) RecordSIDAndReceiverIP(sid int, ip string)()  {
-
+	ackIPMaps.recordIP(sid, ip)
 }
 
 func (p TUpdate) IsFinished() bool {
