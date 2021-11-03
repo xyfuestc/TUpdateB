@@ -95,9 +95,8 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 			p.CMDWaitingQueue = append(p.CMDWaitingQueue[:i], p.CMDWaitingQueue[i:]...)
 		}
 	}else{
-		fmt.Printf("CMDWaitingQueue: %v\n", p.CMDWaitingQueue)
 		//没有等待任务，返回ack
-		if n, ok := ackMaps.getACK(td.SID); !ok || n == 0 {
+		if _, ok := ackMaps.getACK(td.SID); !ok {
 			//返回ack
 			ack := &config.ACK{
 				SID:     td.SID,
@@ -242,14 +241,17 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 		}
 	}else{
 		p.CMDWaitingQueue = append(p.CMDWaitingQueue, cmd)
-		fmt.Printf("添加需要处理的cmd数量为 ：%v\n", p.CMDWaitingQueue[len(p.CMDWaitingQueue)-1])
+		//fmt.Printf("添加需要处理的cmd数量为 ：%v\n", p.CMDWaitingQueue[len(p.CMDWaitingQueue)-1])
 	}
 }
 func (p TUpdate) meetCMDNeed(td *config.TD) []int  {
+	fmt.Printf("td的sid: %v\n", td.SID)
 	indexes := make([]int, 0, config.M)
 	for i, cmd := range p.CMDWaitingQueue{
 		if cmd.SID == td.SID{
 			indexes = append(indexes, i)
+		}else{
+			fmt.Printf("不匹配！CMDWaitingQueue[%d]的sid: %v\n", i, cmd.SID)
 		}
 	}
 	return indexes
