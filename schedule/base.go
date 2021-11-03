@@ -89,7 +89,9 @@ func SetPolicy(policyType config.PolicyType)  {
 	case config.CAU:
 		CurPolicy = CAU{}
 	case config.T_Update:
-		CurPolicy = TUpdate{}
+		CurPolicy = TUpdate{
+			CMDWaitingQueue: make([]*config.CMD, 0, config.MaxBatchSize),
+		}
 	case config.DPR_Forest:
 		CurPolicy = Forest{}
 	}
