@@ -16,7 +16,7 @@ const Megabyte = 1024 * 1024      //1MB
 const MaxBatchSize int = 100
 const MaxBlockSize int = 1000000
 const ECMode string = "RS" // or "XOR"
-var CurPolicyVal = T_Update
+var CurPolicyVal = CAU
 var CurPolicyStr = []string{"Base", "CAU", "Forest", "TUpdate"}
 //var OutFilePath = "../request/proj_4.csv.txt"
 var OutFilePath = "../request/proj_4.csv.bak.txt"
@@ -85,8 +85,8 @@ type PolicyType int
 const (
 	BASE PolicyType = iota
 	CAU
+	Forest
 	T_Update
-	DPR_Forest
 
 )
 const BaseIP string = "192.168.1."
