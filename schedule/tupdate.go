@@ -75,30 +75,34 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 	//本地数据更新
 	go common.WriteDeltaBlock(td.BlockID, td.Buff)
 
-	//没有等待任务，返回ack
-	if n, ok := ackMaps.getACK(td.SID); !ok || n == 0 {
-		//返回ack
-		ack := &config.ACK{
-			SID:     td.SID,
-			BlockID: td.BlockID,
-		}
-		ReturnACK(ack)
-	}
+
 	//有等待任务
 	indexes := p.meetCMDNeed(td)
-	//添加ack监听
-	for _, i := range indexes {
-		cmd := p.CMDWaitingQueue[i]
-		for _, _ = range cmd.ToIPs {
-			ackMaps.pushACK(cmd.SID)
+	if len(indexes) > 0 {
+		//添加ack监听
+		for _, i := range indexes {
+			cmd := p.CMDWaitingQueue[i]
+			for _, _ = range cmd.ToIPs {
+				ackMaps.pushACK(cmd.SID)
+			}
 		}
-	}
-	for _, i := range indexes {
-		cmd := p.CMDWaitingQueue[i]
-		for _, toIP := range cmd.ToIPs {
-			common.SendData(td.Buff, toIP, config.NodeTDListenPort, "")
+		for _, i := range indexes {
+			cmd := p.CMDWaitingQueue[i]
+			for _, toIP := range cmd.ToIPs {
+				common.SendData(td.Buff, toIP, config.NodeTDListenPort, "")
+			}
+			p.CMDWaitingQueue = append(p.CMDWaitingQueue[:i], p.CMDWaitingQueue[i:]...)
 		}
-		p.CMDWaitingQueue = append(p.CMDWaitingQueue[:i], p.CMDWaitingQueue[i:]...)
+	}else{
+		//没有等待任务，返回ack
+		if n, ok := ackMaps.getACK(td.SID); !ok || n == 0 {
+			//返回ack
+			ack := &config.ACK{
+				SID:     td.SID,
+				BlockID: td.BlockID,
+			}
+			ReturnACK(ack)
+		}
 	}
 }
 
