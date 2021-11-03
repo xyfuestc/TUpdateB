@@ -20,10 +20,11 @@ type Task struct {
 }
 
 type TUpdate struct {
-	CMDWaitingQueue []*config.CMD
+
 }
 const MAX_COUNT int = 9
 const INFINITY byte = 255
+var CMDWaitingQueue = make([]*config.CMD, 0, config.MaxBatchSize)
 var NodeMatrix = make(config.Matrix, (config.N)*(config.N))
 func TaskAdjust(taskGroup []Task)  {
 	for _, t := range taskGroup {
@@ -41,7 +42,7 @@ func (p TUpdate) Init()  {
 	ackIPMaps = &ACKIPMap{
 		ACKReceiverIPs: map[int]string{},
 	}
-	p.CMDWaitingQueue = make([]*config.CMD, 0, config.MaxBatchSize)
+	CMDWaitingQueue = make([]*config.CMD, 0, config.MaxBatchSize)
 }
 
 func (p TUpdate) HandleReq(blocks []int)  {
@@ -81,18 +82,18 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 		fmt.Printf("indexes: %v\n", indexes)
 		//添加ack监听
 		for _, i := range indexes {
-			cmd := p.CMDWaitingQueue[i]
+			cmd := CMDWaitingQueue[i]
 			fmt.Printf("cmd : %v\n", cmd)
 			for _, _ = range cmd.ToIPs {
 				ackMaps.pushACK(cmd.SID)
 			}
 		}
 		for _, i := range indexes {
-			cmd := p.CMDWaitingQueue[i]
+			cmd := CMDWaitingQueue[i]
 			for _, toIP := range cmd.ToIPs {
 				common.SendData(td.Buff, toIP, config.NodeTDListenPort, "")
 			}
-			p.CMDWaitingQueue = append(p.CMDWaitingQueue[:i], p.CMDWaitingQueue[i:]...)
+			CMDWaitingQueue = append(CMDWaitingQueue[:i], CMDWaitingQueue[i:]...)
 		}
 	}else{
 		//没有等待任务，返回ack
@@ -240,14 +241,14 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 			common.SendData(td, toIP, config.NodeTDListenPort, "")
 		}
 	}else{
-		p.CMDWaitingQueue = append(p.CMDWaitingQueue, cmd)
+		CMDWaitingQueue = append(CMDWaitingQueue, cmd)
 		//fmt.Printf("添加需要处理的cmd数量为 ：%v\n", p.CMDWaitingQueue[len(p.CMDWaitingQueue)-1])
 	}
 }
 func (p TUpdate) meetCMDNeed(td *config.TD) []int  {
 	fmt.Printf("td的sid: %v\n", td.SID)
 	indexes := make([]int, 0, config.M)
-	for i, cmd := range p.CMDWaitingQueue{
+	for i, cmd := range CMDWaitingQueue{
 		if cmd.SID == td.SID{
 			indexes = append(indexes, i)
 		}else{
@@ -261,7 +262,7 @@ func IsCMDDataExist(cmd *config.CMD) bool {
 }
 
 func (p TUpdate) getMeetCMD(td *config.TD) *config.CMD {
-	for _, cmd:= range p.CMDWaitingQueue{
+	for _, cmd:= range CMDWaitingQueue{
 		if cmd.SID == td.SID{
 			return cmd
 		}
@@ -279,7 +280,7 @@ func (p TUpdate) HandleACK(ack *config.ACK)  {
 	}
 }
 func (p TUpdate) Clear()  {
-	p.CMDWaitingQueue = make([]*config.CMD, 0, 100)
+	CMDWaitingQueue = make([]*config.CMD, 0, 100)
 	NodeMatrix = make(config.Matrix, (config.N)*(config.N))
 }
 
