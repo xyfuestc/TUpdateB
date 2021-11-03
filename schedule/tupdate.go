@@ -41,7 +41,7 @@ func (p TUpdate) Init()  {
 	ackIPMaps = &ACKIPMap{
 		ACKReceiverIPs: map[int]string{},
 	}
-	p.CMDWaitingQueue = make([]*config.CMD, 0, 100)
+	p.CMDWaitingQueue = make([]*config.CMD, 0, config.MaxBatchSize)
 }
 
 func (p TUpdate) HandleReq(blocks []int)  {
@@ -240,7 +240,7 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 		}
 	}else{
 		p.CMDWaitingQueue = append(p.CMDWaitingQueue, cmd)
-
+		fmt.Printf("需要处理的cmd ：%v\n", p.CMDWaitingQueue)
 	}
 }
 func (p TUpdate) meetCMDNeed(td *config.TD) []int  {
