@@ -225,7 +225,14 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 		buff := common.ReadBlock(cmd.BlockID)
 
 		for _, toIP := range cmd.ToIPs {
-			common.SendData(buff, toIP, config.NodeTDListenPort, "")
+			td := &config.TD{
+				BlockID: cmd.BlockID,
+				Buff: buff,
+				FromIP: cmd.FromIP,
+				ToIP: toIP,
+				SID: cmd.SID,
+			}
+			common.SendData(td, toIP, config.NodeTDListenPort, "")
 		}
 	}else{
 		p.CMDWaitingQueue = append(p.CMDWaitingQueue, cmd)
