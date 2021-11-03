@@ -64,7 +64,7 @@ func (p TUpdate) HandleReq(blocks []int)  {
 
 func (p TUpdate) handleOneBlock(reqData * config.ReqData)  {
 	tasks := GetTransmitTasks(reqData)
-	fmt.Printf("tasks: %v\n", tasks)
+	//fmt.Printf("tasks: %v\n", tasks)
 	for _, task := range tasks {
 		fromIP := common.GetNodeIP(int(task.Start))
 		toIPs := []string{common.GetNodeIP(int(task.End))}
@@ -79,11 +79,11 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 	indexes := p.meetCMDNeed(td)
 
 	if len(indexes) > 0 {
-		fmt.Printf("indexes: %v\n", indexes)
+		//fmt.Printf("indexes: %v\n", indexes)
 		//添加ack监听
 		for _, i := range indexes {
 			cmd := CMDWaitingQueue[i]
-			fmt.Printf("cmd : %v\n", cmd)
+			//fmt.Printf("cmd : %v\n", cmd)
 			for _, _ = range cmd.ToIPs {
 				ackMaps.pushACK(cmd.SID)
 			}
@@ -91,7 +91,14 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 		for _, i := range indexes {
 			cmd := CMDWaitingQueue[i]
 			for _, toIP := range cmd.ToIPs {
-				common.SendData(td.Buff, toIP, config.NodeTDListenPort, "")
+				td := &config.TD{
+					BlockID: cmd.BlockID,
+					Buff: td.Buff,
+					FromIP: cmd.FromIP,
+					ToIP: toIP,
+					SID: cmd.SID,
+				}
+				common.SendData(td, toIP, config.NodeTDListenPort, "")
 			}
 			CMDWaitingQueue = append(CMDWaitingQueue[:i], CMDWaitingQueue[i:]...)
 		}
@@ -227,7 +234,7 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 		for _, _ = range cmd.ToIPs {
 			ackMaps.pushACK(cmd.SID)
 		}
-		fmt.Printf("block %d is local\n", cmd.BlockID)
+		//fmt.Printf("block %d is local\n", cmd.BlockID)
 		buff := common.ReadBlock(cmd.BlockID)
 
 		for _, toIP := range cmd.ToIPs {
@@ -251,8 +258,6 @@ func (p TUpdate) meetCMDNeed(td *config.TD) []int  {
 	for i, cmd := range CMDWaitingQueue{
 		if cmd.SID == td.SID{
 			indexes = append(indexes, i)
-		}else{
-			fmt.Printf("不匹配！CMDWaitingQueue[%d]的sid: %v\n", i, cmd.SID)
 		}
 	}
 	return indexes
