@@ -76,7 +76,9 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 	go common.WriteDeltaBlock(td.BlockID, td.Buff)
 	//有等待任务
 	indexes := p.meetCMDNeed(td)
+
 	if len(indexes) > 0 {
+		fmt.Printf("indexes: %v\n", indexes)
 		//添加ack监听
 		for _, i := range indexes {
 			cmd := p.CMDWaitingQueue[i]
@@ -240,7 +242,7 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 		}
 	}else{
 		p.CMDWaitingQueue = append(p.CMDWaitingQueue, cmd)
-		fmt.Printf("需要处理的cmd ：%v\n", p.CMDWaitingQueue)
+		fmt.Printf("添加需要处理的cmd数量为 ：%v\n", p.CMDWaitingQueue[len(p.CMDWaitingQueue)-1])
 	}
 }
 func (p TUpdate) meetCMDNeed(td *config.TD) []int  {
