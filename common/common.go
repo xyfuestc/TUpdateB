@@ -34,7 +34,9 @@ func GetLocalIP() string {
 	}
 	return "IP获取失败"
 }
-
+func GetIDFromIP(nodeIP string) int {
+	return arrays.Contains(config.NodeIPs, nodeIP)
+}
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 const (
@@ -309,6 +311,19 @@ func SendCMD(fromIP string, toIPs []string, sid, blockID int)  {
 	SendData(cmd, fromIP, config.NodeCMDListenPort, "")
 }
 
+func SendCMDWithHelpers(fromIP string, toIPs []string, sid, blockID int, helpers []int)  {
+	cmd := &config.CMD{
+		SID: sid,
+		BlockID: blockID,
+		ToIPs: toIPs,
+		FromIP: fromIP,
+		Helpers: helpers,
+		Matched: 0,
+	}
+	SendData(cmd, fromIP, config.NodeCMDListenPort, "")
+}
+
+
 //func GetCMDFromReqData(reqData config.ReqData) config.CMD  {
 //	sid := reqData.SID
 //	blockID := reqData.BlockID
@@ -410,3 +425,11 @@ func GetParityIDFromIndex(i int) int {
 func GetDataNodeIDFromIndex(rackID, i int) int {
 	return rackID * config.RackSize + i
 }
+
+func IntArrayRemove(slice []int, s int) []int {
+	return append(slice[:s], slice[s+1:]...)
+}
+
+
+
+

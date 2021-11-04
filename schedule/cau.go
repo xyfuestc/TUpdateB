@@ -29,7 +29,73 @@ func (p CAU) Init()  {
 }
 
 func (p CAU) HandleTD(td *config.TD)  {
-	handleOneTD(td)
+	//handleOneTD(td)
+	//1.CMDWaitingQueue检测哪些CMD可以执行
+	//2.本地更新
+	//本地数据更新
+
+	//校验节点本地数据更新
+	localID := arrays.Contains(config.NodeIPs, common.GetLocalIP())
+	if localID >= config.K {
+		go common.WriteDeltaBlock(td.BlockID, td.Buff)
+	}
+
+	//有等待任务
+	indexes := p.meetCMDNeed(td)
+
+	if len(indexes) > 0 {
+		//fmt.Printf("indexes: %v\n", indexes)
+		//添加ack监听
+		for _, i := range indexes {
+			cmd := CMDWaitingQueue[i]
+			//fmt.Printf("cmd : %v\n", cmd)
+			for _, _ = range cmd.ToIPs {
+				ackMaps.pushACK(cmd.SID)
+			}
+		}
+		for _, i := range indexes {
+			cmd := CMDWaitingQueue[i]
+			for _, toIP := range cmd.ToIPs {
+				td := &config.TD{
+					BlockID: cmd.BlockID,
+					Buff: td.Buff,
+					FromIP: cmd.FromIP,
+					ToIP: toIP,
+					SID: cmd.SID,
+				}
+				common.SendData(td, toIP, config.NodeTDListenPort, "")
+			}
+			CMDWaitingQueue = append(CMDWaitingQueue[:i], CMDWaitingQueue[i:]...)
+		}
+	}else{
+		//没有等待任务，返回ack
+		if _, ok := ackMaps.getACK(td.SID); !ok {
+			//返回ack
+			ack := &config.ACK{
+				SID:     td.SID,
+				BlockID: td.BlockID,
+			}
+			ReturnACK(ack)
+		}
+	}
+}
+func (p CAU) meetCMDNeed(td *config.TD) []int  {
+	//matched++
+	for i := 0; i < len(CMDWaitingQueue); i++ {
+		if j := arrays.Contains(CMDWaitingQueue[i].Helpers, td.BlockID); j >= 0 {
+			CMDWaitingQueue[i].Helpers = append(CMDWaitingQueue[i].Helpers[:j], CMDWaitingQueue[i].Helpers[j+1:]...)
+			//CMDWaitingQueue[i].Matched++
+		}
+	}
+	//是否有cmd可以执行
+	indexes := make([]int, 0, config.M)
+	for i, cmd := range CMDWaitingQueue{
+		if len(cmd.Helpers) == 0 {
+			indexes = append(indexes, i)
+		}
+	}
+
+	return indexes
 }
 
 func (p CAU) HandleReq(blocks []int)  {
@@ -165,7 +231,8 @@ func dataUpdate(rackID int, stripe []int)  {
 				//省略了合并操作，直接只发一条
 				fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
 					rootP, common.GetNodeIP(rootP), b, common.GetNodeIP(parityID))
-				common.SendCMD(common.GetNodeIP(rootP), []string{common.GetNodeIP(parityID)}, sid, b)
+				common.SendCMDWithHelpers(common.GetNodeIP(rootP), []string{common.GetNodeIP(parityID)},
+											sid, b, blocks)
 				sid++
 				break
 			}
@@ -238,12 +305,19 @@ func parityUpdate(rackID int, stripe []int) {
 	}
 	/****分发*****/
 	for i, blocks := range parityNodeBlocks {
-		parityID := i + config.K
-		for _, b := range blocks {//省略了合并操作，直接只发一条
-			common.SendCMD(common.GetNodeIP(rootD), []string{common.GetNodeIP(parityID)}, sid, b)
-			sid++
-			break
+		if len(blocks) == 0{
+			continue
 		}
+		parityID := i + config.K
+		helpers := make([]int, 0, len(blocks))
+		for _, b := range blocks {
+			if common.GetNodeID(b) != rootD{
+				helpers = append(helpers, b)
+			}
+		}
+		common.SendCMDWithHelpers(common.GetNodeIP(rootD), []string{common.GetNodeIP(parityID)},
+				sid, blocks[0], helpers)
+		sid++
 	}
 	sort.Ints(unionParities)
 	fmt.Printf("ParityUpdate: stripe: %v, parities: %v, unionParities: %v, curRackNodes: %v\n",
@@ -331,7 +405,28 @@ func turnBlocksToStripes() map[int][]int {
 }
 
 func (p CAU) HandleCMD(cmd *config.CMD)  {
-	handlOneCMD(cmd)
+	//handlOneCMD(cmd)
+	if len(cmd.Helpers) == 0 {
+		//添加ack监听
+		for _, _ = range cmd.ToIPs {
+			ackMaps.pushACK(cmd.SID)
+		}
+		//fmt.Printf("block %d is local\n", cmd.BlockID)
+		buff := common.ReadBlock(cmd.BlockID)
+
+		for _, toIP := range cmd.ToIPs {
+			td := &config.TD{
+				BlockID: cmd.BlockID,
+				Buff: buff,
+				FromIP: cmd.FromIP,
+				ToIP: toIP,
+				SID: cmd.SID,
+			}
+			common.SendData(td, toIP, config.NodeTDListenPort, "")
+		}
+	}else{
+		CMDWaitingQueue = append(CMDWaitingQueue, cmd)
+	}
 }
 
 func (p CAU) HandleACK(ack *config.ACK)  {
@@ -371,6 +466,8 @@ func GetRootParityID(parities [][]int) int {
 func (p CAU) IsFinished() bool {
 	return len(totalBlocks) == 0 && ackMaps.isEmpty()
 }
+
+
 func GetActualBlocks() int {
 	return actualBlocks
 }

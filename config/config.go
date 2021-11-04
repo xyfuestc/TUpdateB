@@ -94,7 +94,7 @@ var MSIP = BaseIP + "108"
 var ClientIP = BaseIP + "109"
 const DataFilePath string = "../../test"
 const StartIP int = 172
-var NodeIPs =[K+M]string{
+var NodeIPs =[N]string{
 	BaseIP+"110", BaseIP+"111", BaseIP+"112", BaseIP+"113",     //rack0
 	BaseIP+"120", BaseIP+"121", BaseIP+"122", BaseIP+"123",     //rack1
 	BaseIP+"140", BaseIP+"141", BaseIP+"142", BaseIP+"143",     //rack2
@@ -118,19 +118,13 @@ type TD struct {
 
 //传输命令格式
 type CMD struct {
-	CreatorIP          string
-	SID                int
-	SendSize           int
-	Type               CMDType
+	SID                int            //
 	StripeID           int
-	BlockID            int
-	UpdateParityID     int
-	NumRecvChunkItem   int
-	NumRecvChunkParity int
-	PortNum            int
+	BlockID            int             //如果有协作者ID，意思就是传XOR结果过去，blockID=第一条ID
 	FromIP             string
 	ToIPs              []string
-	ToOneIP            string
+	Helpers            []int            //协作者的blockIDs
+	Matched            int             //已经匹配的blockID数量
 }
 type ReqData struct {
 	SID      int
