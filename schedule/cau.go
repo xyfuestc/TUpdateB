@@ -187,7 +187,10 @@ func dataUpdate(rackID int, stripe []int)  {
 
 	/****记录ack*****/
 	parityNodeBlocks := GetParityNodeBlocks(parities)
+
+
 	for i, b := range parityNodeBlocks {
+
 		parityID := i + config.K
 		if parityID != rootP && len(b) > 0 {
 			fmt.Printf("pushACK: sid: %d, blockID: %v\n", curSid, b)
@@ -271,6 +274,7 @@ func parityUpdate(rackID int, stripe []int) {
 
 	/****记录ack*****/
 	parityNodeBlocks := GetParityNodeBlocks(parities)
+
 	fmt.Printf("PataUpdate: parityNodeBlocks: %v\n", parityNodeBlocks)
 	for _, blocks := range parityNodeBlocks {
 		if len(blocks) == 0{
@@ -334,6 +338,9 @@ func GetParityNodeBlocks(parities [][]int) [][]int {
 				parityNodeBlocks[parityIndex] = append(parityNodeBlocks[parityIndex], b)
 			}
 		}
+	}
+	for i := 0; i < len(parityNodeBlocks); i++ {
+		sort.Ints(parityNodeBlocks[i])
 	}
 	return parityNodeBlocks
 }
