@@ -46,9 +46,11 @@ func (p CAU) HandleTD(td *config.TD)  {
 	//有等待任务
 	indexes := p.meetCMDNeed(td)
 	if len(indexes) > 0 {
+		fmt.Printf("有等待任务可以执行：%v\n", indexes)
 		//添加ack监听
 		for _, i := range indexes {
 			cmd := CMDWaitingQueue[i]
+			fmt.Printf("执行TD任务：sid:%d blockID:%d\n", cmd.SID, cmd.BlockID)
 			for _, _ = range cmd.ToIPs {
 				ackMaps.pushACK(cmd.SID)
 			}
@@ -268,8 +270,11 @@ func parityUpdate(rackID int, stripe []int) {
 	/****记录ack*****/
 	parityNodeBlocks := GetParityNodeBlocks(parities)
 	fmt.Printf("PataUpdate: parityNodeBlocks: %v\n", parityNodeBlocks)
-	for _, b := range parityNodeBlocks {
-		fmt.Printf("pushACK: sid: %d, blockID: %v\n", curSid, b)
+	for _, blocks := range parityNodeBlocks {
+		if len(blocks) == 0{
+			continue
+		}
+		fmt.Printf("pushACK: sid: %d, blockID: %v\n", curSid, blocks)
 		ackMaps.pushACK(curSid)
 		curSid++
 	}

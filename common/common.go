@@ -212,7 +212,7 @@ func WriteBlock(blockID int, buff []byte)  {
 	log.Printf("write block %d done.\n", blockID)
 }
 func GetNodeID(blockID int) int {
-	return blockID % (config.K*config.W) / config.W
+	return blockID % (config.K * config.W) / config.W
 }
 func GetStripeID(blockID int) int  {
 	if blockID < 0 {
@@ -277,6 +277,8 @@ func SendCMD(fromIP string, toIPs []string, sid, blockID int)  {
 		BlockID: blockID,
 		ToIPs: toIPs,
 		FromIP: fromIP,
+		Helpers: make([]int, 0),
+		Matched: 0,
 	}
 	SendData(cmd, fromIP, config.NodeCMDListenPort, "")
 }
