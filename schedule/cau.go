@@ -26,6 +26,10 @@ func (p CAU) Init()  {
 	ackIPMaps = &ACKIPMap{
 		ACKReceiverIPs: map[int]string{},
 	}
+
+	cmdMaps = &CMDWaitingMap{
+		Queue: map[int]*config.CMD{},
+	}
 }
 
 func (p CAU) HandleTD(td *config.TD)  {
@@ -44,19 +48,19 @@ func (p CAU) HandleTD(td *config.TD)  {
 	ReturnACK(ack)
 
 	//有等待任务
-	indexes := p.meetCMDNeed(td)
+	indexes := p.meetCMDNeed(td.SID)
 	if len(indexes) > 0 {
 		fmt.Printf("有等待任务可以执行：%v\n", indexes)
 		//添加ack监听
 		for _, i := range indexes {
-			cmd := CMDWaitingQueue[i]
+			cmd := i
 			fmt.Printf("执行TD任务：sid:%d blockID:%d\n", cmd.SID, cmd.BlockID)
 			for _, _ = range cmd.ToIPs {
 				ackMaps.pushACK(cmd.SID)
 			}
 		}
 		for _, i := range indexes {
-			cmd := CMDWaitingQueue[i]
+			cmd := i
 			for _, toIP := range cmd.ToIPs {
 				td := &config.TD{
 					BlockID: cmd.BlockID,
@@ -67,27 +71,14 @@ func (p CAU) HandleTD(td *config.TD)  {
 				}
 				common.SendData(td, toIP, config.NodeTDListenPort, "")
 			}
-			CMDWaitingQueue = append(CMDWaitingQueue[:i], CMDWaitingQueue[i:]...)
 		}
 	}
 }
-func (p CAU) meetCMDNeed(td *config.TD) []int  {
-	//matched++
-	for i := 0; i < len(CMDWaitingQueue); i++ {
-		if j := arrays.Contains(CMDWaitingQueue[i].Helpers, td.BlockID); j >= 0 {
-			CMDWaitingQueue[i].Helpers = append(CMDWaitingQueue[i].Helpers[:j], CMDWaitingQueue[i].Helpers[j+1:]...)
-			//CMDWaitingQueue[i].Matched++
-		}
-	}
-	//是否有cmd可以执行
-	indexes := make([]int, 0, config.M)
-	for i, cmd := range CMDWaitingQueue{
-		if len(cmd.Helpers) == 0 {
-			indexes = append(indexes, i)
-		}
-	}
 
-	return indexes
+
+func (p CAU) meetCMDNeed(blockID int) []*config.CMD  {
+	cmdMaps.updateRunnableCMDs(blockID)
+	return cmdMaps.popRunnableCMDs()
 }
 
 func (p CAU) HandleReq(blocks []int)  {
@@ -433,7 +424,7 @@ func (p CAU) HandleCMD(cmd *config.CMD)  {
 			common.SendData(td, toIP, config.NodeTDListenPort, "")
 		}
 	}else{
-		CMDWaitingQueue = append(CMDWaitingQueue, cmd)
+		cmdMaps.pushCMD(cmd.SID, cmd)
 	}
 }
 
@@ -460,7 +451,9 @@ func (p CAU) Clear()  {
 	ackIPMaps = &ACKIPMap{
 		ACKReceiverIPs: map[int]string{},
 	}
-	CMDWaitingQueue = make([]*config.CMD, 0, 100)
+	cmdMaps = &CMDWaitingMap{
+		Queue: map[int]*config.CMD{},
+	}
 
 }
 

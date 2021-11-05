@@ -3,9 +3,10 @@ package schedule
 import (
 	"EC/common"
 	"EC/config"
-	"fmt"
 	"github.com/wxnacy/wgo/arrays"
+	"log"
 	"sort"
+	"sync"
 )
 type Graph struct {
 	N   int //顶点数
@@ -22,9 +23,62 @@ type Task struct {
 type TUpdate struct {
 
 }
+type CMDWaitingMap struct {
+	sync.RWMutex
+	Queue map[int]*config.CMD
+}
+
+func (M *CMDWaitingMap) getCMD(sid int) (*config.CMD, bool)  {
+	M.RLock()
+	num, ok := M.Queue[sid]
+	M.RUnlock()
+	return num, ok
+}
+func (M *CMDWaitingMap) pushCMD(sid int, cmd *config.CMD)  {
+	M.Lock()
+	if _, ok := M.Queue[sid]; !ok {
+		M.Queue[sid] = cmd
+	}else{
+		log.Fatal("pushCMD error！", "sid: ", sid, "cmd: ",cmd, "cmds: ", M.Queue)
+	}
+	M.Unlock()
+}
+func (M *CMDWaitingMap) popCMD(sid int)  {
+	M.Lock()
+	delete(M.Queue, sid)
+	M.Unlock()
+}
+
+func (M *CMDWaitingMap) updateRunnableCMDs(blockID int)  {
+	M.Lock()
+	for i,_ := range M.Queue {
+		if j := arrays.Contains(M.Queue[i].Helpers, blockID); j >= 0 {
+			M.Queue[i].Helpers = append(M.Queue[i].Helpers[:j], M.Queue[i].Helpers[j+1:]...)
+		}
+	}
+	M.Unlock()
+}
+
+func (M *CMDWaitingMap) popRunnableCMDs() []*config.CMD  {
+	M.Lock()
+	cmds := make([]*config.CMD, 0, len(M.Queue))
+	for _, v := range M.Queue {
+		if len(v.Helpers) == 0 {
+			cmds = append(cmds, v)
+		}
+	}
+	for _, cmd := range cmds {
+		delete(M.Queue, cmd.SID)
+	}
+	M.Unlock()
+	return cmds
+}
+
+
+var cmdMaps *CMDWaitingMap
 const MAX_COUNT int = 9
 const INFINITY byte = 255
-var CMDWaitingQueue = make([]*config.CMD, 0, config.MaxBatchSize)
+//var CMDWaitingQueue = make([]*config.CMD, 0, config.MaxBatchSize)
 var NodeMatrix = make(config.Matrix, (config.N)*(config.N))
 func TaskAdjust(taskGroup []Task)  {
 	for _, t := range taskGroup {
@@ -42,7 +96,9 @@ func (p TUpdate) Init()  {
 	ackIPMaps = &ACKIPMap{
 		ACKReceiverIPs: map[int]string{},
 	}
-	CMDWaitingQueue = make([]*config.CMD, 0, config.MaxBatchSize)
+	cmdMaps = &CMDWaitingMap{
+		Queue: map[int]*config.CMD{},
+	}
 }
 
 func (p TUpdate) HandleReq(blocks []int)  {
@@ -76,20 +132,21 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 	//本地数据更新
 	go common.WriteDeltaBlock(td.BlockID, td.Buff)
 	//有等待任务
-	indexes := p.meetCMDNeed(td)
+	cmds := p.meetCMDNeed(td.SID)
+	//cmds := cmdMaps.popRunnableCMDs()
 
-	if len(indexes) > 0 {
-		//fmt.Printf("indexes: %v\n", indexes)
+	if len(cmds) > 0 {
+		//fmt.Printf("cmds: %v\n", cmds)
 		//添加ack监听
-		for _, i := range indexes {
-			cmd := CMDWaitingQueue[i]
+		for _, i := range cmds {
+			cmd := i
 			//fmt.Printf("cmd : %v\n", cmd)
 			for _, _ = range cmd.ToIPs {
 				ackMaps.pushACK(cmd.SID)
 			}
 		}
-		for _, i := range indexes {
-			cmd := CMDWaitingQueue[i]
+		for _, i := range cmds {
+			cmd := i
 			for _, toIP := range cmd.ToIPs {
 				td := &config.TD{
 					BlockID: cmd.BlockID,
@@ -100,7 +157,7 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 				}
 				common.SendData(td, toIP, config.NodeTDListenPort, "")
 			}
-			CMDWaitingQueue = append(CMDWaitingQueue[:i], CMDWaitingQueue[i:]...)
+			//cmdMaps.popCMD(cmd.SID)
 		}
 	}else{
 		//没有等待任务，返回ack
@@ -248,31 +305,15 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 			common.SendData(td, toIP, config.NodeTDListenPort, "")
 		}
 	}else{
-		CMDWaitingQueue = append(CMDWaitingQueue, cmd)
-		//fmt.Printf("添加需要处理的cmd数量为 ：%v\n", p.CMDWaitingQueue[len(p.CMDWaitingQueue)-1])
+		cmdMaps.pushCMD(cmd.SID, cmd)
 	}
 }
-func (p TUpdate) meetCMDNeed(td *config.TD) []int  {
-	fmt.Printf("td的sid: %v\n", td.SID)
-	indexes := make([]int, 0, config.M)
-	for i, cmd := range CMDWaitingQueue{
-		if cmd.SID == td.SID{
-			indexes = append(indexes, i)
-		}
-	}
-	return indexes
+func (p TUpdate) meetCMDNeed(blockID int) []*config.CMD  {
+	cmdMaps.updateRunnableCMDs(blockID)
+	return cmdMaps.popRunnableCMDs()
 }
 func IsCMDDataExist(cmd *config.CMD) bool {
 	return common.GetNodeIP(common.GetNodeID(cmd.BlockID)) == common.GetLocalIP()
-}
-
-func (p TUpdate) getMeetCMD(td *config.TD) *config.CMD {
-	for _, cmd:= range CMDWaitingQueue{
-		if cmd.SID == td.SID{
-			return cmd
-		}
-	}
-	return &config.CMD{}
 }
 
 func (p TUpdate) HandleACK(ack *config.ACK)  {
@@ -285,7 +326,9 @@ func (p TUpdate) HandleACK(ack *config.ACK)  {
 	}
 }
 func (p TUpdate) Clear()  {
-	CMDWaitingQueue = make([]*config.CMD, 0, 100)
+	cmdMaps = &CMDWaitingMap{
+		Queue: map[int]*config.CMD{},
+	}
 	NodeMatrix = make(config.Matrix, (config.N)*(config.N))
 }
 
