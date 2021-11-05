@@ -23,9 +23,7 @@ var BitMatrix = make([]byte, K*M*W*W)
 const RackSize = M
 const NumOfRacks = N / RackSize
 type OPType int
-
 var RS *reedsolomon.RS
-
 type Matrix []byte
 
 const (
