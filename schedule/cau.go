@@ -36,9 +36,15 @@ func (p CAU) HandleTD(td *config.TD)  {
 		go common.WriteDeltaBlock(td.BlockID, td.Buff)
 	}
 
+	//返回ack
+	ack := &config.ACK{
+		SID:     td.SID,
+		BlockID: td.BlockID,
+	}
+	ReturnACK(ack)
+
 	//有等待任务
 	indexes := p.meetCMDNeed(td)
-
 	if len(indexes) > 0 {
 		//添加ack监听
 		for _, i := range indexes {
@@ -60,16 +66,6 @@ func (p CAU) HandleTD(td *config.TD)  {
 				common.SendData(td, toIP, config.NodeTDListenPort, "")
 			}
 			CMDWaitingQueue = append(CMDWaitingQueue[:i], CMDWaitingQueue[i:]...)
-		}
-	}else{
-		//没有等待任务，返回ack
-		if _, ok := ackMaps.getACK(td.SID); !ok {
-			//返回ack
-			ack := &config.ACK{
-				SID:     td.SID,
-				BlockID: td.BlockID,
-			}
-			ReturnACK(ack)
 		}
 	}
 }
@@ -428,7 +424,9 @@ func (p CAU) HandleCMD(cmd *config.CMD)  {
 }
 
 func (p CAU) HandleACK(ack *config.ACK)  {
+
 	ackMaps.popACK(ack.SID)
+	fmt.Printf("当前剩余ack：%d\n", ackMaps)
 	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {

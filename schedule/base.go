@@ -147,7 +147,6 @@ func handleOneTD(td *config.TD)  {
 	ReturnACK(ack)
 }
 func (p Base) HandleACK(ack *config.ACK)  {
-	//fmt.Printf("当前剩余ack：%d\n", RequireACKs)
 	ackMaps.popACK(ack.SID)
 	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
 		//ms不需要反馈ack
