@@ -119,9 +119,11 @@ func (p CAU) HandleReq(blocks []int)  {
 
 		cau()
 
+		fmt.Printf("等待本轮运行结束...\n")
 		for IsRunning {
 			
 		}
+		fmt.Printf("======================================\n")
 		round++
 		p.Clear()
 	}
