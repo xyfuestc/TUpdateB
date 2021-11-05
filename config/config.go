@@ -15,7 +15,6 @@ const BlockSize int = 1024 * 1024 //1MB
 const Megabyte = 1024 * 1024      //1MB
 const MaxBatchSize int = 100
 const MaxBlockSize int = 1000000
-const ECMode string = "RS" // or "XOR"
 var CurPolicyVal = CAU
 var CurPolicyStr = []string{"Base", "CAU", "Forest", "TUpdate"}
 var OutFilePath = "../request/proj_4.csv.txt"
@@ -24,7 +23,11 @@ var BitMatrix = make([]byte, K*M*W*W)
 const RackSize = M
 const NumOfRacks = N / RackSize
 type OPType int
-/******the structure of one line for the update stream file*******/
+
+var RS *reedsolomon.RS
+
+type Matrix []byte
+
 const (
 	Timestamp int  = iota    // default 0
 	WorkloadName    //1
@@ -50,35 +53,6 @@ const (
 	NodeCMDListenPort   string = "8302"   // metainfo server ack listening port
 	NodeTDListenPort   string = "8304"   // metainfo server ack listening port
 )
-
-//DataNode操作
-const (
-	/*********base data operation**********/
-	OP_BASE         OPType = iota //client update, 0
-	/*********cau data operation**********/
-	UpdateReq
-	SendDataToRoot               //内部发送数据，1
-	DDURoot                      //data发送给parity，2
-	DDULeaf
-
-	PDU
-
-)
-
-type CMDType int
-
-const (
-	//data operation
-	CMD_DDU CMDType = iota //client update, 0
-	CMD_BASE
-
-)
-
-type Role int
-const (
-	Role_Uknown Role = iota
-)
-
 
 type PolicyType int
 
@@ -175,11 +149,6 @@ type Rack struct {
 	Stripes      map[int][]int
 	GateIP       string
 }
-
-var RS *reedsolomon.RS
-
-type Matrix []byte
-
 
 func Init(){
 	fmt.Printf("Init GM...\n")

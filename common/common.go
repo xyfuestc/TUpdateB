@@ -120,29 +120,6 @@ func IsContainB(items config.Matrix, item byte) bool {
 	return false
 }
 
-func GetParityIDFromIP(ip string) int {
-
-	//for i := 0; i < 3; i++ {
-	//	if  config.Racks[2].Nodes[i] == ip{
-	//		return i
-	//	}
-	//}
-	return -1
-}
-
-
-func GetRackID(ip string) int {
-	for i, rack := range config.Racks{
-
-		for _, v := range rack.Nodes {
-			if v == ip {
-				return i
-			}
-		}
-	}
-	return -1
-}
-
 func GetRackIDFromNode(nodeID int) int {
 	rackSize := (config.K+config.M)/config.M
 	return nodeID / rackSize
@@ -167,13 +144,6 @@ func GetNeighborsIPs(rackID int, ip string) []string {
 func GetStripeIDFromBlockID(blockID int) int {
 	return blockID/(config.K * config.W)
 }
-/*获取data相关的parity*/
-/*
-	P0 = [1 2 3 4]
-	P1 = [0 1 2 5]
-	P2 = [0 1 3 4]
-	P3 = [0 2 3 5]
-*/
 
 //从0开始编号，一直到M*W-1
 func RelatedParities(blockID int) []byte {
@@ -323,24 +293,6 @@ func SendCMDWithHelpers(fromIP string, toIPs []string, sid, blockID int, helpers
 	SendData(cmd, fromIP, config.NodeCMDListenPort, "")
 }
 
-
-//func GetCMDFromReqData(reqData config.ReqData) config.CMD  {
-//	sid := reqData.SID
-//	blockID := reqData.BlockID
-//	stripeID := reqData.StripeID
-//	nodeID := GetNodeID(blockID)
-//	nodeIP := GetNodeIP(nodeID)
-//	toIPs := GetRelatedParityIPs(blockID)
-//	cmd := config.CMD{
-//		SID:       sid,
-//		Type:      config.CMD_BASE,
-//		StripeID:  stripeID,
-//		BlockID:   blockID,
-//		ToIPs:     toIPs,
-//		FromIP:    nodeIP,
-//	}
-//	return cmd
-//}
 func GetACK(conn net.Conn) config.ACK {
 	//defer conn.Close()
 	dec := gob.NewDecoder(conn)
@@ -397,8 +349,6 @@ func GetBlocksFromOneRequest(userRequest config.UserRequest) (int,int)  {
 func GetConnIP(conn net.Conn) string  {
 	addr := conn.RemoteAddr().String()
 	ip := strings.Split(addr, ":")[0]
-	//port := strings.Split(addr, ":")[1]
-
 	return ip
 }
 func GetIndex(blockID int) int {
@@ -425,11 +375,5 @@ func GetParityIDFromIndex(i int) int {
 func GetDataNodeIDFromIndex(rackID, i int) int {
 	return rackID * config.RackSize + i
 }
-
-func IntArrayRemove(slice []int, s int) []int {
-	return append(slice[:s], slice[s+1:]...)
-}
-
-
 
 

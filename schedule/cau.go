@@ -29,10 +29,6 @@ func (p CAU) Init()  {
 }
 
 func (p CAU) HandleTD(td *config.TD)  {
-	//handleOneTD(td)
-	//1.CMDWaitingQueue检测哪些CMD可以执行
-	//2.本地更新
-	//本地数据更新
 
 	//校验节点本地数据更新
 	localID := arrays.Contains(config.NodeIPs, common.GetLocalIP())
@@ -44,11 +40,9 @@ func (p CAU) HandleTD(td *config.TD)  {
 	indexes := p.meetCMDNeed(td)
 
 	if len(indexes) > 0 {
-		//fmt.Printf("indexes: %v\n", indexes)
 		//添加ack监听
 		for _, i := range indexes {
 			cmd := CMDWaitingQueue[i]
-			//fmt.Printf("cmd : %v\n", cmd)
 			for _, _ = range cmd.ToIPs {
 				ackMaps.pushACK(cmd.SID)
 			}
@@ -138,7 +132,6 @@ func (p CAU) HandleReq(blocks []int)  {
 }
 
 func cau() {
-	//fmt.Printf("curDistinctBlocks: %v", curDistinctBlocks)
 	stripes := turnBlocksToStripes()
 	for _, stripe := range stripes{
 		for i := 0; i < config.NumOfRacks; i++ {
@@ -191,25 +184,6 @@ func dataUpdate(rackID int, stripe []int)  {
 
 	/****记录ack*****/
 	curSid := sid
-	for _, blocks := range curRackNodes {
-		//传输blocks到rootP
-		for _, b := range blocks {
-			fmt.Printf("pushACK: sid: %d, blockID: %v\n", curSid, b)
-			ackMaps.pushACK(curSid)
-			curSid++
-		}
-	}
-	/****汇聚*****/
-	for i, blocks := range curRackNodes {
-		nodeID := common.GetDataNodeIDFromIndex(rackID, i)
-		//传输blocks到rootP
-		for _, b := range blocks{
-			fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
-				nodeID, common.GetNodeIP(nodeID), b, common.GetNodeIP(rootP))
-			common.SendCMD(common.GetNodeIP(nodeID), []string{common.GetNodeIP(rootP)}, sid, b)
-			sid++
-		}
-	}
 
 	/****记录ack*****/
 	parityNodeBlocks := GetParityNodeBlocks(parities)
@@ -232,12 +206,33 @@ func dataUpdate(rackID int, stripe []int)  {
 				fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
 					rootP, common.GetNodeIP(rootP), b, common.GetNodeIP(parityID))
 				common.SendCMDWithHelpers(common.GetNodeIP(rootP), []string{common.GetNodeIP(parityID)},
-											sid, b, blocks)
+					sid, b, blocks)
 				sid++
 				break
 			}
 		}
 	}
+
+	for _, blocks := range curRackNodes {
+		//传输blocks到rootP
+		for _, b := range blocks {
+			fmt.Printf("pushACK: sid: %d, blockID: %v\n", curSid, b)
+			ackMaps.pushACK(curSid)
+			curSid++
+		}
+	}
+	/****汇聚*****/
+	for i, blocks := range curRackNodes {
+		nodeID := common.GetDataNodeIDFromIndex(rackID, i)
+		//传输blocks到rootP
+		for _, b := range blocks{
+			fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
+				nodeID, common.GetNodeIP(nodeID), b, common.GetNodeIP(rootP))
+			common.SendCMD(common.GetNodeIP(nodeID), []string{common.GetNodeIP(rootP)}, sid, b)
+			sid++
+		}
+	}
+
 	sort.Ints(unionParities)
 	fmt.Printf("DataUpdate: stripe: %v, parities: %v, unionParities: %v, curRackNodes: %v\n",
 		stripe, parities, unionParities, curRackNodes)
@@ -273,6 +268,32 @@ func parityUpdate(rackID int, stripe []int) {
 		return
 	}
 	curSid := sid
+
+	/****记录ack*****/
+	parityNodeBlocks := GetParityNodeBlocks(parities)
+	fmt.Printf("PataUpdate: parityNodeBlocks: %v\n", parityNodeBlocks)
+	for _, b := range parityNodeBlocks {
+		fmt.Printf("pushACK: sid: %d, blockID: %v\n", curSid, b)
+		ackMaps.pushACK(curSid)
+		curSid++
+	}
+	/****分发*****/
+	for i, blocks := range parityNodeBlocks {
+		if len(blocks) == 0{
+			continue
+		}
+		parityID := i + config.K
+		helpers := make([]int, 0, len(blocks))
+		for _, b := range blocks {
+			if common.GetNodeID(b) != rootD{
+				helpers = append(helpers, b)
+			}
+		}
+		common.SendCMDWithHelpers(common.GetNodeIP(rootD), []string{common.GetNodeIP(parityID)},
+			sid, blocks[0], helpers)
+		sid++
+	}
+
 	/****记录ack*****/
 	for i, blocks := range curRackNodes {
 		curID := rackID*config.RackSize + i
@@ -295,30 +316,7 @@ func parityUpdate(rackID int, stripe []int) {
 			}
 		}
 	}
-	/****记录ack*****/
-	parityNodeBlocks := GetParityNodeBlocks(parities)
-	fmt.Printf("PataUpdate: parityNodeBlocks: %v\n", parityNodeBlocks)
-	for _, b := range parityNodeBlocks {
-		fmt.Printf("pushACK: sid: %d, blockID: %v\n", curSid, b)
-		ackMaps.pushACK(curSid)
-		curSid++
-	}
-	/****分发*****/
-	for i, blocks := range parityNodeBlocks {
-		if len(blocks) == 0{
-			continue
-		}
-		parityID := i + config.K
-		helpers := make([]int, 0, len(blocks))
-		for _, b := range blocks {
-			if common.GetNodeID(b) != rootD{
-				helpers = append(helpers, b)
-			}
-		}
-		common.SendCMDWithHelpers(common.GetNodeIP(rootD), []string{common.GetNodeIP(parityID)},
-				sid, blocks[0], helpers)
-		sid++
-	}
+
 	sort.Ints(unionParities)
 	fmt.Printf("ParityUpdate: stripe: %v, parities: %v, unionParities: %v, curRackNodes: %v\n",
 											stripe, parities, unionParities, curRackNodes)
@@ -450,6 +448,8 @@ func (p CAU) Clear()  {
 	ackIPMaps = &ACKIPMap{
 		ACKReceiverIPs: map[int]string{},
 	}
+	CMDWaitingQueue = make([]*config.CMD, 0, 100)
+
 }
 
 func (p CAU) RecordSIDAndReceiverIP(sid int, ip string)()  {
