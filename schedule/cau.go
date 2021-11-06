@@ -27,8 +27,8 @@ func (p CAU) Init()  {
 		ACKReceiverIPs: map[int]string{},
 	}
 
-	cmdMaps = &CMDWaitingMap{
-		Queue: map[int]*config.CMD{},
+	cmdMaps = &CMDWaitingList{
+		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
 }
 
@@ -48,7 +48,7 @@ func (p CAU) HandleTD(td *config.TD)  {
 	ReturnACK(ack)
 
 	//有等待任务
-	indexes := p.meetCMDNeed(td.SID)
+	indexes := meetCMDNeed(td.SID)
 	if len(indexes) > 0 {
 		fmt.Printf("有等待任务可以执行：%v\n", indexes)
 		//添加ack监听
@@ -76,10 +76,6 @@ func (p CAU) HandleTD(td *config.TD)  {
 }
 
 
-func (p CAU) meetCMDNeed(blockID int) []*config.CMD  {
-	cmdMaps.updateRunnableCMDs(blockID)
-	return cmdMaps.popRunnableCMDs()
-}
 
 func (p CAU) HandleReq(blocks []int)  {
 	totalBlocks = blocks
@@ -424,7 +420,7 @@ func (p CAU) HandleCMD(cmd *config.CMD)  {
 			common.SendData(td, toIP, config.NodeTDListenPort, "")
 		}
 	}else{
-		cmdMaps.pushCMD(cmd.SID, cmd)
+		cmdMaps.pushCMD(cmd)
 	}
 }
 
@@ -451,8 +447,8 @@ func (p CAU) Clear()  {
 	ackIPMaps = &ACKIPMap{
 		ACKReceiverIPs: map[int]string{},
 	}
-	cmdMaps = &CMDWaitingMap{
-		Queue: map[int]*config.CMD{},
+	cmdMaps = &CMDWaitingList{
+		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
 
 }

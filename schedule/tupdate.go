@@ -4,7 +4,6 @@ import (
 	"EC/common"
 	"EC/config"
 	"github.com/wxnacy/wgo/arrays"
-	"log"
 	"sort"
 	"sync"
 )
@@ -23,59 +22,50 @@ type Task struct {
 type TUpdate struct {
 
 }
-type CMDWaitingMap struct {
+type CMDWaitingList struct {
 	sync.RWMutex
-	Queue map[int]*config.CMD
+	Queue []*config.CMD
 }
 
-func (M *CMDWaitingMap) getCMD(sid int) (*config.CMD, bool)  {
-	M.RLock()
-	num, ok := M.Queue[sid]
-	M.RUnlock()
-	return num, ok
-}
-func (M *CMDWaitingMap) pushCMD(sid int, cmd *config.CMD)  {
+func (M *CMDWaitingList) pushCMD(cmd *config.CMD)  {
 	M.Lock()
-	if _, ok := M.Queue[sid]; !ok {
-		M.Queue[sid] = cmd
-	}else{
-		log.Fatal("pushCMD error！", "sid: ", sid, "cmd: ",cmd, "cmds: ", M.Queue)
-	}
+	M.Queue = append(M.Queue, cmd)
 	M.Unlock()
 }
-func (M *CMDWaitingMap) popCMD(sid int)  {
+func (M *CMDWaitingList) updateRunnableCMDs(blockID int)  {
 	M.Lock()
-	delete(M.Queue, sid)
-	M.Unlock()
-}
-
-func (M *CMDWaitingMap) updateRunnableCMDs(blockID int)  {
-	M.Lock()
-	for i,_ := range M.Queue {
+	for i := 0; i < len(M.Queue); i++ {
 		if j := arrays.Contains(M.Queue[i].Helpers, blockID); j >= 0 {
-			M.Queue[i].Helpers = append(M.Queue[i].Helpers[:j], M.Queue[i].Helpers[j+1:]...)
+			M.Queue[i].Helpers[len(M.Queue[i].Helpers)-1], M.Queue[i].Helpers[j] =
+							M.Queue[i].Helpers[j], M.Queue[i].Helpers[len(M.Queue[i].Helpers)-1]
+			M.Queue[i].Helpers = M.Queue[i].Helpers[:len(M.Queue[i].Helpers)-1]
 		}
 	}
 	M.Unlock()
 }
-
-func (M *CMDWaitingMap) popRunnableCMDs() []*config.CMD  {
+func (M *CMDWaitingList) popRunnableCMDs() []*config.CMD  {
 	M.Lock()
 	cmds := make([]*config.CMD, 0, len(M.Queue))
-	for _, v := range M.Queue {
+	indexes := make([]int, 0, len(M.Queue))
+	//找出可执行命令
+	for i, v := range M.Queue {
 		if len(v.Helpers) == 0 {
 			cmds = append(cmds, v)
+			indexes = append(indexes, i)
 		}
 	}
-	for _, cmd := range cmds {
-		delete(M.Queue, cmd.SID)
+	//删除
+	for _, i := range indexes {
+		M.Queue[len(M.Queue)-1], M.Queue[i] = M.Queue[i], M.Queue[len(M.Queue)-1]
+		M.Queue = M.Queue[:len(M.Queue)-1]
 	}
+
 	M.Unlock()
 	return cmds
 }
 
 
-var cmdMaps *CMDWaitingMap
+var cmdMaps *CMDWaitingList
 const MAX_COUNT int = 9
 const INFINITY byte = 255
 //var CMDWaitingQueue = make([]*config.CMD, 0, config.MaxBatchSize)
@@ -96,8 +86,8 @@ func (p TUpdate) Init()  {
 	ackIPMaps = &ACKIPMap{
 		ACKReceiverIPs: map[int]string{},
 	}
-	cmdMaps = &CMDWaitingMap{
-		Queue: map[int]*config.CMD{},
+	cmdMaps = &CMDWaitingList{
+		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
 }
 
@@ -132,7 +122,7 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 	//本地数据更新
 	go common.WriteDeltaBlock(td.BlockID, td.Buff)
 	//有等待任务
-	cmds := p.meetCMDNeed(td.SID)
+	cmds := meetCMDNeed(td.SID)
 	//cmds := cmdMaps.popRunnableCMDs()
 
 	if len(cmds) > 0 {
@@ -305,10 +295,10 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 			common.SendData(td, toIP, config.NodeTDListenPort, "")
 		}
 	}else{
-		cmdMaps.pushCMD(cmd.SID, cmd)
+		cmdMaps.pushCMD(cmd)
 	}
 }
-func (p TUpdate) meetCMDNeed(blockID int) []*config.CMD  {
+func meetCMDNeed(blockID int) []*config.CMD  {
 	cmdMaps.updateRunnableCMDs(blockID)
 	return cmdMaps.popRunnableCMDs()
 }
@@ -326,8 +316,8 @@ func (p TUpdate) HandleACK(ack *config.ACK)  {
 	}
 }
 func (p TUpdate) Clear()  {
-	cmdMaps = &CMDWaitingMap{
-		Queue: map[int]*config.CMD{},
+	cmdMaps = &CMDWaitingList{
+		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
 	NodeMatrix = make(config.Matrix, (config.N)*(config.N))
 }
