@@ -46,18 +46,22 @@ func (M *CMDWaitingList) updateRunnableCMDs(blockID int)  {
 func (M *CMDWaitingList) popRunnableCMDs() []*config.CMD  {
 	M.Lock()
 	cmds := make([]*config.CMD, 0, len(M.Queue))
-	indexes := make([]int, 0, len(M.Queue))
+	//indexes := make([]int, 0, len(M.Queue))
 	//找出可执行命令
-	for i, v := range M.Queue {
+	for _, v := range M.Queue {
 		if len(v.Helpers) == 0 {
 			cmds = append(cmds, v)
-			indexes = append(indexes, i)
+			//indexes = append(indexes, cmd)
 		}
 	}
+
 	//删除
-	for _, i := range indexes {
-		M.Queue[len(M.Queue)-1], M.Queue[i] = M.Queue[i], M.Queue[len(M.Queue)-1]
-		M.Queue = M.Queue[:len(M.Queue)-1]
+	//sort.Ints(indexes)
+	for i, cmd := range M.Queue {
+		if len(cmd.Helpers) == 0 {
+			M.Queue[len(M.Queue)-1], M.Queue[i] = M.Queue[i], M.Queue[len(M.Queue)-1]
+			M.Queue = M.Queue[:len(M.Queue)-1]
+		}
 	}
 
 	M.Unlock()
