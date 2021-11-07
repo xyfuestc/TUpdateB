@@ -66,7 +66,7 @@ func (M *CMDWaitingList) popRunnableCMDs() []*config.CMD  {
 }
 
 
-var cmdMaps *CMDWaitingList
+var cmdList *CMDWaitingList
 const MAX_COUNT int = 9
 const INFINITY byte = 255
 //var CMDWaitingQueue = make([]*config.CMD, 0, config.MaxBatchSize)
@@ -87,7 +87,7 @@ func (p TUpdate) Init()  {
 	ackIPMaps = &ACKIPMap{
 		ACKReceiverIPs: map[int]string{},
 	}
-	cmdMaps = &CMDWaitingList{
+	cmdList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
 }
@@ -124,7 +124,7 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 	go common.WriteDeltaBlock(td.BlockID, td.Buff)
 	//有等待任务
 	cmds := meetCMDNeed(td.SID)
-	//cmds := cmdMaps.popRunnableCMDs()
+	//cmds := cmdList.popRunnableCMDs()
 
 	if len(cmds) > 0 {
 		//fmt.Printf("cmds: %v\n", cmds)
@@ -148,7 +148,7 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 				}
 				common.SendData(td, toIP, config.NodeTDListenPort, "")
 			}
-			//cmdMaps.popCMD(cmd.SID)
+			//cmdList.popCMD(cmd.SID)
 		}
 	}else{
 		//没有等待任务，返回ack
@@ -296,12 +296,12 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 			common.SendData(td, toIP, config.NodeTDListenPort, "")
 		}
 	}else{
-		cmdMaps.pushCMD(cmd)
+		cmdList.pushCMD(cmd)
 	}
 }
 func meetCMDNeed(blockID int) []*config.CMD  {
-	cmdMaps.updateRunnableCMDs(blockID)
-	return cmdMaps.popRunnableCMDs()
+	cmdList.updateRunnableCMDs(blockID)
+	return cmdList.popRunnableCMDs()
 }
 func IsCMDDataExist(cmd *config.CMD) bool {
 	return common.GetNodeIP(common.GetNodeID(cmd.BlockID)) == common.GetLocalIP()
@@ -317,7 +317,7 @@ func (p TUpdate) HandleACK(ack *config.ACK)  {
 	}
 }
 func (p TUpdate) Clear()  {
-	cmdMaps = &CMDWaitingList{
+	cmdList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
 	NodeMatrix = make(config.Matrix, (config.N)*(config.N))

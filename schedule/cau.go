@@ -27,12 +27,12 @@ func (p CAU) Init()  {
 		ACKReceiverIPs: map[int]string{},
 	}
 
-	cmdMaps = &CMDWaitingList{
+	cmdList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
 }
 
-func (p CAU) HandleTD(td *config.TD)  {
+func (p CAU) HandleTD(td *config.TD) {
 
 	//校验节点本地数据更新
 	localID := arrays.Contains(config.NodeIPs, common.GetLocalIP())
@@ -64,18 +64,16 @@ func (p CAU) HandleTD(td *config.TD)  {
 			for _, toIP := range cmd.ToIPs {
 				td := &config.TD{
 					BlockID: cmd.BlockID,
-					Buff: td.Buff,
-					FromIP: cmd.FromIP,
-					ToIP: toIP,
-					SID: cmd.SID,
+					Buff:    td.Buff,
+					FromIP:  cmd.FromIP,
+					ToIP:    toIP,
+					SID:     cmd.SID,
 				}
 				common.SendData(td, toIP, config.NodeTDListenPort, "")
 			}
 		}
 	}
 }
-
-
 
 func (p CAU) HandleReq(blocks []int)  {
 	totalBlocks = blocks
@@ -106,10 +104,10 @@ func (p CAU) HandleReq(blocks []int)  {
 
 		cau()
 
-		fmt.Printf("等待本轮运行结束...\n")
 		for IsRunning {
 			
 		}
+		fmt.Printf("本轮结束！\n")
 		fmt.Printf("======================================\n")
 		round++
 		p.Clear()
@@ -420,12 +418,11 @@ func (p CAU) HandleCMD(cmd *config.CMD)  {
 			common.SendData(td, toIP, config.NodeTDListenPort, "")
 		}
 	}else{
-		cmdMaps.pushCMD(cmd)
+		cmdList.pushCMD(cmd)
 	}
 }
 
 func (p CAU) HandleACK(ack *config.ACK)  {
-
 	ackMaps.popACK(ack.SID)
 	fmt.Printf("当前剩余ack：%d\n", ackMaps)
 	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
@@ -447,7 +444,7 @@ func (p CAU) Clear()  {
 	ackIPMaps = &ACKIPMap{
 		ACKReceiverIPs: map[int]string{},
 	}
-	cmdMaps = &CMDWaitingList{
+	cmdList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
 
