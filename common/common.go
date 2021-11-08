@@ -378,4 +378,21 @@ func GetDataNodeIDFromIndex(rackID, i int) int {
 	return rackID * config.RackSize + i
 }
 
+func Delete(Array, indexes []int)  {
+	//删除
+	for i:= 0; i < len(Array);{
+		if j := arrays.Contains(indexes, Array[i]) ; j >= 0 {
+			//Array = append(Array[:i], Array[i+1:]...)
+			Array[i], Array[len(Array)-1] = Array[len(Array)-1], Array[i]
+			Array = Array[:len(Array)-1]
 
+			//indexes = append(indexes[:j], indexes[j+1:]...)
+			indexes[j], indexes[len(indexes)-1] = indexes[len(indexes)-1], indexes[j]
+			indexes = indexes[:len(indexes)-1]
+		}else{
+			i++
+		}
+
+	}
+	fmt.Printf("Delete: Array = %v\n", Array)
+}

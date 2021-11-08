@@ -27,7 +27,7 @@ func (p CAU) Init()  {
 		ACKReceiverIPs: map[int]string{},
 	}
 
-	cmdList = &CMDWaitingList{
+	CMDList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
 }
@@ -224,6 +224,8 @@ func dataUpdate(rackID int, stripe []int)  {
 	sort.Ints(unionParities)
 	fmt.Printf("DataUpdate: stripe: %v, parities: %v, unionParities: %v, curRackNodes: %v\n",
 		stripe, parities, unionParities, curRackNodes)
+
+
 }
 
 func parityUpdate(rackID int, stripe []int) {
@@ -418,7 +420,7 @@ func (p CAU) HandleCMD(cmd *config.CMD)  {
 			common.SendData(td, toIP, config.NodeTDListenPort, "")
 		}
 	}else{
-		cmdList.pushCMD(cmd)
+		CMDList.pushCMD(cmd)
 	}
 }
 
@@ -444,7 +446,7 @@ func (p CAU) Clear()  {
 	ackIPMaps = &ACKIPMap{
 		ACKReceiverIPs: map[int]string{},
 	}
-	cmdList = &CMDWaitingList{
+	CMDList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
 

@@ -36,19 +36,21 @@ func (M *CMDWaitingList) updateRunnableCMDs(blockID int)  {
 	M.Lock()
 	for i := 0; i < len(M.Queue); i++ {
 		if j := arrays.Contains(M.Queue[i].Helpers, blockID); j >= 0 {
-			M.Queue[i].Helpers[len(M.Queue[i].Helpers)-1], M.Queue[i].Helpers[j] =
-							M.Queue[i].Helpers[j], M.Queue[i].Helpers[len(M.Queue[i].Helpers)-1]
-			M.Queue[i].Helpers = M.Queue[i].Helpers[:len(M.Queue[i].Helpers)-1]
+			//M.Queue[i].Helpers[len(M.Queue[i].Helpers)-1], M.Queue[i].Helpers[j] =
+			//				M.Queue[i].Helpers[j], M.Queue[i].Helpers[len(M.Queue[i].Helpers)-1]
+			//M.Queue[i].Helpers = M.Queue[i].Helpers[:len(M.Queue[i].Helpers)-1]
+			M.Queue[i].Helpers = append(M.Queue[i].Helpers[:j], M.Queue[i].Helpers[j+1:]...)
 		}
 	}
+
 	M.Unlock()
 }
 func (M *CMDWaitingList) popRunnableCMDs() []*config.CMD  {
 	M.Lock()
 	cmds := make([]*config.CMD, 0, len(M.Queue))
-	for _, v := range M.Queue {
-		if len(v.Helpers) == 0 {
-			cmds = append(cmds, v)
+	for _, cmd := range M.Queue {
+		if len(cmd.Helpers) == 0 {
+			cmds = append(cmds, cmd)
 		}
 	}
 
@@ -66,7 +68,7 @@ func (M *CMDWaitingList) popRunnableCMDs() []*config.CMD  {
 }
 
 
-var cmdList *CMDWaitingList
+var CMDList *CMDWaitingList
 const MAX_COUNT int = 9
 const INFINITY byte = 255
 //var CMDWaitingQueue = make([]*config.CMD, 0, config.MaxBatchSize)
@@ -87,7 +89,7 @@ func (p TUpdate) Init()  {
 	ackIPMaps = &ACKIPMap{
 		ACKReceiverIPs: map[int]string{},
 	}
-	cmdList = &CMDWaitingList{
+	CMDList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
 }
@@ -124,7 +126,7 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 	go common.WriteDeltaBlock(td.BlockID, td.Buff)
 	//有等待任务
 	cmds := meetCMDNeed(td.SID)
-	//cmds := cmdList.popRunnableCMDs()
+	//cmds := CMDList.popRunnableCMDs()
 
 	if len(cmds) > 0 {
 		//fmt.Printf("cmds: %v\n", cmds)
@@ -148,7 +150,7 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 				}
 				common.SendData(td, toIP, config.NodeTDListenPort, "")
 			}
-			//cmdList.popCMD(cmd.SID)
+			//CMDList.popCMD(cmd.SID)
 		}
 	}else{
 		//没有等待任务，返回ack
@@ -296,12 +298,12 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 			common.SendData(td, toIP, config.NodeTDListenPort, "")
 		}
 	}else{
-		cmdList.pushCMD(cmd)
+		CMDList.pushCMD(cmd)
 	}
 }
 func meetCMDNeed(blockID int) []*config.CMD  {
-	cmdList.updateRunnableCMDs(blockID)
-	return cmdList.popRunnableCMDs()
+	CMDList.updateRunnableCMDs(blockID)
+	return CMDList.popRunnableCMDs()
 }
 func IsCMDDataExist(cmd *config.CMD) bool {
 	return common.GetNodeIP(common.GetNodeID(cmd.BlockID)) == common.GetLocalIP()
@@ -317,7 +319,7 @@ func (p TUpdate) HandleACK(ack *config.ACK)  {
 	}
 }
 func (p TUpdate) Clear()  {
-	cmdList = &CMDWaitingList{
+	CMDList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
 	NodeMatrix = make(config.Matrix, (config.N)*(config.N))
