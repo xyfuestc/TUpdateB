@@ -95,19 +95,17 @@ func (p TUpdate) Init()  {
 }
 
 func (p TUpdate) HandleReq(blocks []int)  {
-	for _, _ = range blocks {
-		ackMaps.pushACK(sid)
-		sid++
-	}
-
-	sid = 0
+	//for _, _ = range blocks {
+	//	ackMaps.pushACK(sid)
+	//	sid++
+	//}
 	for _, b := range blocks {
 		req := &config.ReqData{
 			BlockID: b,
-			SID: sid,
+			//SID: sid,
 		}
 		p.handleOneBlock(req)
-		sid++
+		//sid++
 	}
 }
 
@@ -124,16 +122,21 @@ func (p TUpdate) handleOneBlock(reqData * config.ReqData)  {
 func (p TUpdate) HandleTD(td *config.TD)  {
 	//本地数据更新
 	go common.WriteDeltaBlock(td.BlockID, td.Buff)
+
+	//返回ack
+	ack := &config.ACK{
+		SID:     td.SID,
+		BlockID: td.BlockID,
+	}
+	ReturnACK(ack)
+
 	//有等待任务
 	cmds := meetCMDNeed(td.SID)
-	//cmds := CMDList.popRunnableCMDs()
 
 	if len(cmds) > 0 {
-		//fmt.Printf("cmds: %v\n", cmds)
 		//添加ack监听
 		for _, i := range cmds {
 			cmd := i
-			//fmt.Printf("cmd : %v\n", cmd)
 			for _, _ = range cmd.ToIPs {
 				ackMaps.pushACK(cmd.SID)
 			}
@@ -150,17 +153,6 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 				}
 				common.SendData(td, toIP, config.NodeTDListenPort, "")
 			}
-			//CMDList.popCMD(cmd.SID)
-		}
-	}else{
-		//没有等待任务，返回ack
-		if _, ok := ackMaps.getACK(td.SID); !ok {
-			//返回ack
-			ack := &config.ACK{
-				SID:     td.SID,
-				BlockID: td.BlockID,
-			}
-			ReturnACK(ack)
 		}
 	}
 }
@@ -248,7 +240,8 @@ func GetTransmitTasks(reqData *config.ReqData) []Task {
 	path := GetMSTPath(relatedParityMatrix, nodeIndexs)
 	taskGroup := make([]Task, 0, len(nodeIndexs)-1)
 	for i := 1; i < len(nodeIndexs); i++ {
-		taskGroup = append(taskGroup, Task{Start: nodeIndexs[path[i]], SID: reqData.SID, BlockID: reqData.BlockID, End:nodeIndexs[i]})
+		taskGroup = append(taskGroup, Task{Start: nodeIndexs[path[i]], SID: sid, BlockID: reqData.BlockID, End:nodeIndexs[i]})
+		sid++
 	}
 	TaskAdjust(taskGroup)
 	sort.SliceStable(taskGroup, func(i, j int) bool {
@@ -319,6 +312,7 @@ func (p TUpdate) HandleACK(ack *config.ACK)  {
 	}
 }
 func (p TUpdate) Clear()  {
+	sid = 0
 	CMDList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
