@@ -240,11 +240,11 @@ func GetTransmitTasks(reqData *config.ReqData) []Task {
 	path := GetMSTPath(relatedParityMatrix, nodeIndexs)
 	taskGroup := make([]Task, 0, len(nodeIndexs)-1)
 	//添加等待任务
+	curSid := sid
 	for i := 1; i < len(nodeIndexs); i++ {
 		ackMaps.pushACK(sid)
-		sid++
+		curSid++
 	}
-	sid = 0
 	for i := 1; i < len(nodeIndexs); i++ {
 		taskGroup = append(taskGroup, Task{Start: nodeIndexs[path[i]], SID: sid, BlockID: reqData.BlockID, End:nodeIndexs[i]})
 		sid++
