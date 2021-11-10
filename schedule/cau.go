@@ -231,7 +231,7 @@ func dataUpdate(rackID int, stripe []int)  {
 func parityUpdate(rackID int, stripe []int) {
 	curRackNodes := make([][]int, config.RackSize)
 	parities := make([][]int, config.M * config.W)
-	for _, blockID := range stripe{
+	for _, blockID := range stripe {
 		nodeID := common.GetNodeID(blockID)
 		if byte(rackID) != getRackIDFromNodeID(byte(nodeID)) {
 			continue
