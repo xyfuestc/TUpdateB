@@ -3,6 +3,7 @@ package schedule
 import (
 	"EC/common"
 	"EC/config"
+	"fmt"
 	"github.com/wxnacy/wgo/arrays"
 	"sort"
 	"sync"
@@ -67,6 +68,27 @@ func (M *CMDWaitingList) popRunnableCMDs() []*config.CMD  {
 	return cmds
 }
 
+func (M *CMDWaitingList) popRunnableCMDsWithSID(sid int) []*config.CMD  {
+	M.Lock()
+	cmds := make([]*config.CMD, 0, len(M.Queue))
+	for _, cmd := range M.Queue {
+		if cmd.SID == sid {
+			cmds = append(cmds, cmd)
+		}
+	}
+
+	//删除
+	for i:= 0; i < len(M.Queue); {
+		if M.Queue[i].SID == sid {
+			M.Queue = append(M.Queue[:i], M.Queue[i+1:]...)
+		} else {
+			i++
+		}
+	}
+
+	M.Unlock()
+	return cmds
+}
 
 var CMDList *CMDWaitingList
 const MAX_COUNT int = 9
@@ -124,7 +146,7 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 	go common.WriteDeltaBlock(td.BlockID, td.Buff)
 
 	//有等待任务
-	cmds := meetCMDNeed(td.SID)
+	cmds := CMDList.popRunnableCMDsWithSID(td.SID)
 
 	if len(cmds) > 0 {
 		//添加ack监听
@@ -287,6 +309,7 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 		}
 	}else{
 		cmd.Helpers = append(cmd.Helpers, cmd.BlockID)
+		fmt.Printf("添加sid: %d, blockID: %d, helpers: %v到cmdList.", cmd.SID, cmd.BlockID, cmd.Helpers)
 		CMDList.pushCMD(cmd)
 	}
 }
@@ -322,4 +345,5 @@ func (p TUpdate) RecordSIDAndReceiverIP(sid int, ip string)()  {
 func (p TUpdate) IsFinished() bool {
 	return ackMaps.isEmpty()
 }
+
 
