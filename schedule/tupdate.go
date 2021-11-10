@@ -95,23 +95,23 @@ func (p TUpdate) Init()  {
 }
 
 func (p TUpdate) HandleReq(blocks []int)  {
-	//for _, _ = range blocks {
-	//	ackMaps.pushACK(sid)
-	//	sid++
-	//}
+	for _, _ = range blocks {
+		ackMaps.pushACK(sid)
+		sid++
+	}
+	sid = 0
 	for _, b := range blocks {
 		req := &config.ReqData{
 			BlockID: b,
-			//SID: sid,
+			SID: sid,
 		}
 		p.handleOneBlock(req)
-		//sid++
+		sid++
 	}
 }
 
 func (p TUpdate) handleOneBlock(reqData * config.ReqData)  {
 	tasks := GetTransmitTasks(reqData)
-	//fmt.Printf("tasks: %v\n", tasks)
 	for _, task := range tasks {
 		fromIP := common.GetNodeIP(int(task.Start))
 		toIPs := []string{common.GetNodeIP(int(task.End))}
@@ -239,23 +239,13 @@ func GetTransmitTasks(reqData *config.ReqData) []Task {
 	relatedParityMatrix, nodeIndexs := getAdjacentMatrix(parityNodes, nodeID, NodeMatrix)
 	path := GetMSTPath(relatedParityMatrix, nodeIndexs)
 	taskGroup := make([]Task, 0, len(nodeIndexs)-1)
-	//添加等待任务
-	curSid := sid
 	for i := 1; i < len(nodeIndexs); i++ {
-		ackMaps.pushACK(sid)
-		curSid++
-	}
-	for i := 1; i < len(nodeIndexs); i++ {
-		taskGroup = append(taskGroup, Task{Start: nodeIndexs[path[i]], SID: sid, BlockID: reqData.BlockID, End:nodeIndexs[i]})
-		sid++
+		taskGroup = append(taskGroup, Task{Start: nodeIndexs[path[i]], SID: reqData.SID, BlockID: reqData.BlockID, End:nodeIndexs[i]})
 	}
 	TaskAdjust(taskGroup)
 	sort.SliceStable(taskGroup, func(i, j int) bool {
 		return taskGroup[i].Start < taskGroup[j].Start
 	})
-
-	//fmt.Printf("GetTransmitTasks :%v\n", taskGroup)
-
 	return taskGroup
 
 }
