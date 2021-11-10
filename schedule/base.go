@@ -94,6 +94,8 @@ func SetPolicy(policyType config.PolicyType)  {
 		CurPolicy = TUpdate{}
 	case config.Forest:
 		CurPolicy = Forest{}
+	case config.CAU1:
+		CurPolicy = CAU1{}
 	}
 	CurPolicy.Init()
 }

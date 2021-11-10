@@ -35,7 +35,7 @@ func handleACK(conn net.Conn) {
 		throughput :=  float32(numOfReq) * ( float32(config.BlockSize) / config.Megabyte) / float32(sumTime)
 		actualUpdatedBlocks = schedule.GetActualBlocks()
 		fmt.Printf("%s 总耗时: %ds, 完成更新任务: %d, 实际处理任务数: %d, 单个更新速度: %0.4fs, 吞吐量: %0.2f个/s\n",
-			config.CurPolicyStr[config.CurPolicyVal], sumTime, numOfReq, actualUpdatedBlocks, averageOneUpdateSpeed, throughput)
+			config.CurPolicyStr[round], sumTime, numOfReq, actualUpdatedBlocks, averageOneUpdateSpeed, throughput)
 
 		schedule.GetCurPolicy().Clear()
 		clearRound()
@@ -103,9 +103,8 @@ func main() {
 	}
 	defer blockFile.Close()
 	numOfReq = sidCounter
-	for i := 0; i < config.NumOfAlgorithm; i++ {
-		//启动运行
-		start(i)
+	for round < config.NumOfAlgorithm {
+		start()
 		//保证主线程运行
 		for  {
 			if finished {
@@ -113,9 +112,11 @@ func main() {
 				break
 			}
 		}
+		round++
 	}
 	//清空
 	clearUpdates()
+
 }
 
 func settingCurrentPolicy(policyType int)  {
@@ -129,7 +130,7 @@ func settingCurrentPolicy(policyType int)  {
 	time.Sleep(10 * time.Second)
 }
 
-func start(round int)  {
+func start()  {
 	fmt.Printf(" 设置当前算法：[%s]\n", config.CurPolicyStr[round])
 	settingCurrentPolicy(round)
 	fmt.Printf(" [%s]算法开始运行...总共block请求数量为：%d\n", config.CurPolicyStr[round], sidCounter)

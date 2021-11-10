@@ -65,6 +65,7 @@ const (
 	CAU
 	T_Update
 	Forest
+	CAU1
 )
 const BaseIP string = "192.168.1."
 var MSIP = BaseIP + "108"
