@@ -63,9 +63,8 @@ type PolicyType int
 const (
 	BASE PolicyType = iota
 	CAU
-	Forest
 	T_Update
-
+	Forest
 )
 const BaseIP string = "192.168.1."
 var MSIP = BaseIP + "108"
