@@ -238,8 +238,8 @@ func parityUpdate(rackID int, stripe []int) {
 		}
 		curRackNodes[nodeID-rackID*config.RackSize] = append(curRackNodes[nodeID-rackID*config.RackSize], blockID)
 		for _, p := range common.RelatedParities(blockID){
-			if arrays.Contains(parities[p], GetBlockColumn(blockID)) < 0 {
-				parities[p] = append(parities[p], GetBlockColumn(blockID))
+			if arrays.Contains(parities[p], blockID) < 0 {
+				parities[p] = append(parities[p], blockID)
 			}
 		}
 	}
