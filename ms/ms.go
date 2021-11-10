@@ -118,7 +118,20 @@ func main() {
 	clearUpdates()
 }
 
+func settingCurrentPolicy(policyType int)  {
+	p := &config.Policy{
+		Type: policyType,
+	}
+	for _, ip := range config.NodeIPs{
+		common.SendData(p, ip, config.NodeSettingsListenPort, "")
+	}
+	fmt.Printf("等待设置完成...")
+	time.Sleep(10 * time.Second)
+}
+
 func start(round int)  {
+	fmt.Printf(" 设置当前算法：[%s]\n", config.CurPolicyStr[round])
+	settingCurrentPolicy(round)
 	fmt.Printf(" [%s]算法开始运行...总共block请求数量为：%d\n", config.CurPolicyStr[round], sidCounter)
 	schedule.SetPolicy(config.PolicyType(round))
 	schedule.GetCurPolicy().HandleReq(totalBlocks)

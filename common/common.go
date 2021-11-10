@@ -326,6 +326,20 @@ func GetTD(conn net.Conn) config.TD {
 	conn.Close()
 	return td
 }
+func GetPolicy(conn net.Conn) config.Policy  {
+	//defer conn.Close()
+	dec := gob.NewDecoder(conn)
+	var p config.Policy
+	err := dec.Decode(&p)
+	if err != nil {
+		if conn != nil {
+			conn.Close()
+		}
+		log.Fatalln("GetPolicy from ", GetConnIP(conn), "result in decoding error: ", err)
+	}
+	conn.Close()
+	return p
+}
 func GetReq(conn net.Conn) config.ReqData  {
 	/****解析接收数据****/
 	//defer conn.Close()

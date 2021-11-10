@@ -80,6 +80,7 @@ func (M *ACKIPMap) recordIP(sid int, ip string)  {
 }
 
 var CurPolicy Policy = nil
+//var CurPolicyType int = 0
 var ackMaps *ACKMap
 var ackIPMaps *ACKIPMap
 var sid = 0
@@ -97,6 +98,9 @@ func SetPolicy(policyType config.PolicyType)  {
 	CurPolicy.Init()
 }
 func GetCurPolicy() Policy {
+	if CurPolicy == nil {
+		log.Fatalln("CurPolicy is nil！")
+	}
 	return CurPolicy
 }
 func (p Base) HandleCMD(cmd *config.CMD) {
