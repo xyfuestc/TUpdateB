@@ -97,9 +97,6 @@ func SetPolicy(policyType config.PolicyType)  {
 	CurPolicy.Init()
 }
 func GetCurPolicy() Policy {
-	if CurPolicy == nil  {
-		SetPolicy(config.CurPolicyVal)
-	}
 	return CurPolicy
 }
 func (p Base) HandleCMD(cmd *config.CMD) {

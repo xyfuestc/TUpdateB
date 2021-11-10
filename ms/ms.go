@@ -15,7 +15,6 @@ import (
 	"time"
 )
 var numOfReq = 0
-var curReqChunks = make([]config.MetaInfo, config.MaxBatchSize, config.MaxBatchSize)
 var round = 0
 var actualUpdatedBlocks = 0
 var sidCounter = 0
@@ -38,8 +37,9 @@ func handleACK(conn net.Conn) {
 		fmt.Printf("%s 总耗时: %ds, 完成更新任务: %d, 实际处理任务数: %d, 单个更新速度: %0.4fs, 吞吐量: %0.2f个/s\n",
 			config.CurPolicyStr[config.CurPolicyVal], sumTime, numOfReq, actualUpdatedBlocks, averageOneUpdateSpeed, throughput)
 
-		clearUpdates()
 		schedule.GetCurPolicy().Clear()
+		clearRound()
+
 	}
 }
 func PrintGenMatrix(gm []byte)  {
@@ -61,6 +61,10 @@ func clearUpdates() {
 	numOfReq = 0
 	finished = true
 	totalBlocks = make([]int, 0, config.MaxBlockSize)
+}
+func clearRound()  {
+	finished = true
+	actualUpdatedBlocks = 0
 }
 func main() {
 	beginTime = time.Now()
@@ -95,22 +99,29 @@ func main() {
 
 		totalBlocks = append(totalBlocks, blockID)
 
-
 		sidCounter++
 	}
 	defer blockFile.Close()
 	numOfReq = sidCounter
-	fmt.Printf("总共block请求数量为：%d\n", sidCounter)
-	schedule.GetCurPolicy().HandleReq(totalBlocks)
-	//保证主线程运行
-
-
-	for  {
-		if finished {
-			break
+	for i := 0; i < config.NumOfAlgorithm; i++ {
+		//启动运行
+		start(i)
+		//保证主线程运行
+		for  {
+			if finished {
+				finished = false
+				break
+			}
 		}
 	}
-	
+	//清空
+	clearUpdates()
+}
+
+func start(round int)  {
+	fmt.Printf(" [%s]算法开始运行...总共block请求数量为：%d\n", config.CurPolicyStr[round], sidCounter)
+	schedule.SetPolicy(config.PolicyType(round))
+	schedule.GetCurPolicy().HandleReq(totalBlocks)
 }
 func listenACK(listen net.Listener) {
 	defer listen.Close()
