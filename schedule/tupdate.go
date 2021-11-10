@@ -123,26 +123,17 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 	//本地数据更新
 	go common.WriteDeltaBlock(td.BlockID, td.Buff)
 
-	//返回ack
-	ack := &config.ACK{
-		SID:     td.SID,
-		BlockID: td.BlockID,
-	}
-	ReturnACK(ack)
-
 	//有等待任务
 	cmds := meetCMDNeed(td.SID)
 
 	if len(cmds) > 0 {
 		//添加ack监听
-		for _, i := range cmds {
-			cmd := i
+		for _, cmd := range cmds {
 			for _, _ = range cmd.ToIPs {
 				ackMaps.pushACK(cmd.SID)
 			}
 		}
-		for _, i := range cmds {
-			cmd := i
+		for _, cmd := range cmds {
 			for _, toIP := range cmd.ToIPs {
 				td := &config.TD{
 					BlockID: cmd.BlockID,
@@ -153,6 +144,15 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 				}
 				common.SendData(td, toIP, config.NodeTDListenPort, "")
 			}
+		}
+	}else{
+		if _, ok := ackMaps.getACK(td.SID); !ok {
+			//返回ack
+			ack := &config.ACK{
+				SID:     td.SID,
+				BlockID: td.BlockID,
+			}
+			ReturnACK(ack)
 		}
 	}
 }
@@ -247,7 +247,6 @@ func GetTransmitTasks(reqData *config.ReqData) []Task {
 		return taskGroup[i].Start < taskGroup[j].Start
 	})
 	return taskGroup
-
 }
 func getAdjacentMatrix(parities []byte, nodeID int, allMatrix []byte) (config.Matrix, config.Matrix) {
 	nodeIDs := make(config.Matrix, 0, (1+config.M)*(1+config.M))
@@ -287,6 +286,7 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 			common.SendData(td, toIP, config.NodeTDListenPort, "")
 		}
 	}else{
+		cmd.Helpers = append(cmd.Helpers, cmd.BlockID)
 		CMDList.pushCMD(cmd)
 	}
 }

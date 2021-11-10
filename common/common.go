@@ -277,7 +277,7 @@ func SendCMD(fromIP string, toIPs []string, sid, blockID int)  {
 		BlockID: blockID,
 		ToIPs: toIPs,
 		FromIP: fromIP,
-		Helpers: make([]int, 0),
+		Helpers: make([]int, 0, 1),
 		Matched: 0,
 	}
 	SendData(cmd, fromIP, config.NodeCMDListenPort, "")
