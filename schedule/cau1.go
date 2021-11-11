@@ -25,6 +25,7 @@ func (p CAU1) Init()  {
 	CMDList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
+	actualBlocks = 0
 }
 
 func (p CAU1) HandleTD(td *config.TD) {
@@ -375,6 +376,8 @@ func (p CAU1) RecordSIDAndReceiverIP(sid int, ip string)()  {
 func (p CAU1) IsFinished() bool {
 	return len(totalBlocks) == 0 && ackMaps.isEmpty()
 }
-
+func (p CAU1) GetActualBlocks() int {
+	return actualBlocks
+}
 
 

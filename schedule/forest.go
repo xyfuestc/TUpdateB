@@ -9,7 +9,7 @@ type Forest struct {
 }
 
 func (p Forest) Init()  {
-
+	actualBlocks = 0
 }
 func (p Forest) HandleReq(blocks []int)  {
 
@@ -34,7 +34,7 @@ func (p Forest) HandleACK(ack *config.ACK)  {
 	//}
 }
 func (p Forest) Clear()  {
-
+	actualBlocks = 0
 }
 
 func (p Forest)	RecordSIDAndReceiverIP(sid int, ip string)()  {
@@ -43,4 +43,8 @@ func (p Forest)	RecordSIDAndReceiverIP(sid int, ip string)()  {
 
 func (p Forest) IsFinished() bool {
 	return ackMaps.isEmpty()
+}
+
+func (p Forest) GetActualBlocks() int {
+	return actualBlocks
 }

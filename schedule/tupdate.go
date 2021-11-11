@@ -114,9 +114,13 @@ func (p TUpdate) Init()  {
 	CMDList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
+	actualBlocks = 0
 }
 
 func (p TUpdate) HandleReq(blocks []int)  {
+
+	actualBlocks = len(blocks)
+
 	for _, _ = range blocks {
 		ackMaps.pushACK(sid)
 		sid++
@@ -336,6 +340,7 @@ func (p TUpdate) Clear()  {
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
 	NodeMatrix = make(config.Matrix, (config.N)*(config.N))
+	actualBlocks = 0
 }
 
 func (p TUpdate) RecordSIDAndReceiverIP(sid int, ip string)()  {
@@ -347,3 +352,6 @@ func (p TUpdate) IsFinished() bool {
 }
 
 
+func (p TUpdate) GetActualBlocks() int {
+	return actualBlocks
+}

@@ -30,6 +30,8 @@ func (p CAU) Init()  {
 	CMDList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
+	curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
+	actualBlocks = 0
 }
 
 func (p CAU) HandleTD(td *config.TD) {
@@ -449,7 +451,6 @@ func (p CAU) Clear()  {
 	CMDList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
-
 }
 
 func (p CAU) RecordSIDAndReceiverIP(sid int, ip string)()  {
@@ -468,7 +469,7 @@ func (p CAU) IsFinished() bool {
 }
 
 
-func GetActualBlocks() int {
+func (p CAU) GetActualBlocks() int {
 	return actualBlocks
 }
 

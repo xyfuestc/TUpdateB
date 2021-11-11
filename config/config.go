@@ -51,11 +51,11 @@ type Policy struct {
 }
 
 const (
-	NodeReqListenPort   string = "8300" // datanode or paritynode listening port
-	NodeACKListenPort   string = "8301"   // metainfo server ack listening port
-	NodeCMDListenPort   string = "8302"   // metainfo server ack listening port
-	NodeSettingsListenPort   string = "8303"   // metainfo server ack listening port
-	NodeTDListenPort   string = "8304"   // metainfo server ack listening port
+	NodeReqListenPort       string = "8300" // datanode or paritynode listening port
+	NodeACKListenPort       string = "8301"   // metainfo server ack listening port
+	NodeCMDListenPort       string = "8302"   // metainfo server ack listening port
+	NodeSettingsListenPort  string = "8303"   // metainfo server ack listening port
+	NodeTDListenPort        string = "8304"   // metainfo server ack listening port
 )
 
 type PolicyType int

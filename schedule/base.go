@@ -18,6 +18,7 @@ type Policy interface {
 	Clear()
 	RecordSIDAndReceiverIP(sid int, ip string)
 	IsFinished() bool
+	GetActualBlocks() int
 }
 
 type Base struct {
@@ -175,9 +176,12 @@ func (p Base) Init()  {
 	ackIPMaps = &ACKIPMap{
 		ACKReceiverIPs: map[int]string{},
 	}
+	actualBlocks = 0
 }
 
 func (p Base) HandleReq(blocks []int)  {
+
+	actualBlocks = len(blocks)
 
 	for _, _ = range blocks {
 		ackMaps.pushACK(sid)
@@ -208,13 +212,13 @@ func (p Base) RecordSIDAndReceiverIP(sid int, ip string)  {
 }
 func (p Base) Clear()  {
 	sid = 0
-	//RequireACKs = make(map[int]int)
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
 	}
 	ackIPMaps = &ACKIPMap{
 		ACKReceiverIPs: map[int]string{},
 	}
+	actualBlocks = 0
 }
 func ACKIsEmpty() bool {
 	return ackMaps.isEmpty()
@@ -224,3 +228,6 @@ func (p Base) IsFinished() bool {
 	return ackMaps.isEmpty()
 }
 
+func (p Base) GetActualBlocks() int {
+	return actualBlocks
+}
