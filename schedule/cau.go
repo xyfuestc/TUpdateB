@@ -371,9 +371,6 @@ func getRackStripeNum(index int, blocks []int) int  {
 }
 //blocksIDs没有重复元素
 func getRackUpdateNums(index int, blocks []int) int  {
-	if index == ParityRackIndex {
-		return getParityUpdateNums(blocks)
-	}
 	rackUpdateNums := make([]int, 0, len(blocks))
 	for _, b := range blocks {
 		rackID := getRackIDFromBlockID(b)

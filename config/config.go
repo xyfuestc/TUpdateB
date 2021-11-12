@@ -15,10 +15,10 @@ const BlockSize int = 1024 * 1024 //1MB
 const Megabyte = 1024 * 1024      //1MB
 const MaxBatchSize int = 100
 const MaxBlockSize int = 1000000
-var CurPolicyVal = CAU
+//var CurPolicyVal = CAU
 const NumOfAlgorithm int = 4   //采用3种算法执行相同任务
-var CurPolicyStr = []string{"Base", "CAU", "TUpdate", "CAU1" }
-var OutFilePath = "../request/proj_4.csv.bak.txt"
+var CurPolicyStr = []string{"Base", "TUpdate",  "CAU", "CAU1"  }
+var OutFilePath = "../request/proj_4.csv.txt"
 //var OutFilePath = "../request/rsrch_1.csv.txt"
 var BitMatrix = make([]byte, K*M*W*W)
 const RackSize = M
@@ -62,8 +62,8 @@ type PolicyType int
 
 const (
 	BASE PolicyType = iota
-	CAU
 	T_Update
+	CAU
 	CAU1
 	Forest
 )

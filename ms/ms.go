@@ -15,7 +15,7 @@ import (
 	"time"
 )
 var numOfReq = 0
-var round = 0
+var round = 2
 var actualUpdatedBlocks = 0
 var sidCounter = 0
 var beginTime time.Time

@@ -89,14 +89,15 @@ func SetPolicy(policyType config.PolicyType)  {
 	switch policyType {
 	case config.BASE:
 		CurPolicy = Base{}
-	case config.CAU:
-		CurPolicy = CAU{}
 	case config.T_Update:
 		CurPolicy = TUpdate{}
-	case config.Forest:
-		CurPolicy = Forest{}
+	case config.CAU:
+		CurPolicy = CAU{}
 	case config.CAU1:
 		CurPolicy = CAU1{}
+	case config.Forest:
+		CurPolicy = Forest{}
+
 	}
 	CurPolicy.Init()
 }
