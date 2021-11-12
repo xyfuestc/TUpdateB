@@ -28,6 +28,7 @@ func (p TUpdate1) Init()  {
 func (p TUpdate1) HandleReq(blocks []int)  {
 
 	actualBlocks = len(blocks)
+	totalBlocks = blocks
 
 	for len(totalBlocks) > 0 {
 		//过滤blocks
