@@ -15,7 +15,7 @@ import (
 	"time"
 )
 var numOfReq = 0
-var round = 2
+var round = 3
 var actualUpdatedBlocks = 0
 var sidCounter = 0
 var beginTime time.Time
@@ -134,7 +134,7 @@ func settingCurrentPolicy(policyType int)  {
 func start()  {
 	beginTime = time.Now()
 	fmt.Printf(" 设置当前算法：[%s]\n", config.CurPolicyStr[round])
-	settingCurrentPolicy(round)
+	//settingCurrentPolicy(round)
 	fmt.Printf(" [%s]算法开始运行...总共block请求数量为：%d\n", config.CurPolicyStr[round], sidCounter)
 	schedule.SetPolicy(config.PolicyType(round))
 	schedule.GetCurPolicy().HandleReq(totalBlocks)

@@ -357,13 +357,13 @@ func getRackStripeNum(index int, blocks []int) int  {
 	if index == ParityRackIndex {
 		return getParityUpdateNums(blocks)
 	}
-	curRackNodeIDs := make([]byte, 0, config.K / config.RackSize)
+	curRackNodeIDs := make([]int, 0, config.RackSize)
 	for _, b := range blocks {
 		rackID := getRackIDFromBlockID(b)
 		if rackID == byte(index) {
 			nodeID := common.GetNodeID(b)
 			if arrays.Contains(curRackNodeIDs, nodeID) < 0 {
-				curRackNodeIDs = append(curRackNodeIDs, byte(nodeID))
+				curRackNodeIDs = append(curRackNodeIDs, nodeID)
 			}
 		}
 	}
@@ -390,13 +390,13 @@ func getRackIDFromNodeID(nodeID byte) byte  {
 }
 
 func getParityUpdateNums(blocks []int) int {
-	parityIDs := make([]byte, 0, config.M)
+	parityIDs := make([]int, 0, config.M)
 	for _, b := range blocks {
 		parities := common.RelatedParities(b)
 		parityNodeIDs := common.RelatedParityNodes(parities)
 		for _, id := range parityNodeIDs  {
-			if arrays.Contains(parityIDs, id) < 0 {
-				parityIDs = append(parityIDs, id)
+			if arrays.Contains(parityIDs, int(id)) < 0 {
+				parityIDs = append(parityIDs, int(id))
 			}
 		}
 	}

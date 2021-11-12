@@ -4,14 +4,13 @@ import (
 	"EC/config"
 	"encoding/gob"
 	"fmt"
+	"github.com/dchest/uniuri"
 	"github.com/wxnacy/wgo/arrays"
 	"log"
 	"math"
-	"math/rand"
 	"net"
 	"os"
 	"strings"
-	"github.com/dchest/uniuri"
 )
 
 var kinds = map[string]func() interface{}{
@@ -45,34 +44,6 @@ const (
 	letterIdxMax  = 63 / letterIdxBits
 )
 
-func RandStringBytesMask(n int) string {
-	b := make([]byte, n)
-	for i := 0; i < n; {
-		if idx := int(rand.Int63() & letterIdxMask); idx < len(letterBytes) {
-			b[i] = letterBytes[idx]
-			i++
-		}
-	}
-	return string(b)
-}
-
-func RandStringBytesMaskImpr(n int) string {
-	b := make([]byte, n)
-	// A rand.Int63() generates 63 random bits, enough for letterIdxMax letters!
-	for i, cache, remain := n-1, rand.Int63(), letterIdxMax; i >= 0; {
-		if remain == 0 {
-			cache, remain = rand.Int63(), letterIdxMax
-		}
-		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
-			b[i] = letterBytes[idx]
-			i--
-		}
-		cache >>= letterIdxBits
-		remain--
-	}
-	return string(b)
-}
-
 /*******发送数据*********/
 func SendData(data interface{}, targetIP string, port string, retType string) interface{} {
 
@@ -98,49 +69,6 @@ func SendData(data interface{}, targetIP string, port string, retType string) in
 
 	return nil
 }
-
-/**********get IP from nodeID**********/
-
-
-func IsContain(items []int, item int) bool {
-	for _, eachItem := range items {
-		if eachItem == item {
-			return true
-		}
-	}
-	return false
-}
-
-func IsContainB(items config.Matrix, item byte) bool {
-	for _, eachItem := range items {
-		if eachItem == item {
-			return true
-		}
-	}
-	return false
-}
-
-func GetRackIDFromNode(nodeID int) int {
-	rackSize := (config.K+config.M)/config.M
-	return nodeID / rackSize
-}
-
-func GetNeighborsIPs(rackID int, ip string) []string {
-	if rackID < 0 {
-		log.Fatal("GetNeighborsIPs error: rackID < 0")
-		return nil
-	}
-	ips := config.Racks[rackID].Nodes
-	var neighbors = make([]string, 0, config.M)
-	for _, v := range ips {
-		if v == ip {    //except self
-			continue
-		}
-		neighbors = append(neighbors, v)
-	}
-	return neighbors
-}
-
 func GetStripeIDFromBlockID(blockID int) int {
 	return blockID/(config.K * config.W)
 }
@@ -214,13 +142,6 @@ func WriteBlock(blockID int, buff []byte)  {
 func GetNodeID(blockID int) int {
 	return blockID % (config.K * config.W) / config.W
 }
-func GetStripeID(blockID int) int  {
-	if blockID < 0 {
-		return -1
-	}
-	return blockID/config.K
-}
-
 func GetNodeIP(nodeID int) string {
 	return config.NodeIPs[nodeID]
 }
@@ -256,8 +177,6 @@ func WriteDeltaBlock(blockID int, deltaBuff []byte) []byte  {
 }
 
 func GetCMD(conn net.Conn) config.CMD  {
-	//defer conn.Close()
-	//decode the req
 	dec := gob.NewDecoder(conn)
 	var cmd config.CMD
 	err := dec.Decode(&cmd)
@@ -296,7 +215,6 @@ func SendCMDWithHelpers(fromIP string, toIPs []string, sid, blockID int, helpers
 }
 
 func GetACK(conn net.Conn) config.ACK {
-	//defer conn.Close()
 	dec := gob.NewDecoder(conn)
 
 	var ack config.ACK
@@ -339,22 +257,6 @@ func GetPolicy(conn net.Conn) config.Policy  {
 	}
 	conn.Close()
 	return p
-}
-func GetReq(conn net.Conn) config.ReqData  {
-	/****解析接收数据****/
-	//defer conn.Close()
-	dec := gob.NewDecoder(conn)
-
-	var req config.ReqData
-	err := dec.Decode(&req)
-	if err != nil {
-		if conn != nil {
-			conn.Close()
-		}
-		log.Fatalln("GetReq: decode error: ", err)
-	}
-	conn.Close()
-	return req
 }
 func GetBlocksFromOneRequest(userRequest config.UserRequest) (int,int)  {
 	minBlockID := userRequest.AccessOffset / config.BlockSize
