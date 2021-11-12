@@ -22,7 +22,7 @@ var beginTime time.Time
 var endTime time.Time
 var totalBlocks = make([]int, 0, config.MaxBlockSize)
 var finished bool = false
-
+var connections []net.Conn
 func handleACK(conn net.Conn) {
 	defer conn.Close()
 	ack := common.GetACK(conn)
@@ -67,11 +67,12 @@ func clearRound()  {
 	actualUpdatedBlocks = 0
 }
 func main() {
-
 	//初始化
 	config.Init()
-
 	//监听ack
+
+
+
 	fmt.Printf("ms启动...")
 	fmt.Printf("监听ack: %s:%s\n", common.GetLocalIP(), config.NodeACKListenPort)
 	l2, err := net.Listen("tcp", common.GetLocalIP() + ":" + config.NodeACKListenPort)
@@ -139,13 +140,31 @@ func start()  {
 	schedule.GetCurPolicy().HandleReq(totalBlocks)
 }
 func listenACK(listen net.Listener) {
-	defer listen.Close()
+
+	//清除连接
+	defer func() {
+		for _, conn := range connections {
+			conn.Close()
+		}
+	}()
+
+	//defer listen.Close()
 	for {
-		conn, err := listen.Accept()
-		if err != nil {
-			log.Fatalln("listenACK  err: ", err)
+		conn, e := listen.Accept()
+		if e != nil {
+			if ne, ok := e.(net.Error); ok && ne.Temporary() {
+				log.Printf("accept temp err: %v", ne)
+				continue
+			}
+
+			log.Printf("accept err: %v", e)
+			return
 		}
 		go handleACK(conn)
+		connections = append(connections, conn)
+		if len(connections)%100 == 0 {
+			log.Printf("total number of connections: %v", len(connections))
+		}
 	}
 }
 

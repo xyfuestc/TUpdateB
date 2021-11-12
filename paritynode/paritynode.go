@@ -8,6 +8,8 @@ import (
 	"log"
 	"net"
 )
+var connections []net.Conn
+
 func handleCMD(conn net.Conn)  {
 	defer conn.Close()
 	cmd := common.GetCMD(conn)
@@ -57,6 +59,12 @@ func main() {
 		fmt.Printf("listening settings failed, err:%v\n", err)
 		return
 	}
+	//清除连接
+	defer func() {
+		for _, conn := range connections {
+			conn.Close()
+		}
+	}()
 	go listenCMD(l2)
 	go listenACK(l3)
 	go listenSettings(l4)
@@ -64,7 +72,7 @@ func main() {
 
 }
 func listenACK(listen net.Listener) {
-	defer listen.Close()
+	//defer listen.Close()
 	for {
 		conn, err := listen.Accept()
 		if err != nil {
@@ -72,10 +80,14 @@ func listenACK(listen net.Listener) {
 			continue
 		}
 		go handleACK(conn)
+		connections = append(connections, conn)
+		if len(connections)%100 == 0 {
+			log.Printf("total number of connections: %v", len(connections))
+		}
 	}
 }
 func listenCMD(listen net.Listener) {
-	defer listen.Close()
+	//defer listen.Close()
 	for {
 		//等待客户端连接
 		conn, err := listen.Accept()
@@ -84,10 +96,14 @@ func listenCMD(listen net.Listener) {
 			continue
 		}
 		go handleCMD(conn)
+		connections = append(connections, conn)
+		if len(connections)%100 == 0 {
+			log.Printf("total number of connections: %v", len(connections))
+		}
 	}
 }
 func listenTD(listen net.Listener) {
-	defer listen.Close()
+	//defer listen.Close()
 	for {
 		//等待客户端连接
 		conn, err := listen.Accept()
@@ -96,10 +112,14 @@ func listenTD(listen net.Listener) {
 			continue
 		}
 		go handleTD(conn)
+		connections = append(connections, conn)
+		if len(connections)%100 == 0 {
+			log.Printf("total number of connections: %v", len(connections))
+		}
 	}
 }
 func listenSettings(listen net.Listener) {
-	defer listen.Close()
+	//defer listen.Close()
 	for {
 		//等待客户端连接
 		conn, err := listen.Accept()
@@ -108,5 +128,6 @@ func listenSettings(listen net.Listener) {
 			continue
 		}
 		go setPolicy(conn)
+		connections = append(connections, conn)
 	}
 }

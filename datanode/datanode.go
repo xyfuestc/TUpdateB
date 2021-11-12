@@ -8,6 +8,8 @@ import (
 	"log"
 	"net"
 )
+var connections []net.Conn
+
 func handleCMD(conn net.Conn)  {
 	defer conn.Close()
 	cmd := common.GetCMD(conn)
@@ -60,6 +62,13 @@ func main() {
 		fmt.Printf("listening settings failed, err:%v\n", err)
 		return
 	}
+	//清除连接
+	defer func() {
+		for _, conn := range connections {
+			conn.Close()
+		}
+	}()
+
 	go listenTD(l3)
 	go listenACK(l2)
 	go listenSettings(l4)
@@ -75,6 +84,10 @@ func listenCMD(listen net.Listener) {
 			continue
 		}
 		go handleCMD(conn)
+		connections = append(connections, conn)
+		if len(connections)%100 == 0 {
+			log.Printf("total number of connections: %v", len(connections))
+		}
 	}
 }
 func listenACK(listen net.Listener) {
