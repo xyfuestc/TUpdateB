@@ -355,7 +355,7 @@ func compareRacks(rackIndexI, rackIndexJ int, stripe []int) bool {
 //blocksIDs没有重复元素
 func getRackStripeNum(index int, blocks []int) int  {
 	if index == ParityRackIndex {
-		return getParityRackUpdateNum(blocks)
+		return getParityUpdateNums(blocks)
 	}
 	curRackNodeIDs := make([]byte, 0, config.K / config.RackSize)
 	for _, b := range blocks {
@@ -369,6 +369,20 @@ func getRackStripeNum(index int, blocks []int) int  {
 	}
 	return len(curRackNodeIDs)
 }
+//blocksIDs没有重复元素
+func getRackUpdateNums(index int, blocks []int) int  {
+	if index == ParityRackIndex {
+		return getParityUpdateNums(blocks)
+	}
+	rackUpdateNums := make([]int, 0, len(blocks))
+	for _, b := range blocks {
+		rackID := getRackIDFromBlockID(b)
+		if rackID == byte(index) {
+			rackUpdateNums = append(rackUpdateNums, b)
+		}
+	}
+	return len(rackUpdateNums)
+}
 func getRackIDFromBlockID(blockID int) byte {
 	nodeID := common.GetNodeID(blockID)
 	return getRackIDFromNodeID(byte(nodeID))
@@ -378,7 +392,7 @@ func getRackIDFromNodeID(nodeID byte) byte  {
 	return nodeID / byte(config.RackSize)
 }
 
-func getParityRackUpdateNum(blocks []int) int {
+func getParityUpdateNums(blocks []int) int {
 	parityIDs := make([]byte, 0, config.M)
 	for _, b := range blocks {
 		parities := common.RelatedParities(b)

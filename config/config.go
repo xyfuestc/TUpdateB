@@ -16,8 +16,8 @@ const Megabyte = 1024 * 1024      //1MB
 const MaxBatchSize int = 100
 const MaxBlockSize int = 1000000
 var CurPolicyVal = CAU
-const NumOfAlgorithm int = 3   //采用3种算法执行相同任务
-var CurPolicyStr = []string{"Base", "CAU", "TUpdate", "Forest" }
+const NumOfAlgorithm int = 4   //采用3种算法执行相同任务
+var CurPolicyStr = []string{"Base", "CAU", "TUpdate", "CAU1" }
 var OutFilePath = "../request/proj_4.csv.bak.txt"
 //var OutFilePath = "../request/rsrch_1.csv.txt"
 var BitMatrix = make([]byte, K*M*W*W)
@@ -64,8 +64,8 @@ const (
 	BASE PolicyType = iota
 	CAU
 	T_Update
-	Forest
 	CAU1
+	Forest
 )
 const BaseIP string = "192.168.1."
 var MSIP = BaseIP + "108"
