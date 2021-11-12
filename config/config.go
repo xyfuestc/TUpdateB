@@ -10,8 +10,7 @@ const K int = 8
 const M int = 4
 const W int = 3
 const N int = K + M
-const NumOfRack int = 3
-const BlockSize int = 1024 * 1024 //1MB
+const BlockSize int = 1024 * 1024 * 16 //1MB
 const Megabyte = 1024 * 1024      //1MB
 const MaxBatchSize int = 100
 const MaxBlockSize int = 1000000
@@ -69,7 +68,6 @@ const (
 )
 const BaseIP string = "192.168.1."
 var MSIP = BaseIP + "108"
-var ClientIP = BaseIP + "109"
 const DataFilePath string = "../../test"
 const StartIP int = 172
 var NodeIPs =[N]string{
@@ -77,7 +75,6 @@ var NodeIPs =[N]string{
 	BaseIP+"120", BaseIP+"121", BaseIP+"122", BaseIP+"123",     //rack1
 	BaseIP+"140", BaseIP+"141", BaseIP+"142", BaseIP+"143",     //rack2
 }
-var Racks = [NumOfRack]Rack{}
 var BeginTime = time.Now()
 
 //传输数据格式
