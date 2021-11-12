@@ -321,7 +321,7 @@ func (p CAU1) HandleCMD(cmd *config.CMD)  {
 
 func (p CAU1) HandleACK(ack *config.ACK)  {
 	ackMaps.popACK(ack.SID)
-	fmt.Printf("当前剩余ack：%d\n", ackMaps)
+	//fmt.Printf("当前剩余ack：%d\n", ackMaps)
 	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
