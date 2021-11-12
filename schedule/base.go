@@ -91,6 +91,8 @@ func SetPolicy(policyType config.PolicyType)  {
 		CurPolicy = Base{}
 	case config.T_Update:
 		CurPolicy = TUpdate{}
+	case config.T_Update1:
+		CurPolicy = TUpdate1{}
 	case config.CAU:
 		CurPolicy = CAU{}
 	case config.CAU1:

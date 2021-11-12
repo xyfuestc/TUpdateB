@@ -117,7 +117,6 @@ func main() {
 	}
 	//清空
 	clearUpdates()
-
 }
 
 func settingCurrentPolicy(policyType int)  {
@@ -148,7 +147,6 @@ func listenACK(listen net.Listener) {
 		}
 	}()
 
-	//defer listen.Close()
 	for {
 		conn, e := listen.Accept()
 		if e != nil {
@@ -167,4 +165,3 @@ func listenACK(listen net.Listener) {
 		}
 	}
 }
-
