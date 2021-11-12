@@ -15,7 +15,6 @@ const BlockSize int = 1024 * 1024 //1MB
 const Megabyte = 1024 * 1024      //1MB
 const MaxBatchSize int = 100
 const MaxBlockSize int = 1000000
-//var CurPolicyVal = CAU
 const NumOfAlgorithm int = 4   //采用3种算法执行相同任务
 var CurPolicyStr = []string{"Base", "TUpdate",  "CAU", "CAU1"  }
 var OutFilePath = "../request/proj_4.csv.txt"

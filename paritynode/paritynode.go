@@ -74,10 +74,15 @@ func main() {
 func listenACK(listen net.Listener) {
 	//defer listen.Close()
 	for {
-		conn, err := listen.Accept()
-		if err != nil {
-			fmt.Println("accept failed, err:%v", err)
-			continue
+		conn, e := listen.Accept()
+		if e != nil {
+			if ne, ok := e.(net.Error); ok && ne.Temporary() {
+				log.Printf("accept temp err: %v", ne)
+				continue
+			}
+
+			log.Printf("accept err: %v", e)
+			return
 		}
 		go handleACK(conn)
 		connections = append(connections, conn)
@@ -90,10 +95,15 @@ func listenCMD(listen net.Listener) {
 	//defer listen.Close()
 	for {
 		//等待客户端连接
-		conn, err := listen.Accept()
-		if err != nil {
-			fmt.Printf("accept failed, err:%v\n", err)
-			continue
+		conn, e := listen.Accept()
+		if e != nil {
+			if ne, ok := e.(net.Error); ok && ne.Temporary() {
+				log.Printf("accept temp err: %v", ne)
+				continue
+			}
+
+			log.Printf("accept err: %v", e)
+			return
 		}
 		go handleCMD(conn)
 		connections = append(connections, conn)
@@ -106,10 +116,15 @@ func listenTD(listen net.Listener) {
 	//defer listen.Close()
 	for {
 		//等待客户端连接
-		conn, err := listen.Accept()
-		if err != nil {
-			fmt.Printf("accept failed, err:%v\n", err)
-			continue
+		conn, e := listen.Accept()
+		if e != nil {
+			if ne, ok := e.(net.Error); ok && ne.Temporary() {
+				log.Printf("accept temp err: %v", ne)
+				continue
+			}
+
+			log.Printf("accept err: %v", e)
+			return
 		}
 		go handleTD(conn)
 		connections = append(connections, conn)
@@ -122,10 +137,15 @@ func listenSettings(listen net.Listener) {
 	//defer listen.Close()
 	for {
 		//等待客户端连接
-		conn, err := listen.Accept()
-		if err != nil {
-			fmt.Printf("accept failed, err:%v\n", err)
-			continue
+		conn, e := listen.Accept()
+		if e != nil {
+			if ne, ok := e.(net.Error); ok && ne.Temporary() {
+				log.Printf("accept temp err: %v", ne)
+				continue
+			}
+
+			log.Printf("accept err: %v", e)
+			return
 		}
 		go setPolicy(conn)
 		connections = append(connections, conn)
