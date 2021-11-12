@@ -44,7 +44,7 @@ func (p CAU1) HandleTD(td *config.TD) {
 	//有等待任务
 	indexes := meetCMDNeed(td.BlockID)
 	if len(indexes) > 0 {
-		fmt.Printf("有等待任务可以执行：%v\n", indexes)
+		//fmt.Printf("有等待任务可以执行：%v\n", indexes)
 		//添加ack监听
 		for _, i := range indexes {
 			cmd := i
