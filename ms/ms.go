@@ -42,20 +42,6 @@ func handleACK(conn net.Conn) {
 
 	}
 }
-func PrintGenMatrix(gm []byte)  {
-
-	fmt.Printf("Generation Matrix : \n[")
-	for i := 0; i < config.M; i++ {
-		for j := 0; j < config.K; j++ {
-			fmt.Printf("%d ", gm[i*config.K+j])
-
-			if i==config.M-1 && j==config.K-1 {
-				fmt.Printf("%d]", gm[i*config.K+j])
-			}
-		}
-		fmt.Println()
-	}
-}
 func clearUpdates() {
 	actualUpdatedBlocks = 0
 	numOfReq = 0

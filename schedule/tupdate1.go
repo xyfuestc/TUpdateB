@@ -55,7 +55,8 @@ func (p TUpdate1) HandleReq(blocks []int)  {
 }
 
 func (p TUpdate1) handleOneBlock(reqData * config.ReqData)  {
-	tasks := GetTransmitTasks(reqData)
+	tasks := GetBalanceTransmitTasks(reqData)
+	fmt.Printf("tasks: %v\n", tasks)
 	for _, task := range tasks {
 		fromIP := common.GetNodeIP(int(task.Start))
 		toIPs := []string{common.GetNodeIP(int(task.End))}
@@ -100,12 +101,17 @@ func (p TUpdate1) HandleTD(td *config.TD)  {
 		}
 	}
 }
-func (p TUpdate1) GetTransmitTasks(reqData *config.ReqData) []Task {
+func  GetBalanceTransmitTasks(reqData *config.ReqData) []Task {
 	parities :=	common.RelatedParities(reqData.BlockID)
 	parityNodes := common.RelatedParityNodes(parities)
 	nodeID := common.GetNodeID(reqData.BlockID)
 	relatedParityMatrix, nodeIndexs := getAdjacentMatrix(parityNodes, nodeID, NodeMatrix)
 	path := GetMSTPath(relatedParityMatrix, nodeIndexs)
+
+
+	bPath := getBalancePath(path, nodeIndexs)
+	fmt.Printf("bPath : %v\n", bPath)
+
 	taskGroup := make([]Task, 0, len(nodeIndexs)-1)
 	for i := 1; i < len(nodeIndexs); i++ {
 		taskGroup = append(taskGroup, Task{Start: nodeIndexs[path[i]], SID: reqData.SID, BlockID: reqData.BlockID, End:nodeIndexs[i]})

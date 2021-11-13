@@ -91,7 +91,7 @@ func (M *CMDWaitingList) popRunnableCMDsWithSID(sid int) []*config.CMD  {
 }
 
 var CMDList *CMDWaitingList
-const MAX_COUNT int = 9
+const MAX_COUNT int = config.M + 1
 const INFINITY byte = 255
 //var CMDWaitingQueue = make([]*config.CMD, 0, config.MaxBatchSize)
 var NodeMatrix = make(config.Matrix, (config.N)*(config.N))
@@ -258,12 +258,75 @@ func GetMSTPath(matrix, nodeIndexs config.Matrix) config.Matrix   {
 	path := Prim(G)
 	return path
 }
+
+func getBalancePath(path, nodeIndexes []byte) []byte  {
+	childNum := initChild(path)
+
+	for i := 0; i < len(nodeIndexes); i++ {
+		for childNum[i] > 2 {
+			j := findOne(i, path)
+			adjustOnce(j, path, childNum)
+		}
+	}
+	return path
+}
+
+func initChild(path []byte) []int {
+	childNum := make([]int, len(path))
+	for i, v := range path {
+		//root节点
+		if i == int(v) {
+			continue
+		}
+		childNum[v]++
+	}
+	return childNum
+}
+
+func findOne(i int, path []byte) int {
+	for j, v := range path{
+		if int(v) == i {
+			return j
+		}
+	}
+	return -1
+}
+
+func adjustOnce(i int, path []byte, childNum []int) {
+	originNode := i
+	//前向查找
+	p := i - 1
+	for p >= 0 {
+		if childNum[p] < 2 {
+			childNum[path[originNode]]--
+			path[i] = byte(p)
+			childNum[p]++
+			return
+		}
+		p--
+	}
+	p = i + 1
+	for p < len(childNum) {
+		if childNum[p] < 2 {
+			path[i] = byte(p)
+			childNum[p]++
+			childNum[originNode]--
+			return
+		}
+		p++
+	}
+}
+
 func GetTransmitTasks(reqData *config.ReqData) []Task {
 	parities :=	common.RelatedParities(reqData.BlockID)
 	parityNodes := common.RelatedParityNodes(parities)
 	nodeID := common.GetNodeID(reqData.BlockID)
 	relatedParityMatrix, nodeIndexs := getAdjacentMatrix(parityNodes, nodeID, NodeMatrix)
 	path := GetMSTPath(relatedParityMatrix, nodeIndexs)
+
+
+
+
 	taskGroup := make([]Task, 0, len(nodeIndexs)-1)
 	for i := 1; i < len(nodeIndexs); i++ {
 		taskGroup = append(taskGroup, Task{Start: nodeIndexs[path[i]], SID: reqData.SID, BlockID: reqData.BlockID, End:nodeIndexs[i]})
