@@ -270,7 +270,7 @@ func GetConnIP(conn net.Conn) string  {
 	return ip
 }
 func GetIndex(blockID int) int {
-	return blockID / (config.K * config.W)
+	return int(math.Min(float64(blockID/(config.K*config.W)), float64(config.MaxBlockIndex)))
 }
 //求并集
 func Union(slice1, slice2 []int) []int {

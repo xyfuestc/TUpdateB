@@ -376,7 +376,7 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 		}
 	}else{
 		cmd.Helpers = append(cmd.Helpers, cmd.BlockID)
-		fmt.Printf("添加sid: %d, blockID: %d, helpers: %v到cmdList.", cmd.SID, cmd.BlockID, cmd.Helpers)
+		fmt.Printf("添加sid: %d, blockID: %d, helpers: %v到cmdList.\n", cmd.SID, cmd.BlockID, cmd.Helpers)
 		CMDList.pushCMD(cmd)
 	}
 }
