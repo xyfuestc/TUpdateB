@@ -126,7 +126,7 @@ func settingCurrentPolicy(policyType int)  {
 	for _, ip := range config.NodeIPs{
 		common.SendData(p, ip, config.NodeSettingsListenPort, "")
 	}
-	fmt.Printf("等待设置完成...")
+	fmt.Printf("等待设置完成...\n")
 	time.Sleep(3 * time.Second)
 }
 
