@@ -26,31 +26,48 @@ func (p TUpdate1) Init()  {
 }
 
 func (p TUpdate1) HandleReq(blocks []int)  {
-	totalBlocks = blocks
+	//totalBlocks = blocks
+	//
+	//for len(totalBlocks) > 0 {
+	//	//过滤blocks
+	//	findDistinctBlocks()
+	//	//执行cau
+	//	actualBlocks += len(curDistinctBlocks)
+	//	fmt.Printf("第%d轮 CAU：sid：[%d, %d], 处理%d个block\n", round, sid, sid+len(curDistinctBlocks)-1, len(curDistinctBlocks))
+	//
+	//	curSid := sid
+	//	//记录ack
+	//	for _, _ = range curDistinctBlocks {
+	//		ackMaps.pushACK(curSid)
+	//		curSid++
+	//	}
+	//	//处理block
+	//	for _, b := range curDistinctBlocks {
+	//		req := &config.ReqData{
+	//			BlockID: b,
+	//			SID: sid,
+	//		}
+	//		p.handleOneBlock(req)
+	//		sid++
+	//	}
+	//	round++
+	//}
 
-	for len(totalBlocks) > 0 {
-		//过滤blocks
-		findDistinctBlocks()
-		//执行cau
-		actualBlocks += len(curDistinctBlocks)
-		fmt.Printf("第%d轮 CAU：sid：[%d, %d], 处理%d个block\n", round, sid, sid+len(curDistinctBlocks)-1, len(curDistinctBlocks))
 
-		curSid := sid
-		//记录ack
-		for _, _ = range curDistinctBlocks {
-			ackMaps.pushACK(curSid)
-			curSid++
+	actualBlocks = len(blocks)
+
+	for _, _ = range blocks {
+		ackMaps.pushACK(sid)
+		sid++
+	}
+	sid = 0
+	for _, b := range blocks {
+		req := &config.ReqData{
+			BlockID: b,
+			SID: sid,
 		}
-		//处理block
-		for _, b := range curDistinctBlocks {
-			req := &config.ReqData{
-				BlockID: b,
-				SID: sid,
-			}
-			p.handleOneBlock(req)
-			sid++
-		}
-		round++
+		p.handleOneBlock(req)
+		sid++
 	}
 }
 
