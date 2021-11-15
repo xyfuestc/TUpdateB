@@ -378,7 +378,7 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 			common.SendData(td, toIP, config.NodeTDListenPort, "")
 		}
 		end := time.Now().UnixNano() / 1e6
-		fmt.Printf("发送 block %d 给 %v 用时：%vms.\n", cmd.ToIPs, end-begin)
+		fmt.Printf("发送 block %d 给 %v 用时：%vms.\n", cmd.BlockID, cmd.ToIPs, end-begin)
 	}else{
 		cmd.Helpers = append(cmd.Helpers, cmd.BlockID)
 		fmt.Printf("添加sid: %d, blockID: %d, helpers: %v到cmdList.\n", cmd.SID, cmd.BlockID, cmd.Helpers)
