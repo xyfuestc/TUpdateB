@@ -162,6 +162,7 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 			}
 		}
 		for _, cmd := range cmds {
+			begin := time.Now().UnixNano() / 1e6
 			for _, toIP := range cmd.ToIPs {
 				td := &config.TD{
 					BlockID: cmd.BlockID,
@@ -172,6 +173,9 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 				}
 				common.SendData(td, toIP, config.NodeTDListenPort, "")
 			}
+			end := time.Now().UnixNano() / 1e6
+			fmt.Printf("发送 block %d 给 %v 用时：%vms.\n", cmd.BlockID, cmd.ToIPs, end-begin)
+
 		}
 	}else{
 		if _, ok := ackMaps.getACK(td.SID); !ok {
