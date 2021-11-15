@@ -7,6 +7,7 @@ import (
 	"github.com/wxnacy/wgo/arrays"
 	"sort"
 	"sync"
+	"time"
 )
 type Graph struct {
 	N   int //顶点数
@@ -138,6 +139,7 @@ func (p TUpdate) HandleReq(blocks []int)  {
 
 func (p TUpdate) handleOneBlock(reqData * config.ReqData)  {
 	tasks := GetTransmitTasks(reqData)
+	fmt.Printf("tasks: %v\n", tasks)
 	for _, task := range tasks {
 		fromIP := common.GetNodeIP(int(task.Start))
 		toIPs := []string{common.GetNodeIP(int(task.End))}
@@ -362,6 +364,7 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 			ackMaps.pushACK(cmd.SID)
 		}
 		//fmt.Printf("block %d is local\n", cmd.BlockID)
+		begin := time.Now().UnixNano() / 1e6
 		buff := common.ReadBlock(cmd.BlockID)
 
 		for _, toIP := range cmd.ToIPs {
@@ -374,6 +377,8 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 			}
 			common.SendData(td, toIP, config.NodeTDListenPort, "")
 		}
+		end := time.Now().UnixNano() / 1e6
+		fmt.Printf("发送 block %d 给 %v 用时：%vms.\n", cmd.ToIPs, end-begin)
 	}else{
 		cmd.Helpers = append(cmd.Helpers, cmd.BlockID)
 		fmt.Printf("添加sid: %d, blockID: %d, helpers: %v到cmdList.\n", cmd.SID, cmd.BlockID, cmd.Helpers)
