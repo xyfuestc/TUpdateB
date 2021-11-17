@@ -395,7 +395,7 @@ func parityUpdate1(rackID int, stripe []int) {
 
 
 func (p TAR_CAU) HandleCMD(cmd *config.CMD)  {
-	//handlOneCMD(cmd)
+	//handleOneCMD(cmd)
 	if len(cmd.Helpers) == 0 {
 		//添加ack监听
 		for _, _ = range cmd.ToIPs {

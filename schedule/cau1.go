@@ -279,7 +279,7 @@ func (p CAU1) cau1() {
 //}
 
 func (p CAU1) HandleCMD(cmd *config.CMD)  {
-	//handlOneCMD(cmd)
+	//handleOneCMD(cmd)
 	if len(cmd.Helpers) == 0 {
 		//添加ack监听
 		for _, _ = range cmd.ToIPs {

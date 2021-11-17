@@ -417,7 +417,7 @@ func turnBlocksToStripes() map[int][]int {
 }
 
 func (p CAU) HandleCMD(cmd *config.CMD)  {
-	//handlOneCMD(cmd)
+	//handleOneCMD(cmd)
 	if len(cmd.Helpers) == 0 {
 		//添加ack监听
 		for _, _ = range cmd.ToIPs {
