@@ -115,7 +115,8 @@ func (p Base) HandleCMD(cmd *config.CMD) {
 }
 
 func handleOneCMD(cmd *config.CMD)  {
-	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID)
+	//buff := common.RandWriteBlockAndRetDelta(cmd.BlockID)
+	buff := common.ReadBlock(cmd.BlockID)
 	fmt.Printf("读取到数据 block %d: %v\n", cmd.BlockID, len(buff))
 	for _, _ = range cmd.ToIPs {
 		ackMaps.pushACK(cmd.SID)
