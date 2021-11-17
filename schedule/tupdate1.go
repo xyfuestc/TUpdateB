@@ -25,10 +25,10 @@ func (p TUpdate1) Init()  {
 	actualBlocks = 0
 }
 
-func (p TUpdate1) HandleReq(blocks []int)  {
-	//totalBlocks = blocks
+func (p TUpdate1) HandleReq(reqs []*config.ReqData)  {
+	//totalReqs = reqs
 	//
-	//for len(totalBlocks) > 0 {
+	//for len(totalReqs) > 0 {
 	//	//过滤blocks
 	//	findDistinctBlocks()
 	//	//执行cau
@@ -42,9 +42,9 @@ func (p TUpdate1) HandleReq(blocks []int)  {
 	//		curSid++
 	//	}
 	//	//处理block
-	//	for _, b := range curDistinctBlocks {
+	//	for _, req := range curDistinctBlocks {
 	//		req := &config.ReqData{
-	//			BlockID: b,
+	//			BlockID: req,
 	//			SID: sid,
 	//		}
 	//		p.handleOneBlock(req)
@@ -54,17 +54,17 @@ func (p TUpdate1) HandleReq(blocks []int)  {
 	//}
 
 
-	actualBlocks = len(blocks)
+	actualBlocks = len(reqs)
 
-	for _, _ = range blocks {
+	for _, _ = range reqs {
 		ackMaps.pushACK(sid)
 		sid++
 	}
 	sid = 0
-	for _, b := range blocks {
+	for _, req := range reqs {
 		req := &config.ReqData{
-			BlockID: b,
-			SID: sid,
+			BlockID: req.BlockID,
+			SID:     sid,
 		}
 		p.handleOneBlock(req)
 		sid++

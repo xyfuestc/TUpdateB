@@ -69,28 +69,28 @@ func (p CAU1) HandleTD(td *config.TD) {
 	}
 }
 
-func (p CAU1) HandleReq(blocks []int)  {
-	totalBlocks = blocks
-	fmt.Printf("一共接收到%d个请求...\n", len(totalBlocks))
-	curMatchBlocks := make([]int, 0, config.MaxBatchSize)
-	for len(totalBlocks) > 0 {
+func (p CAU1) HandleReq(reqs []*config.ReqData)  {
+	totalReqs = reqs
+	fmt.Printf("一共接收到%d个请求...\n", len(totalReqs))
+	curMatchBlocks := make([]*config.ReqData, 0, config.MaxBatchSize)
+	for len(totalReqs) > 0 {
 		//获取curDistinctBlocks
-		if len(totalBlocks) > config.MaxBatchSize {
-			curMatchBlocks = totalBlocks[:config.MaxBatchSize]
-			for _, b := range curMatchBlocks{
-				if arrays.Contains(curDistinctBlocks, b) < 0 {
-					curDistinctBlocks = append(curDistinctBlocks, b)
+		if len(totalReqs) > config.MaxBatchSize {
+			curMatchBlocks = totalReqs[:config.MaxBatchSize]
+			for _, req := range curMatchBlocks{
+				if arrays.Contains(curDistinctBlocks, req) < 0 {
+					curDistinctBlocks = append(curDistinctBlocks, req.BlockID)
 				}
 			}
-			totalBlocks = totalBlocks[config.MaxBatchSize:]
+			totalReqs = totalReqs[config.MaxBatchSize:]
 		}else { //处理最后不到100个请求
-			curMatchBlocks = totalBlocks
-			for _, b := range curMatchBlocks{
-				if arrays.Contains(curDistinctBlocks, b) < 0 {
-					curDistinctBlocks = append(curDistinctBlocks, b)
+			curMatchBlocks = totalReqs
+			for _, req := range curMatchBlocks{
+				if arrays.Contains(curDistinctBlocks, req) < 0 {
+					curDistinctBlocks = append(curDistinctBlocks, req.BlockID)
 				}
 			}
-			totalBlocks = make([]int, 0, config.MaxBlockSize)
+			totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 		}
 		//执行cau
 		actualBlocks += len(curDistinctBlocks)
@@ -352,7 +352,7 @@ func (p CAU1) RecordSIDAndReceiverIP(sid int, ip string)()  {
 }
 
 func (p CAU1) IsFinished() bool {
-	return len(totalBlocks) == 0 && ackMaps.isEmpty()
+	return len(totalReqs) == 0 && ackMaps.isEmpty()
 }
 func (p CAU1) GetActualBlocks() int {
 	return actualBlocks

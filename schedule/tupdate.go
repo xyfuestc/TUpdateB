@@ -118,19 +118,19 @@ func (p TUpdate) Init()  {
 	actualBlocks = 0
 }
 
-func (p TUpdate) HandleReq(blocks []int)  {
+func (p TUpdate) HandleReq(reqs []*config.ReqData)  {
 
-	actualBlocks = len(blocks)
+	actualBlocks = len(reqs)
 
-	for _, _ = range blocks {
+	for _, _ = range reqs {
 		ackMaps.pushACK(sid)
 		sid++
 	}
 	sid = 0
-	for _, b := range blocks {
+	for _, req := range reqs {
 		req := &config.ReqData{
-			BlockID: b,
-			SID: sid,
+			BlockID: req.BlockID,
+			SID:     sid,
 		}
 		p.handleOneBlock(req)
 		sid++

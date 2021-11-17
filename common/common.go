@@ -128,6 +128,26 @@ func ReadBlock(blockID int) []byte  {
 	}
 	return buff
 }
+func ReadBlockWithSize(blockID, size int) []byte  {
+	index := GetIndex(blockID)
+	//read data from disk
+	var buff = make([]byte, size, size)
+	file, err := os.OpenFile(config.DataFilePath, os.O_RDONLY, 0)
+
+	if err != nil {
+		log.Fatalln("打开文件出错: ", err)
+	}
+	defer file.Close()
+	readSize, err := file.ReadAt(buff, int64(index * size))
+
+	if err != nil {
+		log.Fatal("读取文件失败：", err)
+	}
+	if readSize != size {
+		log.Fatal("读取数据块失败！读取大小为：", readSize)
+	}
+	return buff
+}
 func WriteBlock(blockID int, buff []byte)  {
 	index := GetIndex(blockID)
 	file, err := os.OpenFile(config.DataFilePath, os.O_WRONLY, 0)
@@ -138,6 +158,17 @@ func WriteBlock(blockID int, buff []byte)  {
 	defer file.Close()
 	_, err = file.WriteAt(buff, int64(index*config.BlockSize))
 	log.Printf("write block %d done.\n", blockID)
+}
+func WriteBlockWithSize(blockID int, buff []byte, size int)  {
+	index := GetIndex(blockID)
+	file, err := os.OpenFile(config.DataFilePath, os.O_WRONLY, 0)
+
+	if err != nil {
+		log.Fatalln("打开文件出错: ", err)
+	}
+	defer file.Close()
+	_, err = file.WriteAt(buff, int64(index * size))
+	log.Printf("write block %d with size: %dB done .\n", blockID, size)
 }
 func GetNodeID(blockID int) int {
 	return blockID % (config.K * config.W) / config.W
@@ -163,18 +194,20 @@ func RandWriteBlockAndRetDelta(blockID int) []byte  {
 	return deltaBuff
 }
 func WriteDeltaBlock(blockID int, deltaBuff []byte) []byte  {
+	size := len(deltaBuff)
 	/*****read old data*******/
 	oldBuff := ReadBlock(blockID)
 	/*****compute new delta data*******/
-	newBuff := make([]byte, config.BlockSize, config.BlockSize)
-	for i := 0; i < len(newBuff); i++ {
+	newBuff := make([]byte, size)
+	for i := 0; i < size; i++ {
 		newBuff[i] = deltaBuff[i] ^ oldBuff[i]
 	}
 	/*****write new data*******/
-	go WriteBlock(blockID, newBuff)
+	go WriteBlockWithSize(blockID, newBuff, size)
 
 	return deltaBuff
 }
+
 
 func GetCMD(conn net.Conn) config.CMD  {
 	dec := gob.NewDecoder(conn)

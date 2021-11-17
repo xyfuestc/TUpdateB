@@ -11,7 +11,7 @@ type Forest struct {
 func (p Forest) Init()  {
 	actualBlocks = 0
 }
-func (p Forest) HandleReq(blocks []int)  {
+func (p Forest) HandleReq(reqs []*config.ReqData)  {
 
 }
 func (p Forest) HandleTD(td *config.TD)  {

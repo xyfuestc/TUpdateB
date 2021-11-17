@@ -15,12 +15,12 @@ import (
 	"time"
 )
 var numOfReq = 0
-var round = 0
+var round = 5
 var actualUpdatedBlocks = 0
 var sidCounter = 0
 var beginTime time.Time
 var endTime time.Time
-var totalBlocks = make([]int, 0, config.MaxBlockSize)
+var totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 var finished bool = false
 var connections []net.Conn
 func handleACK(conn net.Conn) {
@@ -46,7 +46,7 @@ func clearUpdates() {
 	actualUpdatedBlocks = 0
 	numOfReq = 0
 	finished = true
-	totalBlocks = make([]int, 0, config.MaxBlockSize)
+	totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 }
 func clearRound()  {
 	finished = true
@@ -56,8 +56,6 @@ func main() {
 	//初始化
 	config.Init()
 	//监听ack
-
-
 
 	fmt.Printf("ms启动...")
 	fmt.Printf("监听ack: %s:%s\n", common.GetLocalIP(), config.NodeACKListenPort)
@@ -83,8 +81,16 @@ func main() {
 		}
 		userRequestStr := strings.Split(string(lineData), ",")
 		blockID, _ := strconv.Atoi(userRequestStr[0])
+		rangeLeft, _ := strconv.Atoi(userRequestStr[1])
+		rangeRight, _ := strconv.Atoi(userRequestStr[2])
 
-		totalBlocks = append(totalBlocks, blockID)
+		req := &config.ReqData{
+			BlockID: blockID,
+			RangeLeft: rangeLeft,
+			RangeRight: rangeRight,
+
+		}
+		totalReqs = append(totalReqs, req)
 
 		sidCounter++
 	}
@@ -119,10 +125,10 @@ func settingCurrentPolicy(policyType int)  {
 func start()  {
 	beginTime = time.Now()
 	fmt.Printf(" 设置当前算法：[%s]\n", config.CurPolicyStr[round])
-	settingCurrentPolicy(round)
+	//settingCurrentPolicy(round)
 	fmt.Printf(" [%s]算法开始运行...总共block请求数量为：%d\n", config.CurPolicyStr[round], sidCounter)
 	schedule.SetPolicy(config.PolicyType(round))
-	schedule.GetCurPolicy().HandleReq(totalBlocks)
+	schedule.GetCurPolicy().HandleReq(totalReqs)
 }
 func listenACK(listen net.Listener) {
 

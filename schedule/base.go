@@ -11,7 +11,7 @@ import (
 
 type Policy interface {
 	Init()
-	HandleReq(blocks []int)
+	HandleReq(reqs []*config.ReqData)
 	HandleCMD(cmd *config.CMD)
 	HandleTD(td *config.TD)
 	HandleACK(ack *config.ACK)
@@ -99,7 +99,8 @@ func SetPolicy(policyType config.PolicyType)  {
 		CurPolicy = CAU1{}
 	case config.Forest:
 		CurPolicy = Forest{}
-
+	case config.TAR_CAU:
+		CurPolicy = TAR_CAU{}
 	}
 	CurPolicy.Init()
 }
@@ -182,20 +183,21 @@ func (p Base) Init()  {
 	actualBlocks = 0
 }
 
-func (p Base) HandleReq(blocks []int)  {
+func (p Base) HandleReq(reqs []*config.ReqData)  {
 
-	actualBlocks = len(blocks)
 
-	for _, _ = range blocks {
+	actualBlocks = len(reqs)
+
+	for _, _ = range reqs {
 		ackMaps.pushACK(sid)
 		sid++
 	}
 
 	sid = 0
-	for _, b := range blocks {
+	for _, req := range reqs {
 		req := config.ReqData{
-			BlockID: b,
-			SID: sid,
+			BlockID: req.BlockID,
+			SID:     sid,
 		}
 		p.handleOneBlock(req)
 		sid++

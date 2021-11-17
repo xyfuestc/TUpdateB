@@ -16,9 +16,9 @@ const MaxBatchSize int = 100
 const MaxBlockSize int = 1000000
 const TestFileSize = 10 * 1024 * Megabyte
 const MaxBlockIndex = TestFileSize / BlockSize - 1
-const NumOfAlgorithm int = 3   //采用3种算法执行相同任务
-var CurPolicyStr = []string{"Base", "TUpdate", "TUpdate1", "CAU", "CAU1"  }
-var OutFilePath = "../request/proj_4.csv.txt"
+const NumOfAlgorithm int = 6   //采用3种算法执行相同任务
+var CurPolicyStr = []string{"Base", "TUpdate", "TUpdate1", "CAU", "CAU1", "TAR_CAU"  }
+var OutFilePath = "./request/wdev_1.csv.txt"
 //var OutFilePath = "../request/rsrch_1.csv.txt"
 var BitMatrix = make([]byte, K*M*W*W)
 const RackSize = M
@@ -66,6 +66,7 @@ const (
 	T_Update1
 	CAU
 	CAU1
+	TAR_CAU
 	Forest
 )
 const BaseIP string = "192.168.1."
@@ -102,13 +103,16 @@ type CMD struct {
 	ToIPs              []string
 	Helpers            []int            //协作者的blockIDs
 	Matched            int             //已经匹配的blockID数量
+	SendSize           int
 }
 type ReqData struct {
-	SID      int
+	SID         int
 	//OPType   OPType
-	BlockID  int
-	AckID    int
-	StripeID int
+	BlockID     int
+	AckID       int
+	StripeID    int
+	RangeLeft   int
+	RangeRight  int
 }
 
 type ReqType struct {
