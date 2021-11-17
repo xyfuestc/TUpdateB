@@ -75,23 +75,7 @@ func (p CAU1) HandleReq(reqs []*config.ReqData)  {
 	curMatchBlocks := make([]*config.ReqData, 0, config.MaxBatchSize)
 	for len(totalReqs) > 0 {
 		//获取curDistinctBlocks
-		if len(totalReqs) > config.MaxBatchSize {
-			curMatchBlocks = totalReqs[:config.MaxBatchSize]
-			for _, req := range curMatchBlocks{
-				if arrays.Contains(curDistinctBlocks, req) < 0 {
-					curDistinctBlocks = append(curDistinctBlocks, req.BlockID)
-				}
-			}
-			totalReqs = totalReqs[config.MaxBatchSize:]
-		}else { //处理最后不到100个请求
-			curMatchBlocks = totalReqs
-			for _, req := range curMatchBlocks{
-				if arrays.Contains(curDistinctBlocks, req) < 0 {
-					curDistinctBlocks = append(curDistinctBlocks, req.BlockID)
-				}
-			}
-			totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
-		}
+		findDistinctBlocks()
 		//执行cau
 		actualBlocks += len(curDistinctBlocks)
 		fmt.Printf("第%d轮 CAU1：获取%d个请求，实际处理%d个block\n", round, len(curMatchBlocks), len(curDistinctBlocks))
