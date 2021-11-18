@@ -115,8 +115,8 @@ func (p Base) HandleCMD(cmd *config.CMD) {
 }
 
 func handleOneCMD(cmd *config.CMD)  {
-	//buff := common.RandWriteBlockAndRetDelta(cmd.BlockID)
-	buff := common.ReadBlock(cmd.BlockID)
+	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID)
+	//buff := common.ReadBlock(cmd.BlockID)
 	fmt.Printf("读取到数据 block %d: %v\n", cmd.BlockID, len(buff))
 	for _, _ = range cmd.ToIPs {
 		ackMaps.pushACK(cmd.SID)
@@ -129,7 +129,6 @@ func handleOneCMD(cmd *config.CMD)  {
 			ToIP: parityIP,
 			SID: cmd.SID,
 		}
-		fmt.Printf("发送td(sid:%d, blockID:%d),从%s到%s...buffSize:= %d \n", cmd.SID, cmd.BlockID, common.GetLocalIP(), parityIP, len(buff))
 		begin := time.Now().UnixNano() / 1e6
 		common.SendData(td, parityIP, config.NodeTDListenPort, "")
 		end := time.Now().UnixNano() / 1e6
