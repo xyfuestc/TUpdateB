@@ -153,6 +153,8 @@ func (p Base) HandleACK(ack *config.ACK)  {
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)
+		}else if ACKIsEmpty() { //ms检查是否全部完成，若完成，进入下一轮
+			IsRunning = false
 		}
 	}
 }
@@ -175,9 +177,41 @@ func (p Base) Init()  {
 	actualBlocks = 0
 }
 
+func getBatchReqs() []*config.ReqData {
+	//获取curDistinctBlocks
+	curMatchReqs := make([]*config.ReqData, 0, config.MaxBatchSize)
+	if len(totalReqs) > config.MaxBatchSize {
+		curMatchReqs = totalReqs[:config.MaxBatchSize]
+		totalReqs = totalReqs[config.MaxBatchSize:]
+	}else { //处理最后不到100个请求
+		curMatchReqs = totalReqs
+		totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
+	}
+	return curMatchReqs
+}
+
 func (p Base) HandleReq(reqs []*config.ReqData)  {
 	actualBlocks = len(reqs)
 
+	for len(totalReqs) > 0 {
+		//过滤blocks
+		batchReqs := getBatchReqs()
+		fmt.Printf("第%d轮 BASE：处理%d个block\n", round, len(batchReqs))
+		//执行cau
+		p.base(batchReqs)
+
+		for IsRunning {
+
+		}
+		fmt.Printf("本轮结束！\n")
+		fmt.Printf("======================================\n")
+		round++
+		p.Clear()
+	}
+
+
+}
+func (p Base) base(reqs []*config.ReqData)  {
 	for _, _ = range reqs {
 		ackMaps.pushACK(sid)
 		sid++
@@ -213,13 +247,15 @@ func (p Base) Clear()  {
 		ACKReceiverIPs: map[int]string{},
 	}
 	actualBlocks = 0
+	IsRunning = true
+
 }
 func ACKIsEmpty() bool {
 	return ackMaps.isEmpty()
 }
 
 func (p Base) IsFinished() bool {
-	return ackMaps.isEmpty()
+	return len(totalReqs) == 0 && ackMaps.isEmpty()
 }
 
 func (p Base) GetActualBlocks() int {
