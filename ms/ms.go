@@ -21,7 +21,7 @@ var sidCounter = 0
 var beginTime time.Time
 var endTime time.Time
 var totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
-var finished bool = false
+var finished = false
 var connections []net.Conn
 func handleACK(conn net.Conn) {
 	defer conn.Close()
@@ -80,9 +80,14 @@ func main() {
 			log.Fatalln("handleReqFile error: ",err)
 		}
 		userRequestStr := strings.Split(string(lineData), ",")
-		blockID, _ := strconv.Atoi(userRequestStr[0])
-		rangeLeft, _ := strconv.Atoi(userRequestStr[1])
-		rangeRight, _ := strconv.Atoi(userRequestStr[2])
+		blockID, rangeLeft, rangeRight := 0, 0, config.BlockSize
+		if len(userRequestStr) == 1 {
+			blockID, _ = strconv.Atoi(userRequestStr[0])
+		}else{
+			blockID, _ = strconv.Atoi(userRequestStr[0])
+			rangeLeft, _ = strconv.Atoi(userRequestStr[1])
+			rangeRight, _ = strconv.Atoi(userRequestStr[2])
+		}
 
 		req := &config.ReqData{
 			BlockID: blockID,
