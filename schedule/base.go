@@ -176,14 +176,12 @@ func (p Base) Init()  {
 }
 
 func (p Base) HandleReq(reqs []*config.ReqData)  {
-
 	actualBlocks = len(reqs)
 
 	for _, _ = range reqs {
 		ackMaps.pushACK(sid)
 		sid++
 	}
-
 	sid = 0
 	for _, req := range reqs {
 		req := config.ReqData{
