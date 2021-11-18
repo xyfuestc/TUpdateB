@@ -135,13 +135,11 @@ func handleOneCMD(cmd *config.CMD)  {
 		fmt.Printf("发送td(sid:%d, blockID:%d),从%s到%s, 用时：%vms \n", cmd.SID, cmd.BlockID, common.GetLocalIP(), parityIP, end-begin)
 	}
 }
-
-
 func (p Base) HandleTD(td *config.TD)  {
 	handleOneTD(td)
 }
 func handleOneTD(td *config.TD)  {
-	go common.WriteDeltaBlock(td.BlockID, td.Buff)
+	common.WriteDeltaBlock(td.BlockID, td.Buff)
 	//返回ack
 	ack := &config.ACK{
 		SID:     td.SID,

@@ -93,7 +93,6 @@ func main() {
 			BlockID: blockID,
 			RangeLeft: rangeLeft,
 			RangeRight: rangeRight,
-
 		}
 		totalReqs = append(totalReqs, req)
 
