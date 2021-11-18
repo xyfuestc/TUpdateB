@@ -192,6 +192,7 @@ func getBatchReqs() []*config.ReqData {
 
 func (p Base) HandleReq(reqs []*config.ReqData)  {
 	actualBlocks = len(reqs)
+	totalReqs = reqs
 
 	for len(totalReqs) > 0 {
 		//过滤blocks
