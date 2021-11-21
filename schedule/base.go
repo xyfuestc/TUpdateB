@@ -175,6 +175,7 @@ func (p Base) Init()  {
 		ACKReceiverIPs: map[int]string{},
 	}
 	actualBlocks = 0
+	round = 0
 }
 
 func getBatchReqs() []*config.ReqData {
@@ -247,9 +248,8 @@ func (p Base) Clear()  {
 	ackIPMaps = &ACKIPMap{
 		ACKReceiverIPs: map[int]string{},
 	}
-	actualBlocks = 0
 	IsRunning = true
-
+	round = 0
 }
 func ACKIsEmpty() bool {
 	return ackMaps.isEmpty()

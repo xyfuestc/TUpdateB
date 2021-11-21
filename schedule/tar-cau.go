@@ -26,6 +26,7 @@ func (p TAR_CAU) Init()  {
 	}
 	curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
 	actualBlocks = 0
+	round = 0
 }
 
 func (p TAR_CAU) HandleTD(td *config.TD) {
@@ -82,7 +83,7 @@ func (p TAR_CAU) HandleReq(reqs []*config.ReqData)  {
 		findDistinctReqs()
 		//执行cau
 		actualBlocks += len(curDistinctReq)
-		fmt.Printf("第%d轮 CAU：处理%d个block\n", round, len(curDistinctBlocks))
+		fmt.Printf("第%d轮 TAR-CAU：处理%d个block\n", round, len(curDistinctBlocks))
 
 		tar_cau()
 
@@ -439,6 +440,7 @@ func (p TAR_CAU) HandleACK(ack *config.ACK)  {
 func (p TAR_CAU) Clear()  {
 	IsRunning = true
 	curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
+	curDistinctReq = make([]*config.ReqData, 0, config.MaxBatchSize)
 	sid = 0
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
@@ -449,6 +451,7 @@ func (p TAR_CAU) Clear()  {
 	CMDList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
+	round = 0
 }
 
 func (p TAR_CAU) RecordSIDAndReceiverIP(sid int, ip string)()  {

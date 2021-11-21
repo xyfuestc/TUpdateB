@@ -32,6 +32,7 @@ func (p CAU) Init()  {
 	}
 	curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
 	actualBlocks = 0
+	round = 0
 }
 
 func (p CAU) HandleTD(td *config.TD) {
@@ -118,8 +119,6 @@ func (p CAU) HandleReq(reqs []*config.ReqData)  {
 		round++
 		p.Clear()
 	}
-	//p.Clear()
-
 }
 
 func cau() {
@@ -135,9 +134,6 @@ func cau() {
 			}
 		}
 	}
-}
-func GetBlockColumn(blockID int) int {
-	return blockID % (config.K * config.W)
 }
 
 func dataUpdate(rackID int, stripe []int)  {
@@ -466,6 +462,7 @@ func (p CAU) Clear()  {
 	CMDList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
+	round = 0
 }
 
 func (p CAU) RecordSIDAndReceiverIP(sid int, ip string)()  {
