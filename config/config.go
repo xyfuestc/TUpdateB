@@ -16,8 +16,8 @@ const MaxBatchSize int = 100
 const MaxBlockSize int = 1000000
 const TestFileSize = 10 * 1024 * Megabyte
 const MaxBlockIndex = TestFileSize / BlockSize - 1
-const NumOfAlgorithm int = 1   //采用3种算法执行相同任务
-var CurPolicyStr = []string{"Base", "TUpdate", "TUpdate1", "CAU", "CAU1", "TAR_CAU"  }
+const NumOfAlgorithm int = 3   //采用3种算法执行相同任务
+var CurPolicyStr = []string{"Base", "CAU","TAR_CAU", "TUpdate", "TUpdate1",  "CAU1" }
 var OutFilePath = "../request/rsrch_1.csv.txt"
 //var OutFilePath = "../request/proj_4.csv.bak.txt"
 var BitMatrix = make([]byte, K*M*W*W)
@@ -62,11 +62,11 @@ type PolicyType int
 
 const (
 	BASE PolicyType = iota
+	CAU
+	TAR_CAU
 	T_Update
 	T_Update1
-	CAU
 	CAU1
-	TAR_CAU
 	Forest
 )
 const BaseIP string = "192.168.1."
