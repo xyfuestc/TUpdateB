@@ -19,7 +19,7 @@ var numOfUpdatedBlocks = 0
 var numOfUserRequests = 0
 const outFilePre = "./request/"
 const outFileSuffix = ".txt"
-const RequestFileName = "./example-traces/hm_1_part_write.csv"
+const RequestFileName = "./example-traces/hm_0_part.csv"
 
 func main() {
 
