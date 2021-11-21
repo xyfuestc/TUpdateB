@@ -436,7 +436,7 @@ func (p TAR_CAU) HandleACK(ack *config.ACK)  {
 			fmt.Printf("当前任务已完成...\n")
 			IsRunning = false
 		}else{
-			fmt.Printf("ackMaps: %v\n", ackIPMaps)
+			fmt.Printf("未完成ackMaps： %v", ackMaps.rest())
 		}
 	}
 }
