@@ -83,7 +83,7 @@ func (p TAR_CAU) HandleReq(reqs []*config.ReqData)  {
 		findDistinctReqs()
 		//执行cau
 		actualBlocks += len(curDistinctReq)
-		fmt.Printf("第%d轮 TAR-CAU：处理%d个block\n", round, len(curDistinctBlocks))
+		fmt.Printf("第%d轮 TAR-CAU：处理%d个block\n", round, len(curDistinctReq))
 
 		tar_cau()
 
@@ -433,7 +433,10 @@ func (p TAR_CAU) HandleACK(ack *config.ACK)  {
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)
 		}else if ACKIsEmpty() { //ms检查是否全部完成，若完成，进入下一轮
+			fmt.Printf("当前任务已完成...\n")
 			IsRunning = false
+		}else{
+			fmt.Printf("ackMaps: %v\n", ackIPMaps)
 		}
 	}
 }
