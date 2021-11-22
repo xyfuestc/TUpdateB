@@ -16,21 +16,18 @@ func (p TAR_CAU) Init()  {
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
 	}
-
 	ackIPMaps = &ACKIPMap{
 		ACKReceiverIPs: map[int]string{},
 	}
-
 	CMDList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
 	curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
+	curDistinctReq = make([]*config.ReqData, 0, config.MaxBatchSize)
 	actualBlocks = 0
 	round = 0
 }
-
 func (p TAR_CAU) HandleTD(td *config.TD) {
-
 	//校验节点本地数据更新
 	localID := arrays.Contains(config.NodeIPs, common.GetLocalIP())
 	if localID >= config.K {
@@ -66,8 +63,8 @@ func (p TAR_CAU) HandleTD(td *config.TD) {
 					SID:     cmd.SID,
 					SendSize: cmd.SendSize,
 				}
-				sendSizeRate := float32(td.SendSize * 1.0 / config.BlockSize)
-				fmt.Printf("发送 block:%d sendSize: %f 的数据给%s.\n", td.BlockID, sendSizeRate, toIP)
+				sendSizeRate := float32(td.SendSize * 1.0) / float32(config.BlockSize)
+				fmt.Printf("发送 block:%d sendSize: %.2f 的数据给%s.\n", td.BlockID, sendSizeRate, toIP)
 				common.SendData(td, toIP, config.NodeTDListenPort, "")
 			}
 		}
@@ -98,36 +95,30 @@ func (p TAR_CAU) HandleReq(reqs []*config.ReqData)  {
 	//p.Clear()
 
 }
+
+func turnMatchReqsToDistinctReqs(curMatchReqs []*config.ReqData)  {
+	for _, req := range curMatchReqs {
+		if i := findBlockIndexInReqs(curDistinctReq, req.BlockID); i < 0 {
+			curDistinctReq = append(curDistinctReq, req)
+		}else{
+			if req.RangeLeft < curDistinctReq[i].RangeLeft {
+				curDistinctReq[i].RangeLeft = req.RangeLeft
+			}else if req.RangeRight > curDistinctReq[i].RangeRight {
+				curDistinctReq[i].RangeRight = req.RangeRight
+			}
+		}
+	}
+}
 func findDistinctReqs() {
 	//获取curDistinctBlocks
 	curMatchReqs := make([]*config.ReqData, 0, config.MaxBatchSize)
 	if len(totalReqs) > config.MaxBatchSize {
 		curMatchReqs = totalReqs[:config.MaxBatchSize]
-		for _, req := range curMatchReqs {
-			if i := findBlockIndexInReqs(curDistinctReq, req.BlockID); i < 0 {
-				curDistinctReq = append(curDistinctReq, req)
-			}else{
-				if req.RangeLeft < curDistinctReq[i].RangeLeft {
-					curDistinctReq[i].RangeLeft = req.RangeLeft
-				}else if req.RangeRight > curDistinctReq[i].RangeRight {
-					curDistinctReq[i].RangeRight = req.RangeRight
-				}
-			}
-		}
+		turnMatchReqsToDistinctReqs(curMatchReqs)
 		totalReqs = totalReqs[config.MaxBatchSize:]
 	}else { //处理最后不到100个请求
 		curMatchReqs = totalReqs
-		for _, req := range curMatchReqs {
-			if i := findBlockIndexInReqs(curDistinctReq, req.BlockID); i < 0 {
-				curDistinctReq = append(curDistinctReq, req)
-			}else{
-				if req.RangeLeft < curDistinctReq[i].RangeLeft {
-					curDistinctReq[i].RangeLeft = req.RangeLeft
-				}else if req.RangeRight > curDistinctReq[i].RangeRight {
-					curDistinctReq[i].RangeRight = req.RangeRight
-				}
-			}
-		}
+		turnMatchReqsToDistinctReqs(curMatchReqs)
 		totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 	}
 }
@@ -163,9 +154,6 @@ func tar_cau() {
 		}
 	}
 }
-
-
-
 func dataUpdate1(rackID int, stripe []int)  {
 	curRackNodes := make([][]int, config.RackSize)
 	parities := make([][]int, config.M * config.W)
@@ -196,18 +184,11 @@ func dataUpdate1(rackID int, stripe []int)  {
 		log.Fatal("找不到rootParity")
 		return
 	}
-	//fmt.Println("rootP: ", rootP)
 
-
-	/****记录ack*****/
 	curSid := sid
-
 	/****记录ack*****/
 	parityNodeBlocks := GetParityNodeBlocks(parities)
-
-
 	for i, b := range parityNodeBlocks {
-
 		parityID := i + config.K
 		if parityID != rootP && len(b) > 0 {
 			fmt.Printf("pushACK: sid: %d, blockID: %v\n", curSid, b)
@@ -225,7 +206,7 @@ func dataUpdate1(rackID int, stripe []int)  {
 				//省略了合并操作，直接只发一条
 				fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
 					rootP, common.GetNodeIP(rootP), b, common.GetNodeIP(parityID))
-				rangeLeft,rangeRight := getRangeFromBlockID(b)
+				//rangeLeft,rangeRight := getRangeFromBlockID(b)
 				cmd := &config.CMD{
 					SID: sid,
 					BlockID: b,
@@ -233,7 +214,8 @@ func dataUpdate1(rackID int, stripe []int)  {
 					FromIP: common.GetNodeIP(rootP),
 					Helpers: blocks,
 					Matched: 0,
-					SendSize: rangeRight-rangeLeft,
+					//SendSize: rangeRight-rangeLeft,
+					SendSize: config.BlockSize,
 				}
 				common.SendData(cmd, common.GetNodeIP(rootP), config.NodeCMDListenPort, "")
 
@@ -276,8 +258,6 @@ func dataUpdate1(rackID int, stripe []int)  {
 	sort.Ints(unionParities)
 	fmt.Printf("DataUpdate: stripe: %v, parities: %v, unionParities: %v, curRackNodes: %v\n",
 		stripe, parities, unionParities, curRackNodes)
-
-
 }
 
 func getRangeFromBlockID(blockID int) (rangeLeft,rangeRight int) {
@@ -340,7 +320,7 @@ func parityUpdate1(rackID int, stripe []int) {
 				helpers = append(helpers, b)
 			}
 		}
-		rangeLeft,rangeRight := getRangeFromBlockID(blocks[0])
+		//rangeLeft,rangeRight := getRangeFromBlockID(blocks[0])
 		cmd := &config.CMD{
 			SID: sid,
 			BlockID: blocks[0],
@@ -348,7 +328,7 @@ func parityUpdate1(rackID int, stripe []int) {
 			FromIP: common.GetNodeIP(rootD),
 			Helpers: helpers,
 			Matched: 0,
-			SendSize: rangeRight-rangeLeft,
+			SendSize: config.BlockSize,
 		}
 		common.SendData(cmd, common.GetNodeIP(rootD), config.NodeCMDListenPort, "")
 		sid++
@@ -392,9 +372,6 @@ func parityUpdate1(rackID int, stripe []int) {
 	fmt.Printf("ParityUpdate: stripe: %v, parities: %v, unionParities: %v, curRackNodes: %v\n",
 											stripe, parities, unionParities, curRackNodes)
 }
-
-
-
 func (p TAR_CAU) HandleCMD(cmd *config.CMD)  {
 	//handleOneCMD(cmd)
 	if len(cmd.Helpers) == 0 {
@@ -404,7 +381,7 @@ func (p TAR_CAU) HandleCMD(cmd *config.CMD)  {
 		}
 		//fmt.Printf("block %d is local\n", cmd.BlockID)
 		buff := common.ReadBlockWithSize(cmd.BlockID, cmd.SendSize)
-		sendSizeRate := float32(len(buff)*1.0/config.BlockSize)
+		sendSizeRate := float32(len(buff)*1.0) / float32(config.BlockSize)
 		fmt.Printf("读取block:%d size:%d本地数据.\n", cmd.BlockID, sendSizeRate)
 
 		for _, toIP := range cmd.ToIPs {
@@ -416,7 +393,7 @@ func (p TAR_CAU) HandleCMD(cmd *config.CMD)  {
 				SID: cmd.SID,
 				SendSize: cmd.SendSize,
 			}
-			sendSizeRate := float32(td.SendSize*1.0/config.BlockSize)
+			sendSizeRate := float32(td.SendSize*1.0) / float32(config.BlockSize)
 			fmt.Printf("发送 block:%d sendSize:%f 的数据到%s.\n", td.BlockID, sendSizeRate, toIP)
 			common.SendData(td, toIP, config.NodeTDListenPort, "")
 		}
