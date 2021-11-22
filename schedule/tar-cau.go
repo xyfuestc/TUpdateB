@@ -435,6 +435,7 @@ func (p TAR_CAU) HandleCMD(cmd *config.CMD)  {
 			common.SendData(td, toIP, config.NodeTDListenPort, "")
 		}
 	}else if !curReceivedTDs.isEmpty() {  //如果已收到过相关td
+		CMDList.pushCMD(cmd)
 		for _, td := range curReceivedTDs.getTDs(){
 			handleWaitingCMDs(td)
 		}
@@ -453,8 +454,6 @@ func (p TAR_CAU) HandleACK(ack *config.ACK)  {
 		}else if ACKIsEmpty() { //ms检查是否全部完成，若完成，进入下一轮
 			fmt.Printf("当前任务已完成...\n")
 			IsRunning = false
-		}else{
-			fmt.Printf("未完成ackMaps： %v\n", ackMaps.rest())
 		}
 	}
 }
