@@ -148,6 +148,7 @@ func (p TUpdate) handleOneBlock(reqData * config.ReqData)  {
 }
 
 func (p TUpdate) HandleTD(td *config.TD)  {
+
 	//本地数据更新
 	go common.WriteDeltaBlock(td.BlockID, td.Buff)
 

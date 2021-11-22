@@ -7,11 +7,41 @@ import (
 	"github.com/wxnacy/wgo/arrays"
 	"log"
 	"sort"
+	"sync"
 )
 type TAR_CAU struct {
 	Base
 }
+
+type ReceivedTDs struct {
+	sync.RWMutex
+	TDs []*config.TD
+}
+func (M *ReceivedTDs) pushTD(td *config.TD)  {
+	M.Lock()
+	M.TDs = append(M.TDs, td)
+	M.Unlock()
+}
+func (M *ReceivedTDs) isEmpty() bool  {
+	M.RLock()
+	num := len(M.TDs)
+	M.RUnlock()
+	if num > 0 {
+		return false
+	}
+	return true
+}
+func (M *ReceivedTDs) getTDs() []*config.TD  {
+	M.RLock()
+	num := len(M.TDs)
+	M.RUnlock()
+	if num > 0 {
+		return M.TDs
+	}
+	return nil
+}
 var curDistinctReq = make([]*config.ReqData, 0, config.MaxBatchSize)
+var curReceivedTDs *ReceivedTDs
 func (p TAR_CAU) Init()  {
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
@@ -26,8 +56,13 @@ func (p TAR_CAU) Init()  {
 	curDistinctReq = make([]*config.ReqData, 0, config.MaxBatchSize)
 	actualBlocks = 0
 	round = 0
+	curReceivedTDs = &ReceivedTDs{
+		TDs: make([]*config.TD, 0, config.MaxBatchSize),
+	}
 }
 func (p TAR_CAU) HandleTD(td *config.TD) {
+	//记录当前轮次接收到的blockID
+	curReceivedTDs.pushTD(td)
 	//校验节点本地数据更新
 	localID := arrays.Contains(config.NodeIPs, common.GetLocalIP())
 	if localID >= config.K {
@@ -40,11 +75,13 @@ func (p TAR_CAU) HandleTD(td *config.TD) {
 	}
 	ReturnACK(ack)
 
+	handleWaitingCMDs(td)
+}
+
+func handleWaitingCMDs(td *config.TD) {
 	//有等待任务
 	indexes := meetCMDNeed(td.BlockID)
 	if len(indexes) > 0 {
-		//fmt.Printf("有等待任务可以执行：%v\n", indexes)
-		//添加ack监听
 		for _, i := range indexes {
 			cmd := i
 			fmt.Printf("执行TD任务：sid:%d blockID:%d\n", cmd.SID, cmd.BlockID)
@@ -374,7 +411,7 @@ func parityUpdate1(rackID int, stripe []int) {
 }
 func (p TAR_CAU) HandleCMD(cmd *config.CMD)  {
 	//handleOneCMD(cmd)
-	if len(cmd.Helpers) == 0 {
+	if len(cmd.Helpers) == 0 {	//本地数据，直接发送
 		//添加ack监听
 		for _, _ = range cmd.ToIPs {
 			ackMaps.pushACK(cmd.SID)
@@ -382,7 +419,7 @@ func (p TAR_CAU) HandleCMD(cmd *config.CMD)  {
 		//fmt.Printf("block %d is local\n", cmd.BlockID)
 		buff := common.ReadBlockWithSize(cmd.BlockID, cmd.SendSize)
 		sendSizeRate := float32(len(buff)*1.0) / float32(config.BlockSize)
-		fmt.Printf("读取block:%d size:%d本地数据.\n", cmd.BlockID, sendSizeRate)
+		fmt.Printf("读取 block:%d size:%.4f 本地数据.\n", cmd.BlockID, sendSizeRate)
 
 		for _, toIP := range cmd.ToIPs {
 			td := &config.TD{
@@ -397,7 +434,11 @@ func (p TAR_CAU) HandleCMD(cmd *config.CMD)  {
 			fmt.Printf("发送 block:%d sendSize:%f 的数据到%s.\n", td.BlockID, sendSizeRate, toIP)
 			common.SendData(td, toIP, config.NodeTDListenPort, "")
 		}
-	}else{
+	}else if !curReceivedTDs.isEmpty() {  //如果已收到过相关td
+		for _, td := range curReceivedTDs.getTDs(){
+			handleWaitingCMDs(td)
+		}
+	}else{  //否则
 		CMDList.pushCMD(cmd)
 	}
 }
@@ -413,7 +454,7 @@ func (p TAR_CAU) HandleACK(ack *config.ACK)  {
 			fmt.Printf("当前任务已完成...\n")
 			IsRunning = false
 		}else{
-			fmt.Printf("未完成ackMaps： %v", ackMaps.rest())
+			fmt.Printf("未完成ackMaps： %v\n", ackMaps.rest())
 		}
 	}
 }
@@ -432,6 +473,9 @@ func (p TAR_CAU) Clear()  {
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
 	round = 0
+	curReceivedTDs = &ReceivedTDs{
+		TDs: make([]*config.TD, 0, config.MaxBatchSize),
+	}
 }
 
 func (p TAR_CAU) RecordSIDAndReceiverIP(sid int, ip string)()  {
