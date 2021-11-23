@@ -72,7 +72,6 @@ func (M *ACKMap) rest() map[int]int {
 			restACKs[i] = num
 		}
 	}
-
 	M.RUnlock()
 	return restACKs
 }
@@ -152,7 +151,7 @@ func (p Base) HandleTD(td *config.TD)  {
 	handleOneTD(td)
 }
 func handleOneTD(td *config.TD)  {
-	common.WriteDeltaBlock(td.BlockID, td.Buff)
+	go common.WriteDeltaBlock(td.BlockID, td.Buff)
 	//返回ack
 	ack := &config.ACK{
 		SID:     td.SID,
@@ -166,7 +165,7 @@ func (p Base) HandleACK(ack *config.ACK)  {
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)
-		}else if ACKIsEmpty() { //ms检查是否全部完成，若完成，进入下一轮
+		}else if ACKIsEmpty() { //检查是否全部完成，若完成，进入下一轮
 			IsRunning = false
 		}
 	}
@@ -212,7 +211,7 @@ func (p Base) HandleReq(reqs []*config.ReqData)  {
 		//过滤blocks
 		batchReqs := getBatchReqs()
 		fmt.Printf("第%d轮 BASE：处理%d个block\n", round, len(batchReqs))
-		//执行cau
+		//执行base
 		p.base(batchReqs)
 
 		for IsRunning {
