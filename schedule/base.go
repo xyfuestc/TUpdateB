@@ -142,7 +142,7 @@ func handleOneCMD(cmd *config.CMD)  {
 			SID: cmd.SID,
 		}
 		begin := time.Now().UnixNano() / 1e6
-		common.SendData(td, parityIP, config.NodeTDListenPort, "")
+		go common.SendData(td, parityIP, config.NodeTDListenPort, "")
 		end := time.Now().UnixNano() / 1e6
 		fmt.Printf("发送td(sid:%d, blockID:%d),从%s到%s, 用时：%vms \n", cmd.SID, cmd.BlockID, common.GetLocalIP(), parityIP, end-begin)
 	}
