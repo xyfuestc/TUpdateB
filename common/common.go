@@ -203,7 +203,7 @@ func WriteDeltaBlock(blockID int, deltaBuff []byte) []byte  {
 		newBuff[i] = deltaBuff[i] ^ oldBuff[i]
 	}
 	/*****write new data*******/
-	go WriteBlockWithSize(blockID, newBuff, size)
+	WriteBlockWithSize(blockID, newBuff, size)
 
 	return deltaBuff
 }
