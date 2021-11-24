@@ -16,6 +16,7 @@ import (
 )
 var numOfReq = 0
 var round = 0
+var blockSize = config.Megabyte * 4 //1MB
 var actualUpdatedBlocks = 0
 var sidCounter = 0
 var beginTime time.Time
@@ -115,9 +116,12 @@ func main() {
 	clearUpdates()
 }
 
+
+
 func settingCurrentPolicy(policyType int)  {
 	p := &config.Policy{
 		Type: policyType,
+		BlockSize: blockSize,
 	}
 	for _, ip := range config.NodeIPs{
 		common.SendData(p, ip, config.NodeSettingsListenPort, "")
@@ -128,7 +132,7 @@ func settingCurrentPolicy(policyType int)  {
 
 func start()  {
 	beginTime = time.Now()
-	fmt.Printf(" 设置当前算法：[%s]\n", config.CurPolicyStr[round])
+	fmt.Printf(" 设置当前算法：[%s], blockSize=%vMB.\n", config.CurPolicyStr[round], blockSize/config.Megabyte)
 	settingCurrentPolicy(round)
 	fmt.Printf(" [%s]算法开始运行...总共block请求数量为：%d\n", config.CurPolicyStr[round], sidCounter)
 	schedule.SetPolicy(config.PolicyType(round))

@@ -10,12 +10,12 @@ const K int = 8
 const M int = 4
 const W int = 3
 const N int = K + M
-const BlockSize int = 1024 * 1024 * 1 //1MB
+var BlockSize  = 1024 * 1024 * 1 //1MB
 const Megabyte = 1024 * 1024      //1MB
 const MaxBatchSize int = 100
 const MaxBlockSize int = 1000000
 const TestFileSize = 10 * 1024 * Megabyte
-const MaxBlockIndex = TestFileSize / BlockSize - 1
+var MaxBlockIndex = TestFileSize / BlockSize - 1
 const NumOfAlgorithm int = 3   //采用3种算法执行相同任务
 var CurPolicyStr = []string{"Base", "CAU","TAR_CAU", "TUpdate", "TUpdate1",  "CAU1" }
 var OutFilePath = "../request/hm_0_1M.csv.txt"
@@ -48,6 +48,7 @@ type UserRequest struct {
 
 type Policy struct {
 	Type int
+	BlockSize int
 }
 
 const (
