@@ -192,10 +192,10 @@ func (p Base) Init()  {
 
 func getBatchReqs() []*config.ReqData {
 	//获取curDistinctBlocks
-	curMatchReqs := make([]*config.ReqData, 0, config.MaxBatchSize)
-	if len(totalReqs) > config.MaxBatchSize {
-		curMatchReqs = totalReqs[:config.MaxBatchSize]
-		totalReqs = totalReqs[config.MaxBatchSize:]
+	curMatchReqs := make([]*config.ReqData, 0, config.MaxBaseBatchSize)
+	if len(totalReqs) > config.MaxBaseBatchSize {
+		curMatchReqs = totalReqs[:config.MaxBaseBatchSize]
+		totalReqs = totalReqs[config.MaxBaseBatchSize:]
 	}else { //处理最后不到100个请求
 		curMatchReqs = totalReqs
 		totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)

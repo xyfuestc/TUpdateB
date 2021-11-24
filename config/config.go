@@ -13,6 +13,7 @@ const N int = K + M
 var BlockSize  = 1024 * 1024 * 1 //1MB
 const Megabyte = 1024 * 1024      //1MB
 const MaxBatchSize int = 100
+const MaxBaseBatchSize int = 10
 const MaxBlockSize int = 1000000
 const TestFileSize = 10 * 1024 * Megabyte
 var MaxBlockIndex = TestFileSize / BlockSize - 1
