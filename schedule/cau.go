@@ -476,6 +476,7 @@ func GetRootParityID(parities [][]int) int {
 			hasOne = true
 			rootP := common.GetParityIDFromIndex(i)
 			if rootP != lastRootP {
+				lastRootP = rootP
 				return rootP
 			}
 		}
