@@ -10,7 +10,8 @@ const K int = 8
 const M int = 4
 const W int = 3
 const N int = K + M
-var BlockSize  = 1024 * 1024 * 1 //1MB
+var NumOfMB = 1
+var BlockSize = 1024 * 1024 * NumOfMB //1MB
 const Megabyte = 1024 * 1024      //1MB
 const MaxBatchSize int = 100
 const MaxBaseBatchSize int = 10
@@ -18,8 +19,9 @@ const MaxBlockSize int = 1000000
 const TestFileSize = 10 * 1024 * Megabyte
 var MaxBlockIndex = TestFileSize / BlockSize - 1
 const NumOfAlgorithm int = 3   //采用3种算法执行相同任务
-var CurPolicyStr = []string{"Base", "CAU","TAR_CAU", "TUpdate", "TUpdate1",  "CAU1" }
-var OutFilePath = "../request/hm_0_1M.csv.txt"
+var CurPolicyStr = []string{"Base", "CAU", "CAU1", "TAR_CAU", "TUpdate", "TUpdate1" }
+var TraceName = "hm_0"
+
 //var OutFilePath = "../request/proj_4.csv.bak.txt"
 var BitMatrix = make([]byte, K*M*W*W)
 const RackSize = M
@@ -48,8 +50,9 @@ type UserRequest struct {
 }
 
 type Policy struct {
-	Type int
-	BlockSize int
+	Type      int
+	NumOfMB   int
+	TraceName string
 }
 
 const (
@@ -65,10 +68,10 @@ type PolicyType int
 const (
 	BASE PolicyType = iota
 	CAU
+	CAU1
 	TAR_CAU
 	T_Update
 	T_Update1
-	CAU1
 	Forest
 )
 const BaseIP string = "192.168.1."

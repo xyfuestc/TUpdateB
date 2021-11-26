@@ -16,7 +16,9 @@ import (
 )
 var numOfReq = 0
 var round = 0
-var blockSize = config.Megabyte * 4 //1MB
+var NumOfMB = 1 //1MB
+var traceName = "hm_0"
+var OutFilePath = "../request/"+traceName+"_"+strconv.Itoa(NumOfMB)+"M.csv.txt"
 var actualUpdatedBlocks = 0
 var sidCounter = 0
 var beginTime time.Time
@@ -35,7 +37,7 @@ func handleACK(conn net.Conn) {
 		throughput :=  float32(numOfReq) * ( float32(config.BlockSize) / config.Megabyte) / float32(sumTime)
 		actualUpdatedBlocks = schedule.GetCurPolicy().GetActualBlocks()
 		averageOneUpdateSpeed := float32(sumTime) / float32(actualUpdatedBlocks)
-		fmt.Printf("%s 总耗时: %ds, 完成更新任务: %d, 实际处理任务数: %d, 单个更新速度: %0.4fs, 吞吐量: %0.2f个/s\n",
+		fmt.Printf("%s 总耗时: %ds, 完成更新任务: %d, 实际处理任务数: %d, 单个更新速度: %0.4fs, 吞吐量: %0.2fMB/s\n",
 			config.CurPolicyStr[round], sumTime, numOfReq, actualUpdatedBlocks, averageOneUpdateSpeed, throughput)
 
 		schedule.GetCurPolicy().Clear()
@@ -57,7 +59,6 @@ func main() {
 	//初始化
 	config.Init()
 	//监听ack
-
 	fmt.Printf("ms启动...")
 	fmt.Printf("监听ack: %s:%s\n", common.GetLocalIP(), config.NodeACKListenPort)
 	l2, err := net.Listen("tcp", common.GetLocalIP() + ":" + config.NodeACKListenPort)
@@ -65,9 +66,25 @@ func main() {
 		log.Fatalln("listening ack err: ", err)
 	}
 	go listenACK(l2)
+	getReqsFromTrace()
+	for round < config.NumOfAlgorithm {
+		start()
+		//保证主线程运行
+		for  {
+			if finished {
+				finished = false
+				break
+			}
+		}
+		round++
+	}
+	//清空
+	clearUpdates()
+}
 
+func getReqsFromTrace()  {
 	//处理block请求
-	blockFile, err := os.Open(config.OutFilePath)
+	blockFile, err := os.Open(OutFilePath)
 	if err != nil {
 		log.Fatalln("Error: ", err)
 	}
@@ -101,27 +118,13 @@ func main() {
 	}
 	defer blockFile.Close()
 	numOfReq = sidCounter
-	for round < config.NumOfAlgorithm {
-		start()
-		//保证主线程运行
-		for  {
-			if finished {
-				finished = false
-				break
-			}
-		}
-		round++
-	}
-	//清空
-	clearUpdates()
 }
-
-
 
 func settingCurrentPolicy(policyType int)  {
 	p := &config.Policy{
-		Type: policyType,
-		BlockSize: blockSize,
+		Type:      policyType,
+		NumOfMB:   NumOfMB,
+		TraceName: traceName,
 	}
 	for _, ip := range config.NodeIPs{
 		common.SendData(p, ip, config.NodeSettingsListenPort, "")
@@ -132,7 +135,7 @@ func settingCurrentPolicy(policyType int)  {
 
 func start()  {
 	beginTime = time.Now()
-	fmt.Printf(" 设置当前算法：[%s], blockSize=%vMB.\n", config.CurPolicyStr[round], blockSize/config.Megabyte)
+	fmt.Printf(" 设置当前算法：[%s], 当前数据集为：%s, blockSize=%vMB.\n", config.CurPolicyStr[round], OutFilePath, NumOfMB)
 	settingCurrentPolicy(round)
 	fmt.Printf(" [%s]算法开始运行...总共block请求数量为：%d\n", config.CurPolicyStr[round], sidCounter)
 	schedule.SetPolicy(config.PolicyType(round))

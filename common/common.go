@@ -177,7 +177,7 @@ func GetNodeIP(nodeID int) string {
 	return config.NodeIPs[nodeID]
 }
 func RandWriteBlockAndRetDelta(blockID int) []byte  {
-	//newDataStr := RandStringBytesMaskImpr(config.BlockSize)
+	//newDataStr := RandStringBytesMaskImpr(config.NumOfMB)
 	newDataStr := uniuri.NewLen(config.BlockSize)
 
 	newBuff := []byte(newDataStr)
