@@ -183,15 +183,15 @@ func tar_cau() {
 		for i := 0; i < config.NumOfRacks; i++ {
 			if i != ParityRackIndex {
 				if compareRacks(i, ParityRackIndex, stripe) {
-					parityUpdate1(i, stripe)
+					tar_parityUpdate(i, stripe)
 				}else{
-					dataUpdate1(i, stripe)
+					tar_dataUpdate(i, stripe)
 				}
 			}
 		}
 	}
 }
-func dataUpdate1(rackID int, stripe []int)  {
+func tar_dataUpdate(rackID int, stripe []int)  {
 	curRackNodes := make([][]int, config.RackSize)
 	parities := make([][]int, config.M * config.W)
 	for _, blockID := range stripe{
@@ -302,7 +302,7 @@ func getRangeFromBlockID(blockID int) (rangeLeft,rangeRight int) {
 	return curDistinctReq[i].RangeLeft, curDistinctReq[i].RangeRight
 }
 
-func parityUpdate1(rackID int, stripe []int) {
+func tar_parityUpdate(rackID int, stripe []int) {
 	curRackNodes := make([][]int, config.RackSize)
 	parities := make([][]int, config.M * config.W)
 	for _, blockID := range stripe {

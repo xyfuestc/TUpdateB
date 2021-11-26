@@ -470,10 +470,18 @@ func (p CAU) RecordSIDAndReceiverIP(sid int, ip string)()  {
 	ackIPMaps.recordIP(sid, ip)
 }
 func GetRootParityID(parities [][]int) int {
+	var hasOne = false
 	for i, parity := range parities {
-		if len(parity) > 0{
-			return common.GetParityIDFromIndex(i)
+		if len(parity) > 0 {
+			hasOne = true
+			rootP := common.GetParityIDFromIndex(i)
+			if rootP != lastRootP {
+				return rootP
+			}
 		}
+	}
+	if hasOne {
+		return lastRootP
 	}
 	return -1
 }
