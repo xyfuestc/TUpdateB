@@ -5,7 +5,6 @@ import (
 	"EC/config"
 	"fmt"
 	"github.com/wxnacy/wgo/arrays"
-	"sort"
 )
 type CAURS struct {
 	Base
@@ -117,18 +116,9 @@ func dataUpdateRS(rackID int, stripe []int)  {
 		}
 		//fmt.Printf("blockID: %d, nodeID: %d, rackID: %d\n", blockID, nodeID, rackID)
 		curRackNodes[nodeID-rackID*config.RackSize] = append(curRackNodes[nodeID-rackID*config.RackSize], blockID)
-		for _, p := range common.RelatedParities(blockID){
-			if arrays.Contains(parities[p], blockID) < 0 {
-				parities[p] = append(parities[p], blockID)
-			}
+		for p, _ := range parities {
+			parities[p] = append(parities[p], blockID)
 		}
-	}
-	unionParities := make([]int, 0, config.K * config.W)
-	for _, p := range parities {
-		unionParities = common.Union(p, unionParities)
-	}
-	if len(unionParities) == 0 {
-		return
 	}
 
 	//选择一个rootP
@@ -198,9 +188,8 @@ func dataUpdateRS(rackID int, stripe []int)  {
 			sid++
 		}
 	}
-	sort.Ints(unionParities)
-	fmt.Printf("DataUpdate: stripe: %v, parities: %v, unionParities: %v, curRackNodes: %v\n",
-		stripe, parities, unionParities, curRackNodes)
+	fmt.Printf("DataUpdate: stripe: %v, parities: %v, curRackNodes: %v\n",
+		stripe, parities, curRackNodes)
 }
 
 
