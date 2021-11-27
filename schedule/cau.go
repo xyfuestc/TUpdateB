@@ -406,7 +406,7 @@ func getParityUpdateNums(blocks []int) int {
 func turnBlocksToStripes() map[int][]int {
 	stripes := map[int][]int{}
 	for _, block := range curDistinctBlocks {
-		stripeID := common.GetStripeIDFromBlockID(block)
+		stripeID := common.GetRSStripeIDFromBlockID(block)
 		stripes[stripeID] = append(stripes[stripeID], block)
 	}
 	return  stripes
@@ -463,7 +463,7 @@ func (p CAU) Clear()  {
 	CMDList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
-	round = 0
+	//round = 0
 }
 
 func (p CAU) RecordSIDAndReceiverIP(sid int, ip string)()  {

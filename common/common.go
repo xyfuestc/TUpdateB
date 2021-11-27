@@ -73,6 +73,10 @@ func GetStripeIDFromBlockID(blockID int) int {
 	return blockID/(config.K * config.W)
 }
 
+func GetRSStripeIDFromBlockID(blockID int) int {
+	return blockID/config.K
+}
+
 //从0开始编号，一直到M*W-1
 func RelatedParities(blockID int) []byte {
 	parities := make([]byte, 0, config.M * config.W)
