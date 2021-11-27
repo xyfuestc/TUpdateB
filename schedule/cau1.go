@@ -18,11 +18,9 @@ func (p CAU1) Init()  {
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
 	}
-
 	ackIPMaps = &ACKIPMap{
 		ACKReceiverIPs: map[int]string{},
 	}
-
 	CMDList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
@@ -31,46 +29,18 @@ func (p CAU1) Init()  {
 }
 
 func (p CAU1) HandleTD(td *config.TD) {
-
 	//校验节点本地数据更新
 	localID := arrays.Contains(config.NodeIPs, common.GetLocalIP())
 	if localID >= config.K {
 		go common.WriteDeltaBlock(td.BlockID, td.Buff)
 	}
-
 	//返回ack
 	ack := &config.ACK{
 		SID:     td.SID,
 		BlockID: td.BlockID,
 	}
 	ReturnACK(ack)
-
-	//有等待任务
-	indexes := meetCMDNeed(td.BlockID)
-	if len(indexes) > 0 {
-		//fmt.Printf("有等待任务可以执行：%v\n", indexes)
-		//添加ack监听
-		for _, i := range indexes {
-			cmd := i
-			fmt.Printf("执行TD任务：sid:%d blockID:%d\n", cmd.SID, cmd.BlockID)
-			for _, _ = range cmd.ToIPs {
-				ackMaps.pushACK(cmd.SID)
-			}
-		}
-		for _, i := range indexes {
-			cmd := i
-			for _, toIP := range cmd.ToIPs {
-				td := &config.TD{
-					BlockID: cmd.BlockID,
-					Buff:    td.Buff,
-					FromIP:  cmd.FromIP,
-					ToIP:    toIP,
-					SID:     cmd.SID,
-				}
-				common.SendData(td, toIP, config.NodeTDListenPort, "")
-			}
-		}
-	}
+	handleWaitingCMDs(td)
 }
 
 func (p CAU1) HandleReq(reqs []*config.ReqData)  {

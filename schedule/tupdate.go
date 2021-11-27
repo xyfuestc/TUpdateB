@@ -120,7 +120,6 @@ func (p TUpdate) Init()  {
 }
 
 func (p TUpdate) HandleReq(reqs []*config.ReqData)  {
-
 	actualBlocks = len(reqs)
 
 	for _, _ = range reqs {
@@ -149,10 +148,8 @@ func (p TUpdate) handleOneBlock(reqData * config.ReqData)  {
 }
 
 func (p TUpdate) HandleTD(td *config.TD)  {
-
 	//本地数据更新
-	go common.WriteDeltaBlock(td.BlockID, td.Buff)
-
+	common.WriteDeltaBlock(td.BlockID, td.Buff)
 	//有等待任务
 	cmds := CMDList.popRunnableCMDsWithSID(td.SID)
 
@@ -331,9 +328,6 @@ func GetTransmitTasks(reqData *config.ReqData) []Task {
 	nodeID := common.GetNodeID(reqData.BlockID)
 	relatedParityMatrix, nodeIndexs := getAdjacentMatrix(parityNodes, nodeID, NodeMatrix)
 	path := GetMSTPath(relatedParityMatrix, nodeIndexs)
-
-
-
 
 	taskGroup := make([]Task, 0, len(nodeIndexs)-1)
 	for i := 1; i < len(nodeIndexs); i++ {

@@ -36,49 +36,22 @@ func (p CAU) Init()  {
 }
 
 func (p CAU) HandleTD(td *config.TD) {
-
 	//校验节点本地数据更新
-	localID := arrays.Contains(config.NodeIPs, common.GetLocalIP())
+	localID := common.GetIDFromIP(common.GetLocalIP())
 	if localID >= config.K {
 		common.WriteDeltaBlock(td.BlockID, td.Buff)
 	}
-
 	//返回ack
 	ack := &config.ACK{
 		SID:     td.SID,
 		BlockID: td.BlockID,
 	}
 	ReturnACK(ack)
-
 	//有等待任务
-	indexes := meetCMDNeed(td.BlockID)
-	if len(indexes) > 0 {
-		//fmt.Printf("有等待任务可以执行：%v\n", indexes)
-		//添加ack监听
-		for _, i := range indexes {
-			cmd := i
-			fmt.Printf("执行TD任务：sid:%d blockID:%d\n", cmd.SID, cmd.BlockID)
-			for _, _ = range cmd.ToIPs {
-				ackMaps.pushACK(cmd.SID)
-			}
-		}
-		for _, i := range indexes {
-			cmd := i
-			for _, toIP := range cmd.ToIPs {
-				td := &config.TD{
-					BlockID: cmd.BlockID,
-					Buff:    td.Buff,
-					FromIP:  cmd.FromIP,
-					ToIP:    toIP,
-					SID:     cmd.SID,
-				}
-				common.SendData(td, toIP, config.NodeTDListenPort, "")
-			}
-		}
-	}
+	handleWaitingCMDs(td)
 }
+
 func findDistinctBlocks() {
-	//获取curDistinctBlocks
 	curMatchReqs := make([]*config.ReqData, 0, config.MaxBatchSize)
 	if len(totalReqs) > config.MaxBatchSize {
 		curMatchReqs = totalReqs[:config.MaxBatchSize]
@@ -171,7 +144,6 @@ func dataUpdate(rackID int, stripe []int)  {
 
 	/****记录ack*****/
 	parityNodeBlocks := GetParityNodeBlocks(parities)
-
 
 	for i, b := range parityNodeBlocks {
 
@@ -417,7 +389,7 @@ func (p CAU) HandleCMD(cmd *config.CMD)  {
 			ackMaps.pushACK(cmd.SID)
 		}
 		//fmt.Printf("block %d is local\n", cmd.BlockID)
-		buff := common.ReadBlock(cmd.BlockID)
+		buff := common.ReadBlockWithSize(cmd.BlockID, cmd.SendSize)
 
 		for _, toIP := range cmd.ToIPs {
 			td := &config.TD{
@@ -467,20 +439,20 @@ func (p CAU) RecordSIDAndReceiverIP(sid int, ip string)()  {
 	ackIPMaps.recordIP(sid, ip)
 }
 func GetRootParityID(parities [][]int) int {
-	var hasOne = false
+	//var hasOne = false
 	for i, parity := range parities {
 		if len(parity) > 0 {
-			hasOne = true
+			//hasOne = true
 			rootP := common.GetParityIDFromIndex(i)
-			if rootP != lastRootP {
-				lastRootP = rootP
+			//if rootP != lastRootP {
+			//	lastRootP = rootP
 				return rootP
-			}
+			//}
 		}
 	}
-	if hasOne {
-		return lastRootP
-	}
+	//if hasOne {
+	//	return lastRootP
+	//}
 	return -1
 }
 func (p CAU) IsFinished() bool {

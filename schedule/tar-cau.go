@@ -91,19 +91,19 @@ func handleWaitingCMDs(td *config.TD) {
 		}
 		for _, i := range indexes {
 			cmd := i
-			for _, toIP := range cmd.ToIPs {
-				td := &config.TD{
-					BlockID: cmd.BlockID,
-					Buff:    td.Buff,
-					FromIP:  cmd.FromIP,
-					ToIP:    toIP,
-					SID:     cmd.SID,
-					SendSize: cmd.SendSize,
-				}
-				sendSizeRate := float32(td.SendSize * 1.0) / float32(config.BlockSize)
-				fmt.Printf("发送 block:%d sendSize: %.2f 的数据给%s.\n", td.BlockID, sendSizeRate, toIP)
-				common.SendData(td, toIP, config.NodeTDListenPort, "")
+			toIP := cmd.ToIPs[0]
+			td := &config.TD{
+				BlockID: cmd.BlockID,
+				Buff:    td.Buff,
+				FromIP:  cmd.FromIP,
+				ToIP:    toIP,
+				SID:     cmd.SID,
+				SendSize: cmd.SendSize,
 			}
+			sendSizeRate := float32(td.SendSize * 1.0) / float32(config.BlockSize)
+			fmt.Printf("发送 block:%d sendSize: %.4fMB -> %s.\n", td.BlockID, sendSizeRate, toIP)
+			common.SendData(td, toIP, config.NodeTDListenPort, "")
+
 		}
 	}
 }

@@ -206,7 +206,7 @@ func RandWriteBlockAndRetDelta(blockID int) []byte  {
 func WriteDeltaBlock(blockID int, deltaBuff []byte) []byte  {
 	size := len(deltaBuff)
 	/*****read old data*******/
-	oldBuff := ReadBlock(blockID)
+	oldBuff := ReadBlockWithSize(blockID, size)
 	/*****compute new delta data*******/
 	newBuff := make([]byte, size)
 	for i := 0; i < size; i++ {
@@ -214,6 +214,7 @@ func WriteDeltaBlock(blockID int, deltaBuff []byte) []byte  {
 	}
 	/*****write new data*******/
 	WriteBlockWithSize(blockID, newBuff, size)
+	fmt.Printf("成功写入blockID: %d, size: %d!\n", blockID, size)
 
 	return deltaBuff
 }
@@ -239,6 +240,7 @@ func SendCMD(fromIP string, toIPs []string, sid, blockID int)  {
 		BlockID: blockID,
 		ToIPs: toIPs,
 		FromIP: fromIP,
+		SendSize: config.BlockSize,
 		Helpers: make([]int, 0, 1),
 		Matched: 0,
 	}
@@ -251,6 +253,7 @@ func SendCMDWithHelpers(fromIP string, toIPs []string, sid, blockID int, helpers
 		BlockID: blockID,
 		ToIPs: toIPs,
 		FromIP: fromIP,
+		SendSize: config.BlockSize,
 		Helpers: helpers,
 		Matched: 0,
 	}
