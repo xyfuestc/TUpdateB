@@ -90,8 +90,11 @@ func getXORBuffFromMapBlockTDs(mapBlockTDs map[int]*config.TD, toIP string) []by
 	parityNodeID := common.GetIDFromIP(toIP)
 	row := parityNodeID - config.K
 
+	fmt.Printf("parityNodeID=%v, row=%v, toIP=%v\n", parityNodeID, row, toIP)
+
 	for b, td := range mapBlockTDs {
 		col := b % config.K
+		fmt.Printf("col=%v, buffLen=%v, \n", col, len(td.Buff))
 		for i := 0; i < len(xorBuff); i++ {
 			xorBuff[i]^= td.Buff[i]*config.RS.GenMatrix[row*config.K+col]
 		}
@@ -100,6 +103,7 @@ func getXORBuffFromMapBlockTDs(mapBlockTDs map[int]*config.TD, toIP string) []by
 }
 func getXORBuffFromCMD(cmd *config.CMD) []byte {
 	mapBlockTDs := getMapBlockTDsFromHelpers(cmd.Helpers)
+	fmt.Printf("mapBlockTDs:= %v\n", mapBlockTDs)
 	buff := getXORBuffFromMapBlockTDs(mapBlockTDs, cmd.ToIPs[0])
 
 	return buff

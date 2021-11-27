@@ -168,7 +168,7 @@ func Init(){
 	fmt.Printf("Init GM...\n")
 	r, _ := reedsolomon.New(K, M)
 	RS = r
-	fmt.Println(RS.GenMatrix)
+	//fmt.Println(RS.GenMatrix)
 	BitMatrix = GenerateBitMatrix(RS.GenMatrix, K, M, W)
 	//fmt.Printf("%v", BitMatrix)
 
