@@ -26,6 +26,9 @@ func (p CAURS) Init()  {
 	curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
 	actualBlocks = 0
 	round = 0
+	curReceivedTDs = &ReceivedTDs{
+		TDs: make([]*config.TD, 0, config.MaxBatchSize),
+	}
 }
 
 func (p CAURS) HandleTD(td *config.TD) {
@@ -276,6 +279,9 @@ func (p CAURS) Clear()  {
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
 	//round = 0
+	curReceivedTDs = &ReceivedTDs{
+		TDs: make([]*config.TD, 0, config.MaxBatchSize),
+	}
 }
 
 func (p CAURS) RecordSIDAndReceiverIP(sid int, ip string)()  {
