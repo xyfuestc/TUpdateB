@@ -34,7 +34,13 @@ func GetLocalIP() string {
 	return "IP获取失败"
 }
 func GetIDFromIP(nodeIP string) int {
-	return arrays.Contains(config.NodeIPs, nodeIP)
+	for i,ip := range config.NodeIPs {
+		if ip == nodeIP {
+			return i
+		}
+	}
+	return -1
+	//return arrays.Contains(config.NodeIPs, nodeIP)
 }
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"

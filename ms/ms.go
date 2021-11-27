@@ -58,6 +58,7 @@ func clearRound()  {
 func main() {
 	//初始化
 	config.Init()
+
 	//监听ack
 	fmt.Printf("ms启动...")
 	fmt.Printf("监听ack: %s:%s\n", common.GetLocalIP(), config.NodeACKListenPort)
