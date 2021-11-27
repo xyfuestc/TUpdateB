@@ -41,7 +41,8 @@ func (M *CMDWaitingList) updateRunnableCMDs(blockID int)  {
 			//M.Queue[i].Helpers[len(M.Queue[i].Helpers)-1], M.Queue[i].Helpers[j] =
 			//				M.Queue[i].Helpers[j], M.Queue[i].Helpers[len(M.Queue[i].Helpers)-1]
 			//M.Queue[i].Helpers = M.Queue[i].Helpers[:len(M.Queue[i].Helpers)-1]
-			M.Queue[i].Helpers = append(M.Queue[i].Helpers[:j], M.Queue[i].Helpers[j+1:]...)
+			//M.Queue[i].Helpers = append(M.Queue[i].Helpers[:j], M.Queue[i].Helpers[j+1:]...)
+			M.Queue[i].Matched++
 		}
 	}
 
@@ -51,19 +52,19 @@ func (M *CMDWaitingList) popRunnableCMDs() []*config.CMD  {
 	M.Lock()
 	cmds := make([]*config.CMD, 0, len(M.Queue))
 	for _, cmd := range M.Queue {
-		if len(cmd.Helpers) == 0 {
+		if len(cmd.Helpers) == cmd.Matched {
 			cmds = append(cmds, cmd)
 		}
 	}
 
 	//删除
-	for i:= 0; i < len(M.Queue); {
-		if len(M.Queue[i].Helpers) == 0 {
-			M.Queue = append(M.Queue[:i], M.Queue[i+1:]...)
-		} else {
-			i++
-		}
-	}
+	//for i:= 0; i < len(M.Queue); {
+	//	if len(M.Queue[i].Helpers) == 0 {
+	//		M.Queue = append(M.Queue[:i], M.Queue[i+1:]...)
+	//	} else {
+	//		i++
+	//	}
+	//}
 
 	M.Unlock()
 	return cmds

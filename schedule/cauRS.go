@@ -30,6 +30,8 @@ func (p CAURS) Init()  {
 
 func (p CAURS) HandleTD(td *config.TD) {
 
+	curReceivedTDs.pushTD(td)
+	
 	//校验节点本地数据更新
 	localID := arrays.Contains(config.NodeIPs, common.GetLocalIP())
 	if localID >= config.K {
@@ -48,27 +50,56 @@ func (p CAURS) HandleTD(td *config.TD) {
 	if len(indexes) > 0 {
 		//fmt.Printf("有等待任务可以执行：%v\n", indexes)
 		//添加ack监听
-		for _, i := range indexes {
-			cmd := i
+		for _, cmd := range indexes {
 			fmt.Printf("执行TD任务：sid:%d blockID:%d\n", cmd.SID, cmd.BlockID)
 			for _, _ = range cmd.ToIPs {
 				ackMaps.pushACK(cmd.SID)
 			}
 		}
-		for _, i := range indexes {
-			cmd := i
-			for _, toIP := range cmd.ToIPs {
-				td := &config.TD{
-					BlockID: cmd.BlockID,
-					Buff:    td.Buff,
-					FromIP:  cmd.FromIP,
-					ToIP:    toIP,
-					SID:     cmd.SID,
-				}
-				common.SendData(td, toIP, config.NodeTDListenPort, "")
+		for _, cmd := range indexes {
+			xorBuff := getXORBuffFromCMD(cmd)
+			toIP := cmd.ToIPs[0]
+			td := &config.TD{
+				BlockID: cmd.BlockID,
+				Buff:    xorBuff,
+				FromIP:  cmd.FromIP,
+				ToIP:    toIP,
+				SID:     cmd.SID,
+			}
+			common.SendData(td, toIP, config.NodeTDListenPort, "")
+		}
+	}
+}
+func getMapBlockTDsFromHelpers(helpers []int) map[int]*config.TD  {
+	//传输数之前，应该有一个计算校验更新的过程
+	mapBlockTDs := map[int]*config.TD{}
+	for _, v := range curReceivedTDs.getTDs() {
+		for _, b := range helpers{
+			if b == v.BlockID {
+				mapBlockTDs[b] = v
 			}
 		}
 	}
+	return mapBlockTDs
+}
+func getXORBuffFromMapBlockTDs(mapBlockTDs map[int]*config.TD, toIP string) []byte {
+	xorBuff := make([]byte, config.RSBlockSize)
+	parityNodeID := common.GetIDFromIP(toIP)
+	row := parityNodeID - config.K
+
+	for b, td := range mapBlockTDs {
+		col := b % config.K
+		for i := 0; i < len(xorBuff); i++ {
+			xorBuff[i]^= td.Buff[i]*config.RS.GenMatrix[row*config.K+col]
+		}
+	}
+	return xorBuff
+}
+func getXORBuffFromCMD(cmd *config.CMD) []byte {
+	mapBlockTDs := getMapBlockTDsFromHelpers(cmd.Helpers)
+	buff := getXORBuffFromMapBlockTDs(mapBlockTDs, cmd.ToIPs[0])
+
+	return buff
 }
 
 func (p CAURS) HandleReq(reqs []*config.ReqData)  {

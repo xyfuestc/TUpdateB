@@ -166,9 +166,6 @@ func dataUpdate(rackID int, stripe []int)  {
 		log.Fatal("找不到rootParity")
 		return
 	}
-	//fmt.Println("rootP: ", rootP)
-
-
 	/****记录ack*****/
 	curSid := sid
 
