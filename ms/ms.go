@@ -16,7 +16,7 @@ import (
 )
 var numOfReq = 0
 var round = 1
-var NumOfMB = 21 //1MB
+var NumOfMB = 4 //1MB
 var traceName = "rsrch_1"
 var OutFilePath = "../request/"+traceName+"_"+strconv.Itoa(NumOfMB)+"M.csv.txt"
 var actualUpdatedBlocks = 0
