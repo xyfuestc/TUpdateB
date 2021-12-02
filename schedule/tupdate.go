@@ -58,13 +58,13 @@ func (M *CMDWaitingList) popRunnableCMDs() []*config.CMD  {
 	}
 
 	//删除
-	//for i:= 0; i < len(M.Queue); {
-	//	if len(M.Queue[i].Helpers) == 0 {
-	//		M.Queue = append(M.Queue[:i], M.Queue[i+1:]...)
-	//	} else {
-	//		i++
-	//	}
-	//}
+	for i:= 0; i < len(M.Queue); {
+		if len(M.Queue[i].Helpers) == M.Queue[i].Matched {
+			M.Queue = append(M.Queue[:i], M.Queue[i+1:]...)
+		} else {
+			i++
+		}
+	}
 
 	M.Unlock()
 	return cmds

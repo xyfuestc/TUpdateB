@@ -101,7 +101,7 @@ func handleWaitingCMDs(td *config.TD) {
 				SendSize: cmd.SendSize,
 			}
 			sendSizeRate := float32(td.SendSize * 1.0) / float32(config.BlockSize)
-			fmt.Printf("发送 block:%d sendSize: %.4fMB -> %s.\n", td.BlockID, sendSizeRate, toIP)
+			fmt.Printf("发送 block:%d sendSize: %.4f%% -> %s.\n", td.BlockID, sendSizeRate, toIP)
 			common.SendData(td, toIP, config.NodeTDListenPort, "")
 
 		}
