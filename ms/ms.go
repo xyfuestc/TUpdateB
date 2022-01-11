@@ -15,8 +15,8 @@ import (
 	"time"
 )
 var numOfReq = 0
-var round = 1
-var NumOfMB = 4 //1MB
+var round = 0
+var NumOfMB = 4 //以这个为准，会同步到各个节点
 var traceName = "rsrch_1"
 var OutFilePath = "../request/"+traceName+"_"+strconv.Itoa(NumOfMB)+"M.csv.txt"
 var actualUpdatedBlocks = 0
