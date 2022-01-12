@@ -22,8 +22,6 @@ var MaxBlockIndex = TestFileSize / BlockSize - 1
 const NumOfAlgorithm int = 4   //采用3种算法执行相同任务
 var CurPolicyStr = []string{"Base", "CAURS", "CAU", "TUpdate1", "TUpdate", "CAU1", "TAR_CAU" }
 var TraceName = "hm_0"
-
-//var OutFilePath = "../request/proj_4.csv.bak.txt"
 var BitMatrix = make([]byte, K*M*W*W)
 const RackSize = M
 const NumOfRacks = N / RackSize

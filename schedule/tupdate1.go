@@ -23,6 +23,7 @@ func (p TUpdate1) Init()  {
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
 	actualBlocks = 0
+	round = 0
 }
 
 func (p TUpdate1) HandleReq(reqs []*config.ReqData)  {
@@ -30,11 +31,11 @@ func (p TUpdate1) HandleReq(reqs []*config.ReqData)  {
 
 	for len(totalReqs) > 0 {
 		//过滤blocks
-		batchReqs := getBatchReqs()
-		actualBlocks += len(batchReqs)
-		fmt.Printf("第%d轮 TUpdate1：处理%d个block\n", round, len(batchReqs))
+		findDistinctReqs()
+		actualBlocks += len(curDistinctReq)
+		fmt.Printf("第%d轮 TUpdate1：处理%d个block\n", round, len(curDistinctReq))
 		//执行base
-		p.TUpdate1(batchReqs)
+		p.TUpdate1(curDistinctReq)
 
 		for IsRunning {
 
