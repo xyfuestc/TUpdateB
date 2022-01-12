@@ -20,7 +20,7 @@ const MaxBlockSize int = 1000000
 const TestFileSize = 10 * 1024 * Megabyte
 var MaxBlockIndex = TestFileSize / BlockSize - 1
 const NumOfAlgorithm int = 4   //采用3种算法执行相同任务
-var CurPolicyStr = []string{"Base", "CAURS", "TUpdate", "CAU", "CAU1", "TAR_CAU", "TUpdate1" }
+var CurPolicyStr = []string{"Base", "CAURS", "TUpdate1", "CAU", "CAU1", "TAR_CAU", "TUpdate" }
 var TraceName = "hm_0"
 
 //var OutFilePath = "../request/proj_4.csv.bak.txt"

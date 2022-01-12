@@ -26,36 +26,27 @@ func (p TUpdate1) Init()  {
 }
 
 func (p TUpdate1) HandleReq(reqs []*config.ReqData)  {
-	//totalReqs = reqs
-	//
-	//for len(totalReqs) > 0 {
-	//	//过滤blocks
-	//	findDistinctBlocks()
-	//	//执行cau
-	//	actualBlocks += len(curDistinctBlocks)
-	//	fmt.Printf("第%d轮 CAU：sid：[%d, %d], 处理%d个block\n", round, sid, sid+len(curDistinctBlocks)-1, len(curDistinctBlocks))
-	//
-	//	curSid := sid
-	//	//记录ack
-	//	for _, _ = range curDistinctBlocks {
-	//		ackMaps.pushACK(curSid)
-	//		curSid++
-	//	}
-	//	//处理block
-	//	for _, req := range curDistinctBlocks {
-	//		req := &config.ReqData{
-	//			BlockID: req,
-	//			SID: sid,
-	//		}
-	//		p.handleOneBlock(req)
-	//		sid++
-	//	}
-	//	round++
-	//}
+	totalReqs = reqs
 
+	for len(totalReqs) > 0 {
+		//过滤blocks
+		batchReqs := getBatchReqs()
+		actualBlocks += len(batchReqs)
+		fmt.Printf("第%d轮 TUpdate1：处理%d个block\n", round, len(batchReqs))
+		//执行base
+		p.TUpdate1(batchReqs)
 
-	actualBlocks = len(reqs)
+		for IsRunning {
 
+		}
+		fmt.Printf("本轮结束！\n")
+		fmt.Printf("======================================\n")
+		round++
+		p.Clear()
+	}
+}
+
+func (p TUpdate1) TUpdate1(reqs []*config.ReqData)  {
 	for _, _ = range reqs {
 		ackMaps.pushACK(sid)
 		sid++
@@ -170,7 +161,10 @@ func (p TUpdate1) HandleACK(ack *config.ACK)  {
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)
+		}else if ACKIsEmpty() { //检查是否全部完成，若完成，进入下一轮
+			IsRunning = false
 		}
+
 	}
 }
 func (p TUpdate1) Clear()  {

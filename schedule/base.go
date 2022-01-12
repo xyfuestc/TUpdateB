@@ -206,12 +206,13 @@ func getBatchReqs() []*config.ReqData {
 }
 
 func (p Base) HandleReq(reqs []*config.ReqData)  {
-	actualBlocks = len(reqs)
+	//actualBlocks = len(reqs)
 	totalReqs = reqs
 
 	for len(totalReqs) > 0 {
 		//过滤blocks
 		batchReqs := getBatchReqs()
+		actualBlocks += len(batchReqs)
 		fmt.Printf("第%d轮 BASE：处理%d个block\n", round, len(batchReqs))
 		//执行base
 		p.base(batchReqs)
