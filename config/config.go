@@ -20,7 +20,7 @@ const MaxBlockSize int = 1000000
 const TestFileSize = 10 * 1024 * Megabyte
 var MaxBlockIndex = TestFileSize / BlockSize - 1
 const NumOfAlgorithm int = 4   //采用3种算法执行相同任务
-var CurPolicyStr = []string{"Base", "CAURS", "TUpdate1", "CAU", "CAU1", "TAR_CAU", "TUpdate" }
+var CurPolicyStr = []string{"Base", "CAURS", "CAU", "TUpdate1", "TUpdate", "CAU1", "TAR_CAU" }
 var TraceName = "hm_0"
 
 //var OutFilePath = "../request/proj_4.csv.bak.txt"
@@ -30,7 +30,16 @@ const NumOfRacks = N / RackSize
 type OPType int
 var RS *reedsolomon.RS
 type Matrix []byte
-
+const (
+	BASE PolicyType = iota
+	CAURS
+	CAU
+	T_Update1
+	T_Update
+	CAU1
+	TAR_CAU
+	Forest
+)
 const (
 	Timestamp int  = iota    // default 0
 	WorkloadName    //1
@@ -66,16 +75,7 @@ const (
 
 type PolicyType int
 
-const (
-	BASE PolicyType = iota
-	CAURS
-	CAU
-	CAU1
-	TAR_CAU
-	T_Update
-	T_Update1
-	Forest
-)
+
 const BaseIP string = "192.168.1."
 var MSIP = BaseIP + "108"
 const DataFilePath string = "../../test"
