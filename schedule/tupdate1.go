@@ -170,6 +170,8 @@ func (p TUpdate1) HandleACK(ack *config.ACK)  {
 	}
 }
 func (p TUpdate1) Clear()  {
+	curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
+	curDistinctReq = make([]*config.ReqData, 0, config.MaxBatchSize)
 	sid = 0
 	CMDList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
