@@ -28,14 +28,15 @@ func (p TUpdate1) Init()  {
 
 func (p TUpdate1) HandleReq(reqs []*config.ReqData)  {
 	totalReqs = reqs
+	fmt.Printf("一共接收到%d个请求...\n", len(totalReqs))
 
 	for len(totalReqs) > 0 {
 		//过滤blocks
-		findDistinctReqs()
-		actualBlocks += len(curDistinctReq)
-		fmt.Printf("第%d轮 TUpdate1：处理%d个block\n", round, len(curDistinctReq))
+		findDistinctBlocks()
+		actualBlocks += len(curDistinctBlocks)
+		fmt.Printf("第%d轮 TUpdate1：处理%d个block\n", round, len(curDistinctBlocks))
 		//执行base
-		p.TUpdate1(curDistinctReq)
+		p.TUpdate1(curDistinctBlocks)
 
 		for IsRunning {
 
@@ -47,15 +48,15 @@ func (p TUpdate1) HandleReq(reqs []*config.ReqData)  {
 	}
 }
 
-func (p TUpdate1) TUpdate1(reqs []*config.ReqData)  {
-	for _, _ = range reqs {
+func (p TUpdate1) TUpdate1(distinctBlocks []int)  {
+	for _, _ = range distinctBlocks {
 		ackMaps.pushACK(sid)
 		sid++
 	}
 	sid = 0
-	for _, req := range reqs {
+	for _, blockID := range distinctBlocks {
 		req := &config.ReqData{
-			BlockID: req.BlockID,
+			BlockID: blockID,
 			SID:     sid,
 		}
 		p.handleOneBlock(req)
@@ -174,7 +175,6 @@ func (p TUpdate1) Clear()  {
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
 	NodeMatrix = make(config.Matrix, (config.N)*(config.N))
-	actualBlocks = 0
 }
 func (p TUpdate1) RecordSIDAndReceiverIP(sid int, ip string)()  {
 	ackIPMaps.recordIP(sid, ip)
