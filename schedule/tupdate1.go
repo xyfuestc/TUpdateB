@@ -180,7 +180,7 @@ func (p TUpdate1) RecordSIDAndReceiverIP(sid int, ip string)()  {
 	ackIPMaps.recordIP(sid, ip)
 }
 func (p TUpdate1) IsFinished() bool {
-	return ackMaps.isEmpty()
+	return len(totalReqs) == 0 && ackMaps.isEmpty()
 }
 func (p TUpdate1) GetActualBlocks() int {
 	return actualBlocks
