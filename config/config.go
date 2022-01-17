@@ -8,19 +8,19 @@ import (
 
 const K int = 8
 const M int = 4
-const W int = 3
+const W int = 4
 const N int = K + M
-var NumOfMB = 3
+var NumOfMB = 1
 var BlockSize = 1024 * 1024 * NumOfMB //1MB
-var RSBlockSize = Megabyte * NumOfMB * 3
+var RSBlockSize = Megabyte * NumOfMB * W
 const Megabyte = 1024 * 1024      //1MB
 const MaxBatchSize int = 100
 const MaxBaseBatchSize int = 10
 const MaxBlockSize int = 1000000
 const TestFileSize = 10 * 1024 * Megabyte
 var MaxBlockIndex = TestFileSize / BlockSize - 1
-const NumOfAlgorithm int = 4   //采用3种算法执行相同任务
-var CurPolicyStr = []string{"Base", "CAURS", "CAU", "TUpdate1", "TUpdate", "CAU1", "TAR_CAU" }
+const NumOfAlgorithm int = 5   //采用3种算法执行相同任务
+var CurPolicyStr = []string{"Base", "CAU", "TUpdate1", "TUpdate", "TAR_CAU", "CAU1", "CAURS" }
 var TraceName = "hm_0"
 var BitMatrix = make([]byte, K*M*W*W)
 const RackSize = M
@@ -30,12 +30,12 @@ var RS *reedsolomon.RS
 type Matrix []byte
 const (
 	BASE PolicyType = iota
-	CAURS
 	CAU
 	T_Update1
 	T_Update
-	CAU1
 	TAR_CAU
+	CAU1
+	CAURS
 	Forest
 )
 const (
