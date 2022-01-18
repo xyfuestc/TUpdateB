@@ -145,6 +145,12 @@ func (p TUpdate) handleOneBlock(reqData * config.ReqData)  {
 		fromIP := common.GetNodeIP(int(task.Start))
 		toIPs := []string{common.GetNodeIP(int(task.End))}
 		common.SendCMD(fromIP, toIPs, task.SID, task.BlockID)
+		//统计跨域流量
+		rack1 := getRackIDFromNodeID(task.Start)
+		rack2 := getRackIDFromNodeID(task.End)
+		if rack1 != rack2 {
+			 totalCrossRackTraffic += config.BlockSize
+		}
 	}
 }
 
