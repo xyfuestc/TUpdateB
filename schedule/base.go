@@ -144,8 +144,7 @@ func handleOneCMD(cmd *config.CMD)  {
 			ToIP: parityIP,
 			SID: cmd.SID,
 		}
-		//跨域流量统计
-		totalCrossRackTraffic += len(buff)
+
 		begin := time.Now().UnixNano() / 1e6
 		go common.SendData(td, parityIP, config.NodeTDListenPort, "")
 		end := time.Now().UnixNano() / 1e6
@@ -252,7 +251,8 @@ func (p Base) handleOneBlock(reqData config.ReqData)  {
 	fromIP := common.GetNodeIP(nodeID)
 	toIPs := common.GetRelatedParityIPs(reqData.BlockID)
 	common.SendCMD(fromIP, toIPs, reqData.SID, reqData.BlockID)
-
+	//跨域流量统计
+	totalCrossRackTraffic += len(toIPs) * config.BlockSize
 	fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", reqData.SID,
 		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, toIPs)
 }

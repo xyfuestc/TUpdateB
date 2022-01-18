@@ -503,7 +503,7 @@ func (p TAR_CAU) Clear()  {
 	CMDList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
-	round = 0
+
 	curReceivedTDs = &ReceivedTDs{
 		TDs: make([]*config.TD, 0, config.MaxBatchSize),
 	}
