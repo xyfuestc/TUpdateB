@@ -256,6 +256,8 @@ func parityUpdate(rackID int, stripe []int) {
 		}
 		common.SendCMDWithHelpers(common.GetNodeIP(rootD), []string{common.GetNodeIP(parityID)},
 			sid, blocks[0], helpers)
+		//统计跨域流量
+		totalCrossRackTraffic += config.BlockSize
 		sid++
 	}
 

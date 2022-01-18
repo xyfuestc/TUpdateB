@@ -56,6 +56,10 @@ func clearUpdates() {
 func clearRound()  {
 	finished = true
 	actualUpdatedBlocks = 0
+
+	//清空totalReqs
+	totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
+	sidCounter = 0
 }
 func main() {
 	//初始化
@@ -93,8 +97,6 @@ func setCurrentTrace() {
 }
 
 func getReqsFromTrace()  {
-	//清空totalReqs
-	totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 
 	blockFile, err := os.Open(OutFilePath)
 	//处理block请求
@@ -183,5 +185,9 @@ func listenACK(listen net.Listener) {
 			log.Printf("total number of connections: %v", len(connections))
 		}
 	}
+}
+
+func clear()  {
+
 }
 

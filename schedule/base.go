@@ -281,3 +281,7 @@ func (p Base) IsFinished() bool {
 func (p Base) GetActualBlocks() int {
 	return actualBlocks
 }
+//数据格式：MB
+func (p Base) GetCrossRackTraffic() float32 {
+	return  float32(totalCrossRackTraffic) / config.Megabyte
+}
