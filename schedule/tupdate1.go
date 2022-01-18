@@ -170,6 +170,7 @@ func (p TUpdate1) HandleACK(ack *config.ACK)  {
 	}
 }
 func (p TUpdate1) Clear()  {
+	IsRunning = true
 	curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
 	curDistinctReq = make([]*config.ReqData, 0, config.MaxBatchSize)
 	sid = 0
