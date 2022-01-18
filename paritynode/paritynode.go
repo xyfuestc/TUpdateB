@@ -29,8 +29,8 @@ func setPolicy(conn net.Conn)  {
 	p := common.GetPolicy(conn)
 	schedule.SetPolicy(config.PolicyType(p.Type))
 	config.NumOfMB = p.NumOfMB
-	log.Printf("收到来自 %s 的命令，设置当前算法设置为%s, 当前blockSize=%vMB.\n",
-		common.GetConnIP(conn), config.CurPolicyStr[p.Type], config.BlockSize)
+	log.Printf("收到来自 %s 的命令，设置当前算法设置为%s, 当前XOR的blockSize=%vMB，RS的blockSize=%vMB.\n",
+		common.GetConnIP(conn), config.CurPolicyStr[p.Type], config.BlockSize, config.RSBlockSize)
 }
 func handleACK(conn net.Conn) {
 	defer conn.Close()
