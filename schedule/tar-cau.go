@@ -213,6 +213,9 @@ func alignRangeOfStripe(stripe []int) {
 		//记录哪些block需要统一range
 		reqIndexList = append(reqIndexList, j)
 	}
+	if (maxRangeR - minRangeL) > config.BlockSize {
+		log.Fatalln("error! range超出范围")
+	}
 	for i := range reqIndexList{
 		curDistinctReq[i].RangeLeft = minRangeL
 		curDistinctReq[i].RangeRight = maxRangeR
