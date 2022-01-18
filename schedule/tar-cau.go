@@ -43,6 +43,7 @@ func (M *ReceivedTDs) getTDs() []*config.TD  {
 var curDistinctReq = make([]*config.ReqData, 0, config.MaxBatchSize)
 var curReceivedTDs *ReceivedTDs
 func (p TAR_CAU) Init()  {
+	totalCrossRackTraffic = 0
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
 	}
@@ -180,8 +181,13 @@ func turnReqsToStripes() map[int][]int {
 func tar_cau() {
 	stripes := turnReqsToStripes()
 	for _, stripe := range stripes{
+
 		for i := 0; i < config.NumOfRacks; i++ {
 			if i != ParityRackIndex {
+
+				//统一同一stripe的rangeL和rangeR
+				alignRangeOfStripe(stripe)
+
 				if compareRacks(i, ParityRackIndex, stripe) {
 					tar_parityUpdate(i, stripe)
 				}else{
@@ -189,6 +195,27 @@ func tar_cau() {
 				}
 			}
 		}
+	}
+}
+
+func alignRangeOfStripe(stripe []int) {
+	//1、寻找同一个stripe下最大范围的rangeL，rangeR
+	minRangeL, maxRangeR := config.BlockSize, 0
+	reqIndexList := make([]int, len(stripe))
+	for _, b := range stripe{
+		j, rangeL, rangeR := getRangeFromBlockID(b)
+		if rangeL < minRangeL {
+			minRangeL = rangeL
+		}
+		if rangeR > maxRangeR {
+			maxRangeR = rangeR
+		}
+		//记录哪些block需要统一range
+		reqIndexList = append(reqIndexList, j)
+	}
+	for i := range reqIndexList{
+		curDistinctReq[i].RangeLeft = minRangeL
+		curDistinctReq[i].RangeRight = maxRangeR
 	}
 }
 func tar_dataUpdate(rackID int, stripe []int)  {
@@ -243,7 +270,7 @@ func tar_dataUpdate(rackID int, stripe []int)  {
 				//省略了合并操作，直接只发一条
 				fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
 					rootP, common.GetNodeIP(rootP), b, common.GetNodeIP(parityID))
-				//rangeLeft,rangeRight := getRangeFromBlockID(b)
+				_, rangeLeft, rangeRight := getRangeFromBlockID(b)
 				cmd := &config.CMD{
 					SID: sid,
 					BlockID: b,
@@ -251,8 +278,8 @@ func tar_dataUpdate(rackID int, stripe []int)  {
 					FromIP: common.GetNodeIP(rootP),
 					Helpers: blocks,
 					Matched: 0,
-					//SendSize: rangeRight-rangeLeft,
-					SendSize: config.BlockSize,
+					SendSize: rangeRight - rangeLeft,
+					//SendSize: config.BlockSize,
 				}
 				common.SendData(cmd, common.GetNodeIP(rootP), config.NodeCMDListenPort, "")
 
@@ -274,10 +301,10 @@ func tar_dataUpdate(rackID int, stripe []int)  {
 	for i, blocks := range curRackNodes {
 		nodeID := common.GetDataNodeIDFromIndex(rackID, i)
 		//传输blocks到rootP
-		for _, b := range blocks{
+		for _, b := range blocks {
 			fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
 				nodeID, common.GetNodeIP(nodeID), b, common.GetNodeIP(rootP))
-			rangeLeft,rangeRight := getRangeFromBlockID(b)
+			_, rangeLeft, rangeRight := getRangeFromBlockID(b)
 			cmd := &config.CMD{
 				SID: sid,
 				BlockID: b,
@@ -285,10 +312,12 @@ func tar_dataUpdate(rackID int, stripe []int)  {
 				FromIP: common.GetNodeIP(nodeID),
 				Helpers: make([]int, 0, 1),
 				Matched: 0,
-				SendSize: rangeRight-rangeLeft,
+				SendSize: rangeRight - rangeLeft,
 			}
 			common.SendData(cmd, common.GetNodeIP(nodeID), config.NodeCMDListenPort, "")
 			sid++
+			//统计跨域流量
+			totalCrossRackTraffic += rangeRight - rangeLeft
 		}
 	}
 
@@ -297,12 +326,13 @@ func tar_dataUpdate(rackID int, stripe []int)  {
 		stripe, parities, unionParities, curRackNodes)
 }
 
-func getRangeFromBlockID(blockID int) (rangeLeft,rangeRight int) {
-	i := findBlockIndexInReqs(curDistinctReq, blockID)
-	return curDistinctReq[i].RangeLeft, curDistinctReq[i].RangeRight
+func getRangeFromBlockID(blockID int) (i, rangeLeft, rangeRight int) {
+	j := findBlockIndexInReqs(curDistinctReq, blockID)
+	return j, curDistinctReq[j].RangeLeft, curDistinctReq[j].RangeRight
 }
 
 func tar_parityUpdate(rackID int, stripe []int) {
+
 	curRackNodes := make([][]int, config.RackSize)
 	parities := make([][]int, config.M * config.W)
 	for _, blockID := range stripe {
@@ -357,7 +387,7 @@ func tar_parityUpdate(rackID int, stripe []int) {
 				helpers = append(helpers, b)
 			}
 		}
-		//rangeLeft,rangeRight := getRangeFromBlockID(blocks[0])
+		_, rangeLeft, rangeRight := getRangeFromBlockID(blocks[0])
 		cmd := &config.CMD{
 			SID: sid,
 			BlockID: blocks[0],
@@ -365,10 +395,12 @@ func tar_parityUpdate(rackID int, stripe []int) {
 			FromIP: common.GetNodeIP(rootD),
 			Helpers: helpers,
 			Matched: 0,
-			SendSize: config.BlockSize,
+			SendSize: rangeRight - rangeLeft,
 		}
 		common.SendData(cmd, common.GetNodeIP(rootD), config.NodeCMDListenPort, "")
 		sid++
+		//统计跨域流量
+		totalCrossRackTraffic += rangeRight - rangeLeft
 	}
 
 	/****记录ack*****/
@@ -388,7 +420,7 @@ func tar_parityUpdate(rackID int, stripe []int) {
 		if curID != rootD {
 			//传输blocks到rootD
 			for _, b := range blocks{
-				rangeLeft,rangeRight := getRangeFromBlockID(b)
+				_, rangeLeft,rangeRight := getRangeFromBlockID(b)
 				cmd := &config.CMD{
 					SID: sid,
 					BlockID: b,
@@ -396,7 +428,7 @@ func tar_parityUpdate(rackID int, stripe []int) {
 					FromIP: common.GetNodeIP(curID),
 					Helpers: make([]int, 0, 1),
 					Matched: 0,
-					SendSize: rangeRight-rangeLeft,
+					SendSize: rangeRight - rangeLeft,
 				}
 				common.SendData(cmd, common.GetNodeIP(curID), config.NodeCMDListenPort, "")
 

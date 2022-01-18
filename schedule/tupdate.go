@@ -106,6 +106,7 @@ func TaskAdjust(taskGroup []Task)  {
 	}
 }
 func (p TUpdate) Init()  {
+	totalCrossRackTraffic = 0
 	InitNetworkDistance()
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),

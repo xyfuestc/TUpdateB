@@ -39,8 +39,9 @@ func handleACK(conn net.Conn) {
 		throughput :=  float32(numOfReq) * ( float32(config.BlockSize) / config.Megabyte) / float32(sumTime)
 		actualUpdatedBlocks = schedule.GetCurPolicy().GetActualBlocks()
 		averageOneUpdateSpeed := float32(sumTime) / float32(actualUpdatedBlocks)
-		fmt.Printf("%s 总耗时: %ds, 完成更新任务: %d, 实际处理任务数: %d, 单块更新时间: %0.4fs, 吞吐量: %0.2fMB/s\n",
-			config.CurPolicyStr[curPolicy], sumTime, numOfReq, actualUpdatedBlocks, averageOneUpdateSpeed, throughput)
+		crossTraffic := schedule.GetCrossRackTraffic()
+		fmt.Printf("%s 总耗时: %ds, 完成更新任务: %d, 实际处理任务数: %d, 单块更新时间: %0.4fs, 吞吐量: %0.2fMB，跨域流量为：%0.2fMB\n",
+			config.CurPolicyStr[curPolicy], sumTime, numOfReq, actualUpdatedBlocks, averageOneUpdateSpeed, throughput, crossTraffic)
 
 		schedule.GetCurPolicy().Clear()
 		clearRound()
@@ -54,12 +55,14 @@ func clearUpdates() {
 	totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 }
 func clearRound()  {
-	finished = true
-	actualUpdatedBlocks = 0
-
 	//清空totalReqs
 	totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 	sidCounter = 0
+
+	finished = true
+	actualUpdatedBlocks = 0
+
+
 }
 func main() {
 	//初始化

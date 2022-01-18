@@ -12,6 +12,7 @@ type CAURS struct {
 
 
 func (p CAURS) Init()  {
+	totalCrossRackTraffic = 0
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
 	}
@@ -224,6 +225,8 @@ func dataUpdateRS(rackID int, stripe []int)  {
 			}
 			common.SendData(cmd, common.GetNodeIP(nodeID), config.NodeCMDListenPort, "")
 			sid++
+			//统计跨域流量
+			totalCrossRackTraffic += config.RSBlockSize
 		}
 	}
 	fmt.Printf("DataUpdate: stripe: %v, parities: %v, curRackNodes: %v\n",

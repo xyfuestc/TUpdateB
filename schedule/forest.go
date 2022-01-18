@@ -9,6 +9,7 @@ type Forest struct {
 }
 
 func (p Forest) Init()  {
+	totalCrossRackTraffic = 0
 	actualBlocks = 0
 }
 func (p Forest) HandleReq(reqs []*config.ReqData)  {

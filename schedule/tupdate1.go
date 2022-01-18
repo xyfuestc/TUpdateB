@@ -12,6 +12,7 @@ type TUpdate1 struct {
 }
 
 func (p TUpdate1) Init()  {
+	totalCrossRackTraffic = 0
 	InitNetworkDistance()
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),

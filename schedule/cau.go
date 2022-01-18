@@ -19,6 +19,8 @@ var totalReqs = make([]*config.ReqData, config.MaxBatchSize, config.MaxBatchSize
 var curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
 var actualBlocks = 0
 func (p CAU) Init()  {
+	totalCrossRackTraffic = 0
+
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
 	}
@@ -189,6 +191,8 @@ func dataUpdate(rackID int, stripe []int)  {
 				nodeID, common.GetNodeIP(nodeID), b, common.GetNodeIP(rootP))
 			common.SendCMD(common.GetNodeIP(nodeID), []string{common.GetNodeIP(rootP)}, sid, b)
 			sid++
+			//统计跨域流量
+			totalCrossRackTraffic += config.BlockSize
 		}
 	}
 

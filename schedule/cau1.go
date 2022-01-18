@@ -15,6 +15,7 @@ type CAU1 struct {
 
 var lastRootP = 0
 func (p CAU1) Init()  {
+	totalCrossRackTraffic = 0
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
 	}
@@ -163,6 +164,8 @@ func dataUpdate1(rackID int, stripe []int)  {
 				nodeID, common.GetNodeIP(nodeID), b, common.GetNodeIP(rootP))
 			common.SendCMD(common.GetNodeIP(nodeID), []string{common.GetNodeIP(rootP)}, sid, b)
 			sid++
+			//统计跨域流量
+			totalCrossRackTraffic += config.BlockSize
 		}
 	}
 
@@ -231,6 +234,8 @@ func parityUpdate1(rackID int, stripe []int) {
 		common.SendCMDWithHelpers(common.GetNodeIP(rootD), []string{common.GetNodeIP(parityID)},
 			sid, blocks[0], helpers)
 		sid++
+		//统计跨域流量
+		totalCrossRackTraffic += config.BlockSize
 	}
 
 	/****记录ack*****/
