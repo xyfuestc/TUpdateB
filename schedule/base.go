@@ -97,6 +97,7 @@ var CurPolicy Policy = nil
 var ackMaps *ACKMap
 var ackIPMaps *ACKIPMap
 var sid = 0
+var totalCrossRackTraffic = 0
 func SetPolicy(policyType config.PolicyType)  {
 	switch policyType {
 	case config.BASE:
@@ -143,6 +144,8 @@ func handleOneCMD(cmd *config.CMD)  {
 			ToIP: parityIP,
 			SID: cmd.SID,
 		}
+		//跨域流量统计
+		totalCrossRackTraffic += len(buff)
 		begin := time.Now().UnixNano() / 1e6
 		go common.SendData(td, parityIP, config.NodeTDListenPort, "")
 		end := time.Now().UnixNano() / 1e6
@@ -190,6 +193,7 @@ func (p Base) Init()  {
 	}
 	actualBlocks = 0
 	round = 0
+	totalCrossRackTraffic = 0
 }
 
 func getBatchReqs() []*config.ReqData {

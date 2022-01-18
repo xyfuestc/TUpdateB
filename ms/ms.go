@@ -69,8 +69,7 @@ func main() {
 		log.Fatalln("listening ack err: ", err)
 	}
 	go listenACK(l2)
-	setCurrentTrace()
-	getReqsFromTrace()
+
 	for curPolicy < config.NumOfAlgorithm {
 		start()
 		//保证主线程运行
@@ -94,6 +93,9 @@ func setCurrentTrace() {
 }
 
 func getReqsFromTrace()  {
+	//清空totalReqs
+	totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
+
 	blockFile, err := os.Open(OutFilePath)
 	//处理block请求
 	if err != nil {
@@ -145,6 +147,9 @@ func settingCurrentPolicy(policyType int)  {
 }
 
 func start()  {
+	setCurrentTrace()
+	getReqsFromTrace()
+
 	beginTime = time.Now()
 	fmt.Printf(" 设置当前算法：[%s], 当前数据集为：%s, blockSize=%vMB.\n", config.CurPolicyStr[curPolicy], OutFilePath, NumOfMB)
 	settingCurrentPolicy(curPolicy)
