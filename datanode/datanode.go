@@ -33,9 +33,10 @@ func setPolicy(conn net.Conn)  {
 	defer conn.Close()
 	p := common.GetPolicy(conn)
 	schedule.SetPolicy(config.PolicyType(p.Type))
-	config.NumOfMB = p.NumOfMB
+	config.BlockSize = p.NumOfMB * config.Megabyte
+	config.RSBlockSize = p.NumOfMB * config.Megabyte * config.W
 	log.Printf("收到来自 %s 的命令，设置当前算法设置为%s, 当前blockSize=%vMB.\n",
-		common.GetConnIP(conn), config.CurPolicyStr[p.Type], config.BlockSize)
+		common.GetConnIP(conn), config.CurPolicyStr[p.Type], config.BlockSize/config.Megabyte)
 }
 func main() {
 	config.Init()
