@@ -268,7 +268,6 @@ func (p Base) Clear()  {
 		ACKReceiverIPs: map[int]string{},
 	}
 	IsRunning = true
-	round = 0
 }
 func ACKIsEmpty() bool {
 	return ackMaps.isEmpty()

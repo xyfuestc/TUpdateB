@@ -214,7 +214,7 @@ func WriteDeltaBlock(blockID int, deltaBuff []byte) []byte  {
 	}
 	/*****write new data*******/
 	WriteBlockWithSize(blockID, newBuff, size)
-	fmt.Printf("成功写入blockID: %d, size: %d!\n", blockID, size)
+	//fmt.Printf("成功写入blockID: %d, size: %d!\n", blockID, size)
 
 	return deltaBuff
 }
