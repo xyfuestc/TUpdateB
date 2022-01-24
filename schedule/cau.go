@@ -40,6 +40,7 @@ func (p CAU) Init()  {
 func (p CAU) HandleTD(td *config.TD) {
 	//校验节点本地数据更新
 	localID := common.GetIDFromIP(common.GetLocalIP())
+	fmt.Printf("cau localID:%d\n", localID)
 	if localID >= config.K {
 		common.WriteDeltaBlock(td.BlockID, td.Buff)
 	}
@@ -53,7 +54,7 @@ func (p CAU) HandleTD(td *config.TD) {
 	handleWaitingCMDs(td)
 }
 
-func findDistinctBlocks() {
+func findDistinctBlocks() []*config.ReqData {
 	curMatchReqs := make([]*config.ReqData, 0, config.MaxBatchSize)
 	if len(totalReqs) > config.MaxBatchSize {
 		curMatchReqs = totalReqs[:config.MaxBatchSize]
@@ -72,6 +73,7 @@ func findDistinctBlocks() {
 		}
 		totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 	}
+	return curMatchReqs
 }
 func (p CAU) HandleReq(reqs []*config.ReqData)  {
 	totalReqs = reqs
@@ -79,10 +81,11 @@ func (p CAU) HandleReq(reqs []*config.ReqData)  {
 
 	for len(totalReqs) > 0 {
 		//过滤blocks
-		findDistinctBlocks()
+		curMatchBlocks := findDistinctBlocks()
 		//执行cau
 		actualBlocks += len(curDistinctBlocks)
-		fmt.Printf("第%d轮 CAU：处理%d个block\n", round, len(curDistinctBlocks))
+		//fmt.Printf("第%d轮 CAU：处理%d个block\n", round, len(curDistinctBlocks))
+		fmt.Printf("第%d轮 CAU：获取%d个请求，实际处理%d个block\n", round, len(curMatchBlocks), len(curDistinctBlocks))
 
 		cau()
 

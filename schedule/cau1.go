@@ -27,11 +27,13 @@ func (p CAU1) Init()  {
 	}
 	actualBlocks = 0
 	lastRootP = 0
+	round = 0
 }
 
 func (p CAU1) HandleTD(td *config.TD) {
 	//校验节点本地数据更新
 	localID := arrays.Contains(config.NodeIPs, common.GetLocalIP())
+	fmt.Printf("cau1 localID:%d\n", localID)
 	if localID >= config.K {
 		go common.WriteDeltaBlock(td.BlockID, td.Buff)
 	}
@@ -47,10 +49,9 @@ func (p CAU1) HandleTD(td *config.TD) {
 func (p CAU1) HandleReq(reqs []*config.ReqData)  {
 	totalReqs = reqs
 	fmt.Printf("一共接收到%d个请求...\n", len(totalReqs))
-	curMatchBlocks := make([]*config.ReqData, 0, config.MaxBatchSize)
 	for len(totalReqs) > 0 {
 		//获取curDistinctBlocks
-		findDistinctBlocks()
+		curMatchBlocks := findDistinctBlocks()
 		//执行cau
 		actualBlocks += len(curDistinctBlocks)
 		fmt.Printf("第%d轮 CAU1：获取%d个请求，实际处理%d个block\n", round, len(curMatchBlocks), len(curDistinctBlocks))
@@ -71,8 +72,9 @@ func (p CAU1) cau1() {
 	for _, stripe := range stripes{
 		for i := 0; i < config.NumOfRacks; i++ {
 			if i != ParityRackIndex {
-				//如果当前dataRack的更新量 > 需要更新的ParityNodeIDs
-				if getRackUpdateNums(i, stripe) > getParityUpdateNums(stripe) {
+				//如果当前dataRack的更新量 > 需要更新的Pa
+				if compareRacks(i, ParityRackIndex, stripe) {
+				//if getRackUpdateNums(i, stripe) > getParityUpdateNums(stripe) {
 					parityUpdate1(i, stripe)
 				}else{
 					dataUpdate1(i, stripe)
