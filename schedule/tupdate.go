@@ -180,7 +180,8 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 				common.SendData(td, toIP, config.NodeTDListenPort, "")
 			}
 			end := time.Now().UnixNano() / 1e6
-			fmt.Printf("发送 block %d 给 %v 用时：%vms.\n", cmd.BlockID, cmd.ToIPs, end-begin)
+			fmt.Printf("发送 block %d 给 %v， 发送大小为：%vMB， 用时：%vms.\n", cmd.BlockID, cmd.ToIPs, len(td.Buff),
+			end-begin)
 
 		}
 	}else{

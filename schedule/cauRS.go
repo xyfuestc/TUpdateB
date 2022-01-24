@@ -22,13 +22,13 @@ func (p CAURS) Init()  {
 	}
 
 	CMDList = &CMDWaitingList{
-		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
+		Queue: make([]*config.CMD, 0, config.MaxRSBatchSize),
 	}
-	curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
+	curDistinctBlocks = make([]int, 0, config.MaxRSBatchSize)
 	actualBlocks = 0
 	round = 0
 	curReceivedTDs = &ReceivedTDs{
-		TDs: make([]*config.TD, 0, config.MaxBatchSize),
+		TDs: make([]*config.TD, 0, config.MaxRSBatchSize),
 	}
 }
 
@@ -273,8 +273,8 @@ func (p CAURS) HandleACK(ack *config.ACK)  {
 }
 func (p CAURS) Clear()  {
 	IsRunning = true
-	curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
-	curDistinctReq = make([]*config.ReqData, 0, config.MaxBatchSize)
+	curDistinctBlocks = make([]int, 0, config.MaxRSBatchSize)
+	curDistinctReq = make([]*config.ReqData, 0, config.MaxRSBatchSize)
 	sid = 0
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
@@ -283,11 +283,11 @@ func (p CAURS) Clear()  {
 		ACKReceiverIPs: map[int]string{},
 	}
 	CMDList = &CMDWaitingList{
-		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
+		Queue: make([]*config.CMD, 0, config.MaxRSBatchSize),
 	}
 	//round = 0
 	curReceivedTDs = &ReceivedTDs{
-		TDs: make([]*config.TD, 0, config.MaxBatchSize),
+		TDs: make([]*config.TD, 0, config.MaxRSBatchSize),
 	}
 }
 
