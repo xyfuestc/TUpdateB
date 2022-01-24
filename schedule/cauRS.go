@@ -110,13 +110,34 @@ func getXORBuffFromCMD(cmd *config.CMD) []byte {
 	return buff
 }
 
+func findRSDistinctBlocks() {
+	curMatchReqs := make([]*config.ReqData, 0, config.MaxRSBatchSize)
+	if len(totalReqs) > config.MaxRSBatchSize {
+		curMatchReqs = totalReqs[:config.MaxRSBatchSize]
+		for _, req := range curMatchReqs {
+			if arrays.Contains(curDistinctBlocks, req.BlockID) < 0 {
+				curDistinctBlocks = append(curDistinctBlocks, req.BlockID)
+			}
+		}
+		totalReqs = totalReqs[config.MaxRSBatchSize:]
+	}else { //处理最后不到100个请求
+		curMatchReqs = totalReqs
+		for _, req := range curMatchReqs {
+			if arrays.Contains(curDistinctBlocks, req.BlockID) < 0 {
+				curDistinctBlocks = append(curDistinctBlocks, req.BlockID)
+			}
+		}
+		totalReqs = make([]*config.ReqData, 0, config.MaxRSBatchSize)
+	}
+}
+
 func (p CAURS) HandleReq(reqs []*config.ReqData)  {
 	totalReqs = reqs
 	fmt.Printf("一共接收到%d个请求...\n", len(totalReqs))
 
 	for len(totalReqs) > 0 {
 		//过滤blocks
-		findDistinctBlocks()
+		findRSDistinctBlocks()
 		//执行cau
 		actualBlocks += len(curDistinctBlocks)
 		fmt.Printf("第%d轮 CAU：处理%d个block\n", round, len(curDistinctBlocks))
