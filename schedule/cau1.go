@@ -274,7 +274,7 @@ func (p CAU1) HandleCMD(cmd *config.CMD)  {
 			ackMaps.pushACK(cmd.SID)
 		}
 		//fmt.Printf("block %d is local\n", cmd.BlockID)
-		buff := common.ReadBlock(cmd.BlockID)
+		buff := common.ReadBlockWithSize(cmd.BlockID, config.BlockSize)
 
 		for _, toIP := range cmd.ToIPs {
 			td := &config.TD{

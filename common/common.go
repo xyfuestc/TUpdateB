@@ -118,26 +118,6 @@ func GetRelatedParityIPs(blockID int) []string {
 	return parityIPs
 }
 
-func ReadBlock(blockID int) []byte  {
-	index := GetIndex(blockID)
-	//read data from disk
-	var buff = make([]byte, config.BlockSize, config.BlockSize)
-	file, err := os.OpenFile(config.DataFilePath, os.O_RDONLY, 0)
-
-	if err != nil {
-		log.Fatalln("打开文件出错: ", err)
-	}
-	defer file.Close()
-	readSize, err := file.ReadAt(buff, int64(index*config.BlockSize))
-
-	if err != nil {
-		log.Fatal("读取文件失败：", err)
-	}
-	if readSize != config.BlockSize {
-		log.Fatal("读取数据块失败！读取大小为：", readSize)
-	}
-	return buff
-}
 func ReadBlockWithSize(blockID, size int) []byte  {
 	index := GetIndex(blockID)
 	//read data from disk
@@ -157,17 +137,6 @@ func ReadBlockWithSize(blockID, size int) []byte  {
 		log.Fatal("读取数据块失败！读取大小为：", readSize)
 	}
 	return buff
-}
-func WriteBlock(blockID int, buff []byte)  {
-	index := GetIndex(blockID)
-	file, err := os.OpenFile(config.DataFilePath, os.O_WRONLY, 0)
-
-	if err != nil {
-		log.Fatalln("打开文件出错: ", err)
-	}
-	defer file.Close()
-	_, err = file.WriteAt(buff, int64(index*config.BlockSize))
-	log.Printf("write block %d done.\n", blockID)
 }
 func WriteBlockWithSize(blockID int, buff []byte, size int)  {
 	index := GetIndex(blockID)
@@ -192,14 +161,14 @@ func RandWriteBlockAndRetDelta(blockID int) []byte  {
 
 	newBuff := []byte(newDataStr)
 	/*****read old data*******/
-	oldBuff := ReadBlock(blockID)
+	oldBuff := ReadBlockWithSize(blockID, config.BlockSize)
 	/*****compute new delta data*******/
 	deltaBuff := make([]byte, config.BlockSize, config.BlockSize)
 	for i := 0; i < len(newBuff); i++ {
 		deltaBuff[i] = newBuff[i] ^ oldBuff[i]
 	}
 	/*****write new data*******/
-	go WriteBlock(blockID, newBuff)
+	go WriteBlockWithSize(blockID, newBuff, config.BlockSize)
 
 	return deltaBuff
 }

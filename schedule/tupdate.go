@@ -373,7 +373,7 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 		}
 		//fmt.Printf("block %d is local\n", cmd.BlockID)
 		begin := time.Now().UnixNano() / 1e6
-		buff := common.ReadBlock(cmd.BlockID)
+		buff := common.ReadBlockWithSize(cmd.BlockID, config.BlockSize)
 
 		for _, toIP := range cmd.ToIPs {
 			td := &config.TD{
