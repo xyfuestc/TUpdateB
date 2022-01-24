@@ -327,15 +327,17 @@ func compareRacks(rackIndexI, rackIndexJ int, stripe []int) bool {
 	}
 }
 
-//blocksIDs没有重复元素
-func getRackStripeNum(index int, blocks []int) int  {
-	if index == ParityRackIndex {
-		return getParityUpdateNums(blocks)
+/*统计当前rack更新量*/
+func getRackStripeNum(curRackID int, blocksOfStripe []int) int  {
+	//统计parityRack更新量
+	if curRackID == ParityRackIndex {
+		return getParityUpdateNums(blocksOfStripe)
 	}
+
 	curRackNodeIDs := make([]int, 0, config.RackSize)
-	for _, b := range blocks {
+	for _, b := range blocksOfStripe {
 		rackID := getRackIDFromBlockID(b)
-		if rackID == byte(index) {
+		if rackID == byte(curRackID) {
 			nodeID := common.GetNodeID(b)
 			if arrays.Contains(curRackNodeIDs, nodeID) < 0 {
 				curRackNodeIDs = append(curRackNodeIDs, nodeID)
