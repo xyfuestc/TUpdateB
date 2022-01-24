@@ -344,13 +344,13 @@ func getRackStripeNum(index int, blocks []int) int  {
 	}
 	return len(curRackNodeIDs)
 }
-//blocksIDs没有重复元素
-func getRackUpdateNums(index int, blocks []int) int  {
-	rackUpdateNums := make([]int, 0, len(blocks))
-	for _, b := range blocks {
-		rackID := getRackIDFromBlockID(b)
-		if rackID == byte(index) {
-			rackUpdateNums = append(rackUpdateNums, b)
+//统计当前curRackID中有多少数据更新（某一条带）
+func getRackUpdateNums(curRackID int, curBlocksOfStripe []int) int  {
+	rackUpdateNums := make([]int, 0, len(curBlocksOfStripe))
+	for _, block := range curBlocksOfStripe {
+		curBlockRackID := getRackIDFromBlockID(block)
+		if curBlockRackID == byte(curRackID) {
+			rackUpdateNums = append(rackUpdateNums, block)
 		}
 	}
 	return len(rackUpdateNums)
@@ -363,19 +363,19 @@ func getRackIDFromBlockID(blockID int) byte {
 func getRackIDFromNodeID(nodeID byte) byte  {
 	return nodeID / byte(config.RackSize)
 }
-
-func getParityUpdateNums(blocks []int) int {
-	parityIDs := make([]int, 0, config.M)
-	for _, b := range blocks {
-		parities := common.RelatedParities(b)
-		parityNodeIDs := common.RelatedParityNodes(parities)
-		for _, id := range parityNodeIDs  {
-			if arrays.Contains(parityIDs, int(id)) < 0 {
-				parityIDs = append(parityIDs, int(id))
+/*统计当前需要更新的块与哪些parityNode有关*/
+func getParityUpdateNums(blocksOfStripe []int) int {
+	parityNodeIDs := make([]int, 0, config.M)
+	for _, b := range blocksOfStripe {
+		curParityIDs := common.RelatedParities(b) // eg: [0 2 4 6 8 9]
+		curParityNodeIDs := common.RelatedParityNodes(curParityIDs)
+		for _, id := range curParityNodeIDs {
+			if arrays.Contains(parityNodeIDs, int(id)) < 0 {
+				parityNodeIDs = append(parityNodeIDs, int(id))
 			}
 		}
 	}
-	return len(parityIDs)
+	return len(parityNodeIDs)
 }
 
 func turnBlocksToStripes() map[int][]int {
@@ -452,7 +452,7 @@ func GetRootParityID(parities [][]int) int {
 			rootP := common.GetParityIDFromIndex(i)
 			//if rootP != lastRootP {
 			//	lastRootP = rootP
-				return rootP
+			return rootP
 			//}
 		}
 	}

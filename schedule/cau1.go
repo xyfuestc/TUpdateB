@@ -71,6 +71,7 @@ func (p CAU1) cau1() {
 	for _, stripe := range stripes{
 		for i := 0; i < config.NumOfRacks; i++ {
 			if i != ParityRackIndex {
+				//如果当前dataRack的更新量 > 需要更新的ParityNodeIDs
 				if getRackUpdateNums(i, stripe) > getParityUpdateNums(stripe) {
 					parityUpdate1(i, stripe)
 				}else{

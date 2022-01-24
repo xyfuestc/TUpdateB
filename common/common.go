@@ -83,7 +83,7 @@ func GetRSStripeIDFromBlockID(blockID int) int {
 	return blockID/config.K
 }
 
-//从0开始编号，一直到M*W-1
+//统计blockID与哪些parityID有关（一共有M*W个parityID）
 func RelatedParities(blockID int) []byte {
 	parities := make([]byte, 0, config.M * config.W)
 	col := blockID % (config.K * config.W)
