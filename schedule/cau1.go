@@ -70,8 +70,7 @@ func (p CAU1) cau1() {
 		for i := 0; i < config.NumOfRacks; i++ {
 			if i != ParityRackIndex {
 				//如果当前dataRack的更新量 > 需要更新的ParityIDs
-				if compareRacks(i, ParityRackIndex, stripe) {
-				//if getRackUpdateNums(i, stripe) > getParityUpdateNums(stripe) {
+				if getRackUpdateNums(i, stripe) > getParityUpdateNums(stripe) {
 					parityUpdate1(i, stripe)
 				}else{
 					dataUpdate1(i, stripe)
@@ -265,7 +264,7 @@ func (p CAU1) HandleCMD(cmd *config.CMD)  {
 			ackMaps.pushACK(cmd.SID)
 		}
 		//log.Printf("block %d is local\n", cmd.BlockID)
-		buff := common.ReadBlockWithSize(cmd.BlockID, config.BlockSize)
+		buff := common.ReadBlockWithSize(cmd.BlockID, cmd.SendSize)
 
 		for _, toIP := range cmd.ToIPs {
 			td := &config.TD{

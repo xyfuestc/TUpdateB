@@ -387,7 +387,6 @@ func (p CAU) HandleCMD(cmd *config.CMD)  {
 		for _, _ = range cmd.ToIPs {
 			ackMaps.pushACK(cmd.SID)
 		}
-		//buff := common.ReadBlockWithSize(cmd.BlockID, config.BlockSize)
 		buff := common.ReadBlockWithSize(cmd.BlockID, cmd.SendSize)
 
 		for _, toIP := range cmd.ToIPs {

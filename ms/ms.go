@@ -143,6 +143,8 @@ func settingCurrentPolicy(policyType int)  {
 		NumOfMB:   NumOfMB,
 		TraceName: traceName,
 	}
+	config.NumOfMB = NumOfMB
+	config.BlockSize = NumOfMB * config.Megabyte
 	for _, ip := range config.NodeIPs{
 		common.SendData(p, ip, config.NodeSettingsListenPort, "")
 	}
