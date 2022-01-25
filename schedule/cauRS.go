@@ -3,8 +3,8 @@ package schedule
 import (
 	"EC/common"
 	"EC/config"
-	"fmt"
 	"github.com/wxnacy/wgo/arrays"
+	"log"
 )
 type CAURS struct {
 	Base
@@ -52,10 +52,10 @@ func (p CAURS) HandleTD(td *config.TD) {
 	//有等待任务
 	indexes := meetCMDNeed(td.BlockID)
 	if len(indexes) > 0 {
-		//fmt.Printf("有等待任务可以执行：%v\n", indexes)
+		//log.Printf("有等待任务可以执行：%v\n", indexes)
 		//添加ack监听
 		for _, cmd := range indexes {
-			fmt.Printf("执行TD任务：sid:%d blockID:%d\n", cmd.SID, cmd.BlockID)
+			log.Printf("执行TD任务：sid:%d blockID:%d\n", cmd.SID, cmd.BlockID)
 			for _, _ = range cmd.ToIPs {
 				ackMaps.pushACK(cmd.SID)
 			}
@@ -92,11 +92,11 @@ func getXORBuffFromMapBlockTDs(mapBlockTDs map[int]*config.TD, toIP string) []by
 	//parityNodeID := common.GetIDFromIP(toIP)
 	//row := parityNodeID - config.K
 	//
-	//fmt.Printf("parityNodeID=%v, row=%v, toIP=%v\n", parityNodeID, row, toIP)
+	//log.Printf("parityNodeID=%v, row=%v, toIP=%v\n", parityNodeID, row, toIP)
 	//
 	for _, td := range mapBlockTDs {
 		//col := b % config.K
-		//fmt.Printf("col=%v, buffLen=%v, \n", col, len(td.Buff))
+		//log.Printf("col=%v, buffLen=%v, \n", col, len(td.Buff))
 		//for i := 0; i < len(xorBuff); i++ {
 		//	xorBuff[i]^= td.Buff[i]*config.RS.GenMatrix[row*config.K+col]
 		//}
@@ -108,7 +108,7 @@ func getXORBuffFromMapBlockTDs(mapBlockTDs map[int]*config.TD, toIP string) []by
 }
 func getXORBuffFromCMD(cmd *config.CMD) []byte {
 	mapBlockTDs := getMapBlockTDsFromHelpers(cmd.Helpers)
-	fmt.Printf("mapBlockTDs:= %v\n", mapBlockTDs)
+	log.Printf("mapBlockTDs:= %v\n", mapBlockTDs)
 	buff := getXORBuffFromMapBlockTDs(mapBlockTDs, cmd.ToIPs[0])
 
 	return buff
@@ -137,22 +137,22 @@ func findRSDistinctBlocks() {
 
 func (p CAURS) HandleReq(reqs []*config.ReqData)  {
 	totalReqs = reqs
-	fmt.Printf("一共接收到%d个请求...\n", len(totalReqs))
+	log.Printf("一共接收到%d个请求...\n", len(totalReqs))
 
 	for len(totalReqs) > 0 {
 		//过滤blocks
 		findRSDistinctBlocks()
 		//执行cau
 		actualBlocks += len(curDistinctBlocks)
-		fmt.Printf("第%d轮 CAURS：处理%d个block\n", round, len(curDistinctBlocks))
+		log.Printf("第%d轮 CAURS：处理%d个block\n", round, len(curDistinctBlocks))
 
 		cau_rs()
 
 		for IsRunning {
 			
 		}
-		fmt.Printf("本轮结束！\n")
-		fmt.Printf("======================================\n")
+		log.Printf("本轮结束！\n")
+		log.Printf("======================================\n")
 		round++
 		p.Clear()
 	}
@@ -178,7 +178,7 @@ func dataUpdateRS(rackID int, stripe []int)  {
 		if byte(rackID) != getRackIDFromNodeID(byte(nodeID)) {
 			continue
 		}
-		//fmt.Printf("blockID: %d, nodeID: %d, rackID: %d\n", blockID, nodeID, rackID)
+		//log.Printf("blockID: %d, nodeID: %d, rackID: %d\n", blockID, nodeID, rackID)
 		curRackNodes[nodeID-rackID*config.RackSize] = append(curRackNodes[nodeID-rackID*config.RackSize], blockID)
 		for p, _ := range parities {
 			parities[p] = append(parities[p], blockID)
@@ -194,19 +194,19 @@ func dataUpdateRS(rackID int, stripe []int)  {
 	/****记录ack*****/
 	for i := 1; i < len(parities); i++ {
 		if  len(parities[i]) > 0 {
-			fmt.Printf("pushACK: sid: %d, blockIDs: %v\n", curSid, parities[i])
+			log.Printf("pushACK: sid: %d, blockIDs: %v\n", curSid, parities[i])
 			ackMaps.pushACK(curSid)
 			curSid++
 		}
 	}
 
 	/****分发*****/
-	fmt.Printf("DataUpdate: parityNodeBlocks: %v\n", parities)
+	log.Printf("DataUpdate: parityNodeBlocks: %v\n", parities)
 
 	for i := 1; i < len(parities); i++ {
 		parityID := rootP + i
 		for _, b := range parities[i]{
-			fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
+			log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
 				rootP, common.GetNodeIP(rootP), b, common.GetNodeIP(parityID))
 
 			cmd := &config.CMD{
@@ -227,7 +227,7 @@ func dataUpdateRS(rackID int, stripe []int)  {
 	for _, blocks := range curRackNodes {
 		//传输blocks到rootP
 		for _, b := range blocks {
-			fmt.Printf("pushACK: sid: %d, blockID: %v\n", curSid, b)
+			log.Printf("pushACK: sid: %d, blockID: %v\n", curSid, b)
 			ackMaps.pushACK(curSid)
 			curSid++
 		}
@@ -237,7 +237,7 @@ func dataUpdateRS(rackID int, stripe []int)  {
 		nodeID := common.GetDataNodeIDFromIndex(rackID, i)
 		//传输blocks到rootP
 		for _, b := range blocks{
-			fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
+			log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
 				nodeID, common.GetNodeIP(nodeID), b, common.GetNodeIP(rootP))
 			cmd := &config.CMD{
 				SID: sid,
@@ -254,7 +254,7 @@ func dataUpdateRS(rackID int, stripe []int)  {
 			totalCrossRackTraffic += config.RSBlockSize
 		}
 	}
-	fmt.Printf("DataUpdate: stripe: %v, parities: %v, curRackNodes: %v\n",
+	log.Printf("DataUpdate: stripe: %v, parities: %v, curRackNodes: %v\n",
 		stripe, parities, curRackNodes)
 }
 
@@ -266,7 +266,7 @@ func (p CAURS) HandleCMD(cmd *config.CMD)  {
 		for _, _ = range cmd.ToIPs {
 			ackMaps.pushACK(cmd.SID)
 		}
-		//fmt.Printf("block %d is local\n", cmd.BlockID)
+		//log.Printf("block %d is local\n", cmd.BlockID)
 		buff := common.ReadBlockWithSize(cmd.BlockID, cmd.SendSize)
 
 		for _, toIP := range cmd.ToIPs {
@@ -286,7 +286,7 @@ func (p CAURS) HandleCMD(cmd *config.CMD)  {
 
 func (p CAURS) HandleACK(ack *config.ACK)  {
 	ackMaps.popACK(ack.SID)
-	//fmt.Printf("当前剩余ack：%d\n", ackMaps)
+	//log.Printf("当前剩余ack：%d\n", ackMaps)
 	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {

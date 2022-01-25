@@ -33,14 +33,14 @@ func handleACK(conn net.Conn) {
 	ack := common.GetACK(conn)
 	schedule.GetCurPolicy().HandleACK(&ack)
 	if schedule.GetCurPolicy().IsFinished() {
-		fmt.Printf("=====================================\n")
+		log.Printf("=====================================\n")
 		endTime = time.Now()
 		sumTime := endTime.Unix() - beginTime.Unix()
 		throughput :=  float32(numOfReq) * ( float32(config.BlockSize) / config.Megabyte) / float32(sumTime)
 		actualUpdatedBlocks = schedule.GetCurPolicy().GetActualBlocks()
 		averageOneUpdateSpeed := float32(sumTime) / float32(actualUpdatedBlocks)
 		crossTraffic := schedule.GetCrossRackTraffic()
-		fmt.Printf("%s 总耗时: %ds, 完成更新任务: %d, 实际处理任务数: %d, 单块更新时间: %0.4fs, 吞吐量: %0.2fMB/s，跨域流量为：%0.2fMB\n",
+		log.Printf("%s 总耗时: %ds, 完成更新任务: %d, 实际处理任务数: %d, 单块更新时间: %0.4fs, 吞吐量: %0.2fMB/s，跨域流量为：%0.2fMB\n",
 			config.CurPolicyStr[curPolicy], sumTime, numOfReq, actualUpdatedBlocks, averageOneUpdateSpeed, throughput, crossTraffic)
 
 		schedule.GetCurPolicy().Clear()
@@ -69,8 +69,8 @@ func main() {
 	config.Init()
 
 	//监听ack
-	fmt.Printf("ms启动...")
-	fmt.Printf("监听ack: %s:%s\n", common.GetLocalIP(), config.NodeACKListenPort)
+	log.Printf("ms启动...")
+	log.Printf("监听ack: %s:%s\n", common.GetLocalIP(), config.NodeACKListenPort)
 	l2, err := net.Listen("tcp", common.GetLocalIP() + ":" + config.NodeACKListenPort)
 	if err != nil {
 		log.Fatalln("listening ack err: ", err)
@@ -147,7 +147,7 @@ func settingCurrentPolicy(policyType int)  {
 	for _, ip := range config.NodeIPs{
 		common.SendData(p, ip, config.NodeSettingsListenPort, "")
 	}
-	fmt.Printf("等待设置完成...\n")
+	log.Printf("等待设置完成...\n")
 	time.Sleep(3 * time.Second)
 }
 
@@ -156,9 +156,9 @@ func start()  {
 	getReqsFromTrace()
 
 	beginTime = time.Now()
-	fmt.Printf(" 设置当前算法：[%s], 当前数据集为：%s, blockSize=%vMB.\n", config.CurPolicyStr[curPolicy], OutFilePath, NumOfMB)
+	log.Printf(" 设置当前算法：[%s], 当前数据集为：%s, blockSize=%vMB.\n", config.CurPolicyStr[curPolicy], OutFilePath, NumOfMB)
 	settingCurrentPolicy(curPolicy)
-	fmt.Printf(" [%s]算法开始运行...总共block请求数量为：%d\n", config.CurPolicyStr[curPolicy], sidCounter)
+	log.Printf(" [%s]算法开始运行...总共block请求数量为：%d\n", config.CurPolicyStr[curPolicy], sidCounter)
 	schedule.SetPolicy(config.PolicyType(curPolicy))
 	schedule.GetCurPolicy().HandleReq(totalReqs)
 }

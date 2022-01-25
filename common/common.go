@@ -183,7 +183,7 @@ func WriteDeltaBlock(blockID int, deltaBuff []byte) []byte  {
 	}
 	/*****write new data*******/
 	WriteBlockWithSize(blockID, newBuff, size)
-	//fmt.Printf("成功写入blockID: %d, size: %d!\n", blockID, size)
+	//log.Printf("成功写入blockID: %d, size: %d!\n", blockID, size)
 
 	return deltaBuff
 }
@@ -241,7 +241,7 @@ func GetACK(conn net.Conn) config.ACK {
 		log.Fatalln("GetACK : Decode error: ", err)
 
 	}
-	fmt.Printf("received block %d's ack from %s, sid: %d\n", ack.BlockID, GetConnIP(conn), ack.SID)
+	log.Printf("received block %d's ack from %s, sid: %d\n", ack.BlockID, GetConnIP(conn), ack.SID)
 	conn.Close()
 	return ack
 }
@@ -325,5 +325,5 @@ func Delete(Array, indexes []int)  {
 		}
 
 	}
-	fmt.Printf("Delete: Array = %v\n", Array)
+	log.Printf("Delete: Array = %v\n", Array)
 }

@@ -27,16 +27,16 @@ func main() {
 
 	//config.Init()
 	//
-	//fmt.Printf("listening ack in %s:%s\n", common.GetLocalIP(), config.NodeACKListenPort)
+	//log.Printf("listening ack in %s:%s\n", common.GetLocalIP(), config.NodeACKListenPort)
 	//l1, err := net.Listen("tcp", common.GetLocalIP() +  ":" + config.NodeACKListenPort)
 	//if err != nil {
-	//	fmt.Printf("listening ack failed, err:%v\n", err)
+	//	log.Printf("listening ack failed, err:%v\n", err)
 	//	return
 	//}
 	//go listenACK(l1)
 	//
 	//config.BeginTime = time.Now()
-	//fmt.Printf("%s : simulation start\n", config.BeginTime.Format("2010-01-02 15:04:02"))
+	//log.Printf("%s : simulation start\n", config.BeginTime.Format("2010-01-02 15:04:02"))
 	//handleRequestsFromFile("../example-traces/wdev_1.csv")
 	//for  {
 	//
@@ -47,7 +47,7 @@ func handleRequestsFromFile(fileName string) {
 	handleReqFile(updateStreamFile)
 }
 func openFile(fileName string) (*os.File, error) {
-	fmt.Printf("reading update stream file: %s\n", fileName)
+	log.Printf("reading update stream file: %s\n", fileName)
 	updateStreamFile, err := os.Open(fileName)
 	if err != nil {
 		log.Fatalln("Error: ", err)
@@ -123,7 +123,7 @@ func getOneRequestFromOneLine(lineData []byte) config.UserRequest {
 	return userRequest
 }
 func requestBlockToMS(blockID int)  {
-	//fmt.Printf("sid %d : request block %d to ms : %s\n", sidCounter, blockID, config.MSIP)
+	//log.Printf("sid %d : request block %d to ms : %s\n", sidCounter, blockID, config.MSIP)
 	request := &config.ReqData{
 		//SID:      sidCounter,
 
@@ -147,7 +147,7 @@ func listenACK(listen net.Listener) {
 
 func handleACK(conn net.Conn) {
 	ack := common.GetACK(conn)
-	fmt.Printf("receive ms' ack : %v\n", ack)
+	log.Printf("receive ms' ack : %v\n", ack)
 }
 
 func generateRequestBlocksFromFile(fileName string) {

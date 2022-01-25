@@ -3,8 +3,8 @@ package schedule
 import (
 	"EC/common"
 	"EC/config"
-	"fmt"
 	"github.com/wxnacy/wgo/arrays"
+	"log"
 	"sort"
 	"sync"
 	"time"
@@ -140,7 +140,7 @@ func (p TUpdate) HandleReq(reqs []*config.ReqData)  {
 
 func (p TUpdate) handleOneBlock(reqData * config.ReqData)  {
 	tasks := GetTransmitTasks(reqData)
-	fmt.Printf("tasks: %v\n", tasks)
+	log.Printf("tasks: %v\n", tasks)
 	for _, task := range tasks {
 		fromIP := common.GetNodeIP(int(task.Start))
 		toIPs := []string{common.GetNodeIP(int(task.End))}
@@ -180,7 +180,7 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 				common.SendData(td, toIP, config.NodeTDListenPort, "")
 			}
 			end := time.Now().UnixNano() / 1e6
-			fmt.Printf("发送 block %d 给 %v， 发送大小为：%vMB， 用时：%vms.\n", cmd.BlockID, cmd.ToIPs, len(td.Buff),
+			log.Printf("发送 block %d 给 %v， 发送大小为：%vMB， 用时：%vms.\n", cmd.BlockID, cmd.ToIPs, len(td.Buff),
 			end-begin)
 
 		}
@@ -371,7 +371,7 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 		for _, _ = range cmd.ToIPs {
 			ackMaps.pushACK(cmd.SID)
 		}
-		//fmt.Printf("block %d is local\n", cmd.BlockID)
+		//log.Printf("block %d is local\n", cmd.BlockID)
 		begin := time.Now().UnixNano() / 1e6
 		buff := common.ReadBlockWithSize(cmd.BlockID, config.BlockSize)
 
@@ -386,10 +386,10 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 			common.SendData(td, toIP, config.NodeTDListenPort, "")
 		}
 		end := time.Now().UnixNano() / 1e6
-		fmt.Printf("发送 block %d 给 %v 用时：%vms.\n", cmd.BlockID, cmd.ToIPs, end-begin)
+		log.Printf("发送 block %d 给 %v 用时：%vms.\n", cmd.BlockID, cmd.ToIPs, end-begin)
 	}else{
 		cmd.Helpers = append(cmd.Helpers, cmd.BlockID)
-		fmt.Printf("添加sid: %d, blockID: %d, helpers: %v到cmdList.\n", cmd.SID, cmd.BlockID, cmd.Helpers)
+		log.Printf("添加sid: %d, blockID: %d, helpers: %v到cmdList.\n", cmd.SID, cmd.BlockID, cmd.Helpers)
 		CMDList.pushCMD(cmd)
 	}
 }

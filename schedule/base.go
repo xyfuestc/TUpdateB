@@ -3,7 +3,6 @@ package schedule
 import (
 	"EC/common"
 	"EC/config"
-	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -54,8 +53,8 @@ func (M *ACKMap) isEmpty() bool {
 	M.RLock()
 	for _, num := range M.RequireACKs {
 		if num > 0 {
-			//fmt.PrintfACKMap非空("ACKMap非空：%v\n", M.RequireACKs)
-			//fmt.Printf("%d：%v\n", i, num)
+			//log.PrintfACKMap非空("ACKMap非空：%v\n", M.RequireACKs)
+			//log.Printf("%d：%v\n", i, num)
 			M.RUnlock()
 			return false
 		}
@@ -132,7 +131,7 @@ func (p Base) HandleCMD(cmd *config.CMD) {
 func handleOneCMD(cmd *config.CMD)  {
 	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID)
 	//buff := common.ReadBlock(cmd.BlockID)
-	fmt.Printf("读取到数据 block %d: %v\n", cmd.BlockID, len(buff))
+	log.Printf("读取到数据 block %d: %v\n", cmd.BlockID, len(buff))
 	for _, _ = range cmd.ToIPs {
 		ackMaps.pushACK(cmd.SID)
 	}
@@ -148,7 +147,7 @@ func handleOneCMD(cmd *config.CMD)  {
 		begin := time.Now().UnixNano() / 1e6
 		go common.SendData(td, parityIP, config.NodeTDListenPort, "")
 		end := time.Now().UnixNano() / 1e6
-		fmt.Printf("发送td(sid:%d, blockID:%d),从%s到%s, 用时：%vms \n", cmd.SID, cmd.BlockID, common.GetLocalIP(), parityIP, end-begin)
+		log.Printf("发送td(sid:%d, blockID:%d),从%s到%s, 用时：%vms \n", cmd.SID, cmd.BlockID, common.GetLocalIP(), parityIP, end-begin)
 	}
 }
 func (p Base) HandleTD(td *config.TD)  {
@@ -177,7 +176,7 @@ func (p Base) HandleACK(ack *config.ACK)  {
 func ReturnACK(ack *config.ACK) {
 	if ackReceiverIP, ok := ackIPMaps.getIP(ack.SID); ok{
 		common.SendData(ack, ackReceiverIP, config.NodeACKListenPort, "ack")
-		fmt.Printf("任务已完成，给上级：%s返回ack: sid: %d, blockID: %d\n", ackReceiverIP, ack.SID, ack.BlockID)
+		log.Printf("任务已完成，给上级：%s返回ack: sid: %d, blockID: %d\n", ackReceiverIP, ack.SID, ack.BlockID)
 	}else{
 		log.Fatal("returnACK error! ack: ", ack, " ackReceiverIPs: ", ackIPMaps)
 	}
@@ -216,15 +215,15 @@ func (p Base) HandleReq(reqs []*config.ReqData)  {
 		//过滤blocks
 		batchReqs := getBatchReqs()
 		actualBlocks += len(batchReqs)
-		fmt.Printf("第%d轮 BASE：处理%d个block\n", round, len(batchReqs))
+		log.Printf("第%d轮 BASE：处理%d个block\n", round, len(batchReqs))
 		//执行base
 		p.base(batchReqs)
 
 		for IsRunning {
 
 		}
-		fmt.Printf("本轮结束！\n")
-		fmt.Printf("======================================\n")
+		log.Printf("本轮结束！\n")
+		log.Printf("======================================\n")
 		round++
 		p.Clear()
 	}
@@ -253,7 +252,7 @@ func (p Base) handleOneBlock(reqData config.ReqData)  {
 	common.SendCMD(fromIP, toIPs, reqData.SID, reqData.BlockID)
 	//跨域流量统计
 	totalCrossRackTraffic += len(toIPs) * config.BlockSize
-	fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", reqData.SID,
+	log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", reqData.SID,
 		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, toIPs)
 }
 func (p Base) RecordSIDAndReceiverIP(sid int, ip string)  {

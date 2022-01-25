@@ -29,14 +29,14 @@ func (p TUpdate1) Init()  {
 
 func (p TUpdate1) HandleReq(reqs []*config.ReqData)  {
 	totalReqs = reqs
-	fmt.Printf("一共接收到%d个请求...\n", len(totalReqs))
+	log.Printf("一共接收到%d个请求...\n", len(totalReqs))
 
 	for len(totalReqs) > 0 {
 		//过滤blocks
 		curMatchBlocks := findDistinctBlocks()
 		actualBlocks += len(curDistinctBlocks)
-		//fmt.Printf("第%d轮 TUpdate1：处理%d个block\n", round, len(curDistinctBlocks))
-		fmt.Printf("第%d轮 TUpdate1：获取%d个请求，实际处理%d个block\n", round, len(curMatchBlocks), len(curDistinctBlocks))
+		//log.Printf("第%d轮 TUpdate1：处理%d个block\n", round, len(curDistinctBlocks))
+		log.Printf("第%d轮 TUpdate1：获取%d个请求，实际处理%d个block\n", round, len(curMatchBlocks), len(curDistinctBlocks))
 
 		//执行base
 		p.TUpdate1(curDistinctBlocks)
@@ -44,8 +44,8 @@ func (p TUpdate1) HandleReq(reqs []*config.ReqData)  {
 		for IsRunning {
 
 		}
-		fmt.Printf("本轮结束！\n")
-		fmt.Printf("======================================\n")
+		log.Printf("本轮结束！\n")
+		log.Printf("======================================\n")
 		round++
 		p.Clear()
 	}
@@ -69,7 +69,7 @@ func (p TUpdate1) TUpdate1(distinctBlocks []int)  {
 
 func (p TUpdate1) handleOneBlock(reqData * config.ReqData)  {
 	tasks := GetBalanceTransmitTasks(reqData)
-	fmt.Printf("tasks: %v\n", tasks)
+	log.Printf("tasks: %v\n", tasks)
 	for _, task := range tasks {
 		fromIP := common.GetNodeIP(int(task.Start))
 		toIPs := []string{common.GetNodeIP(int(task.End))}
@@ -129,7 +129,7 @@ func  GetBalanceTransmitTasks(reqData *config.ReqData) []Task {
 
 
 	bPath := getBalancePath(path, nodeIndexs)
-	fmt.Printf("bPath : %v\n", bPath)
+	log.Printf("bPath : %v\n", bPath)
 
 	taskGroup := make([]Task, 0, len(nodeIndexs)-1)
 	for i := 1; i < len(nodeIndexs); i++ {
@@ -147,7 +147,7 @@ func (p TUpdate1) HandleCMD(cmd *config.CMD)  {
 		for _, _ = range cmd.ToIPs {
 			ackMaps.pushACK(cmd.SID)
 		}
-		//fmt.Printf("block %d is local\n", cmd.BlockID)
+		//log.Printf("block %d is local\n", cmd.BlockID)
 		buff := common.ReadBlockWithSize(cmd.BlockID, config.BlockSize)
 
 		for _, toIP := range cmd.ToIPs {
@@ -162,7 +162,7 @@ func (p TUpdate1) HandleCMD(cmd *config.CMD)  {
 		}
 	}else{
 		cmd.Helpers = append(cmd.Helpers, cmd.BlockID)
-		fmt.Printf("添加sid: %d, blockID: %d, helpers: %v到cmdList.\n", cmd.SID, cmd.BlockID, cmd.Helpers)
+		log.Printf("添加sid: %d, blockID: %d, helpers: %v到cmdList.\n", cmd.SID, cmd.BlockID, cmd.Helpers)
 		CMDList.pushCMD(cmd)
 	}
 }

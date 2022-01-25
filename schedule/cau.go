@@ -3,7 +3,6 @@ package schedule
 import (
 	"EC/common"
 	"EC/config"
-	"fmt"
 	"github.com/wxnacy/wgo/arrays"
 	"log"
 	"sort"
@@ -40,7 +39,7 @@ func (p CAU) Init()  {
 func (p CAU) HandleTD(td *config.TD) {
 	//校验节点本地数据更新
 	localID := common.GetIDFromIP(common.GetLocalIP())
-	fmt.Printf("cau localID:%d\n", localID)
+	log.Printf("cau localID:%d\n", localID)
 	if localID >= config.K {
 		go common.WriteDeltaBlock(td.BlockID, td.Buff)
 	}
@@ -77,22 +76,22 @@ func findDistinctBlocks() []*config.ReqData {
 }
 func (p CAU) HandleReq(reqs []*config.ReqData)  {
 	totalReqs = reqs
-	fmt.Printf("一共接收到%d个请求...\n", len(totalReqs))
+	log.Printf("一共接收到%d个请求...\n", len(totalReqs))
 	for len(totalReqs) > 0 {
 		//过滤blocks
 		curMatchBlocks := findDistinctBlocks()
 		//执行cau
 		actualBlocks += len(curDistinctBlocks)
-		//fmt.Printf("第%d轮 CAU：处理%d个block\n", round, len(curDistinctBlocks))
-		fmt.Printf("第%d轮 CAU：获取%d个请求，实际处理%d个block\n", round, len(curMatchBlocks), len(curDistinctBlocks))
+		//log.Printf("第%d轮 CAU：处理%d个block\n", round, len(curDistinctBlocks))
+		log.Printf("第%d轮 CAU：获取%d个请求，实际处理%d个block\n", round, len(curMatchBlocks), len(curDistinctBlocks))
 
 		cau()
 
 		for IsRunning {
 			
 		}
-		fmt.Printf("本轮结束！\n")
-		fmt.Printf("======================================\n")
+		log.Printf("本轮结束！\n")
+		log.Printf("======================================\n")
 		round++
 		p.Clear()
 	}
@@ -104,9 +103,9 @@ func cau() {
 		for i := 0; i < config.NumOfRacks; i++ {
 			if i != ParityRackIndex {
 				if compareRacks(i, ParityRackIndex, stripe) {
-					parityUpdate1(i, stripe)
+					parityUpdate(i, stripe)
 				}else{
-					dataUpdate1(i, stripe)
+					dataUpdate(i, stripe)
 				}
 			}
 		}
@@ -120,7 +119,7 @@ func dataUpdate(rackID int, stripe []int)  {
 		if byte(rackID) != getRackIDFromNodeID(byte(nodeID)) {
 			continue
 		}
-		//fmt.Printf("blockID: %d, nodeID: %d, rackID: %d\n", blockID, nodeID, rackID)
+		//log.Printf("blockID: %d, nodeID: %d, rackID: %d\n", blockID, nodeID, rackID)
 		curRackNodes[nodeID-rackID*config.RackSize] = append(curRackNodes[nodeID-rackID*config.RackSize], blockID)
 		for _, p := range common.RelatedParities(blockID){
 			if arrays.Contains(parities[p], blockID) < 0 {
@@ -151,20 +150,20 @@ func dataUpdate(rackID int, stripe []int)  {
 
 		parityID := i + config.K
 		if parityID != rootP && len(b) > 0 {
-			fmt.Printf("pushACK: sid: %d, blockID: %v\n", curSid, b)
+			log.Printf("pushACK: sid: %d, blockID: %v\n", curSid, b)
 			ackMaps.pushACK(curSid)
 			curSid++
 		}
 	}
 	/****分发*****/
-	fmt.Printf("DataUpdate: parityNodeBlocks: %v\n", parityNodeBlocks)
+	log.Printf("DataUpdate: parityNodeBlocks: %v\n", parityNodeBlocks)
 	for i, blocks := range parityNodeBlocks {
 		parityID := i + config.K
 		if parityID != rootP {
 			//传输blocks到rootD
 			for _, b := range blocks{
 				//省略了合并操作，直接只发一条
-				fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
+				log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
 					rootP, common.GetNodeIP(rootP), b, common.GetNodeIP(parityID))
 				common.SendCMDWithHelpers(common.GetNodeIP(rootP), []string{common.GetNodeIP(parityID)},
 					sid, b, blocks)
@@ -177,7 +176,7 @@ func dataUpdate(rackID int, stripe []int)  {
 	for _, blocks := range curRackNodes {
 		//传输blocks到rootP
 		for _, b := range blocks {
-			fmt.Printf("pushACK: sid: %d, blockID: %v\n", curSid, b)
+			log.Printf("pushACK: sid: %d, blockID: %v\n", curSid, b)
 			ackMaps.pushACK(curSid)
 			curSid++
 		}
@@ -187,7 +186,7 @@ func dataUpdate(rackID int, stripe []int)  {
 		nodeID := common.GetDataNodeIDFromIndex(rackID, i)
 		//传输blocks到rootP
 		for _, b := range blocks{
-			fmt.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
+			log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
 				nodeID, common.GetNodeIP(nodeID), b, common.GetNodeIP(rootP))
 			common.SendCMD(common.GetNodeIP(nodeID), []string{common.GetNodeIP(rootP)}, sid, b)
 			sid++
@@ -197,7 +196,7 @@ func dataUpdate(rackID int, stripe []int)  {
 	}
 
 	sort.Ints(unionParities)
-	fmt.Printf("DataUpdate: stripe: %v, parities: %v, unionParities: %v, curRackNodes: %v\n",
+	log.Printf("DataUpdate: stripe: %v, parities: %v, unionParities: %v, curRackNodes: %v\n",
 		stripe, parities, unionParities, curRackNodes)
 }
 
@@ -235,12 +234,12 @@ func parityUpdate(rackID int, stripe []int) {
 	/****记录ack*****/
 	parityNodeBlocks := GetParityNodeBlocks(parities)
 
-	fmt.Printf("PataUpdate: parityNodeBlocks: %v\n", parityNodeBlocks)
+	log.Printf("PataUpdate: parityNodeBlocks: %v\n", parityNodeBlocks)
 	for _, blocks := range parityNodeBlocks {
 		if len(blocks) == 0{
 			continue
 		}
-		fmt.Printf("pushACK: sid: %d, blockID: %v\n", curSid, blocks)
+		log.Printf("pushACK: sid: %d, blockID: %v\n", curSid, blocks)
 		ackMaps.pushACK(curSid)
 		curSid++
 	}
@@ -268,7 +267,7 @@ func parityUpdate(rackID int, stripe []int) {
 		curID := rackID*config.RackSize + i
 		if curID != rootD {
 			for _, b := range blocks {
-				fmt.Printf("pushACK: sid: %d, blockID: %v\n", curSid, b)
+				log.Printf("pushACK: sid: %d, blockID: %v\n", curSid, b)
 				ackMaps.pushACK(curSid)
 				curSid++
 			}
@@ -286,7 +285,7 @@ func parityUpdate(rackID int, stripe []int) {
 		}
 	}
 	sort.Ints(unionParities)
-	fmt.Printf("ParityUpdate: stripe: %v, parities: %v, unionParities: %v, curRackNodes: %v\n",
+	log.Printf("ParityUpdate: stripe: %v, parities: %v, unionParities: %v, curRackNodes: %v\n",
 											stripe, parities, unionParities, curRackNodes)
 }
 
@@ -393,7 +392,7 @@ func (p CAU) HandleCMD(cmd *config.CMD)  {
 		for _, _ = range cmd.ToIPs {
 			ackMaps.pushACK(cmd.SID)
 		}
-		//fmt.Printf("block %d is local\n", cmd.BlockID)
+		//log.Printf("block %d is local\n", cmd.BlockID)
 		buff := common.ReadBlockWithSize(cmd.BlockID, cmd.SendSize)
 
 		for _, toIP := range cmd.ToIPs {
@@ -413,7 +412,7 @@ func (p CAU) HandleCMD(cmd *config.CMD)  {
 
 func (p CAU) HandleACK(ack *config.ACK)  {
 	ackMaps.popACK(ack.SID)
-	//fmt.Printf("当前剩余ack：%d\n", ackMaps)
+	//log.Printf("当前剩余ack：%d\n", ackMaps)
 	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
