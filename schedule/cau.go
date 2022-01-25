@@ -19,19 +19,15 @@ var curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
 var actualBlocks = 0
 func (p CAU) Init()  {
 	totalCrossRackTraffic = 0
-
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
 	}
-
 	ackIPMaps = &ACKIPMap{
 		ACKReceiverIPs: map[int]string{},
 	}
-
 	CMDList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
-	curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
 	actualBlocks = 0
 	round = 0
 }
@@ -425,7 +421,6 @@ func (p CAU) HandleACK(ack *config.ACK)  {
 func (p CAU) Clear()  {
 	IsRunning = true
 	curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
-	curDistinctReq = make([]*config.ReqData, 0, config.MaxBatchSize)
 	sid = 0
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
@@ -436,7 +431,6 @@ func (p CAU) Clear()  {
 	CMDList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
-	//round = 0
 }
 
 func (p CAU) RecordSIDAndReceiverIP(sid int, ip string)()  {
