@@ -78,7 +78,6 @@ func findDistinctBlocks() []*config.ReqData {
 func (p CAU) HandleReq(reqs []*config.ReqData)  {
 	totalReqs = reqs
 	fmt.Printf("一共接收到%d个请求...\n", len(totalReqs))
-
 	for len(totalReqs) > 0 {
 		//过滤blocks
 		curMatchBlocks := findDistinctBlocks()
@@ -105,15 +104,14 @@ func cau() {
 		for i := 0; i < config.NumOfRacks; i++ {
 			if i != ParityRackIndex {
 				if compareRacks(i, ParityRackIndex, stripe) {
-					parityUpdate(i, stripe)
+					parityUpdate1(i, stripe)
 				}else{
-					dataUpdate(i, stripe)
+					dataUpdate1(i, stripe)
 				}
 			}
 		}
 	}
 }
-
 func dataUpdate(rackID int, stripe []int)  {
 	curRackNodes := make([][]int, config.RackSize)
 	parities := make([][]int, config.M * config.W)
@@ -149,7 +147,6 @@ func dataUpdate(rackID int, stripe []int)  {
 
 	/****记录ack*****/
 	parityNodeBlocks := GetParityNodeBlocks(parities)
-
 	for i, b := range parityNodeBlocks {
 
 		parityID := i + config.K
@@ -447,27 +444,17 @@ func (p CAU) RecordSIDAndReceiverIP(sid int, ip string)()  {
 	ackIPMaps.recordIP(sid, ip)
 }
 func GetRootParityID(parities [][]int) int {
-	//var hasOne = false
 	for i, parity := range parities {
 		if len(parity) > 0 {
-			//hasOne = true
 			rootP := common.GetParityIDFromIndex(i)
-			//if rootP != lastRootP {
-			//	lastRootP = rootP
 			return rootP
-			//}
 		}
 	}
-	//if hasOne {
-	//	return lastRootP
-	//}
 	return -1
 }
 func (p CAU) IsFinished() bool {
 	return len(totalReqs) == 0 && ackMaps.isEmpty()
 }
-
-
 func (p CAU) GetActualBlocks() int {
 	return actualBlocks
 }

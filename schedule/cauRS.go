@@ -144,7 +144,7 @@ func (p CAURS) HandleReq(reqs []*config.ReqData)  {
 		findRSDistinctBlocks()
 		//执行cau
 		actualBlocks += len(curDistinctBlocks)
-		fmt.Printf("第%d轮 CAU：处理%d个block\n", round, len(curDistinctBlocks))
+		fmt.Printf("第%d轮 CAURS：处理%d个block\n", round, len(curDistinctBlocks))
 
 		cau_rs()
 

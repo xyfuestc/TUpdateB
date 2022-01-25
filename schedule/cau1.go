@@ -12,8 +12,6 @@ import (
 type CAU1 struct {
 	Base
 }
-
-var lastRootP = 0
 func (p CAU1) Init()  {
 	totalCrossRackTraffic = 0
 	ackMaps = &ACKMap{
@@ -26,16 +24,15 @@ func (p CAU1) Init()  {
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
 	actualBlocks = 0
-	lastRootP = 0
 	round = 0
 }
 
 func (p CAU1) HandleTD(td *config.TD) {
 	//校验节点本地数据更新
-	//localID := arrays.Contains(config.NodeIPs, common.GetLocalIP())
-	localID := common.GetIDFromIP(common.GetLocalIP())
-	fmt.Printf("cau1 localID:%d\n", localID)
+	localID := arrays.Contains(config.NodeIPs, common.GetLocalIP())
+	//localID := common.GetIDFromIP(common.GetLocalIP())
 	if localID >= config.K {
+		fmt.Printf("cau1 localID:%d\n", localID)
 		go common.WriteDeltaBlock(td.BlockID, td.Buff)
 	}
 	//返回ack
@@ -73,7 +70,7 @@ func (p CAU1) cau1() {
 	for _, stripe := range stripes{
 		for i := 0; i < config.NumOfRacks; i++ {
 			if i != ParityRackIndex {
-				//如果当前dataRack的更新量 > 需要更新的Pa
+				//如果当前dataRack的更新量 > 需要更新的ParityIDs
 				if compareRacks(i, ParityRackIndex, stripe) {
 				//if getRackUpdateNums(i, stripe) > getParityUpdateNums(stripe) {
 					parityUpdate1(i, stripe)
@@ -122,8 +119,6 @@ func dataUpdate1(rackID int, stripe []int)  {
 
 	/****记录ack*****/
 	parityNodeBlocks := GetParityNodeBlocks(parities)
-
-
 	for i, b := range parityNodeBlocks {
 
 		parityID := i + config.K
@@ -172,12 +167,9 @@ func dataUpdate1(rackID int, stripe []int)  {
 			totalCrossRackTraffic += config.BlockSize
 		}
 	}
-
 	sort.Ints(unionParities)
 	fmt.Printf("DataUpdate: stripe: %v, parities: %v, unionParities: %v, curRackNodes: %v\n",
 		stripe, parities, unionParities, curRackNodes)
-
-
 }
 
 func parityUpdate1(rackID int, stripe []int) {
@@ -320,8 +312,6 @@ func (p CAU1) Clear()  {
 	CMDList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
-	lastRootP = 0
-
 }
 
 func (p CAU1) RecordSIDAndReceiverIP(sid int, ip string)()  {
