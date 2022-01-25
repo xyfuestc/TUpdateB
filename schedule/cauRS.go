@@ -39,7 +39,7 @@ func (p CAURS) HandleTD(td *config.TD) {
 	//校验节点本地数据更新
 	localID := arrays.Contains(config.NodeIPs, common.GetLocalIP())
 	if localID >= config.K {
-		common.WriteDeltaBlock(td.BlockID, td.Buff)
+		go common.WriteDeltaBlock(td.BlockID, td.Buff)
 	}
 
 	//返回ack

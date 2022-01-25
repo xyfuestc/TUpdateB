@@ -85,7 +85,7 @@ func (p TUpdate1) handleOneBlock(reqData * config.ReqData)  {
 
 func (p TUpdate1) HandleTD(td *config.TD)  {
 	//本地数据更新
-	common.WriteDeltaBlock(td.BlockID, td.Buff)
+	go common.WriteDeltaBlock(td.BlockID, td.Buff)
 
 	//有等待任务
 	cmds := CMDList.popRunnableCMDsWithSID(td.SID)

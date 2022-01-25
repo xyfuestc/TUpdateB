@@ -42,7 +42,7 @@ func (p CAU) HandleTD(td *config.TD) {
 	localID := common.GetIDFromIP(common.GetLocalIP())
 	fmt.Printf("cau localID:%d\n", localID)
 	if localID >= config.K {
-		common.WriteDeltaBlock(td.BlockID, td.Buff)
+		go common.WriteDeltaBlock(td.BlockID, td.Buff)
 	}
 	//返回ack
 	ack := &config.ACK{
