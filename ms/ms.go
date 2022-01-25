@@ -5,7 +5,6 @@ import (
 	"EC/config"
 	"EC/schedule"
 	"bufio"
-	"fmt"
 	"io"
 	"log"
 	"net"

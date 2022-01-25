@@ -10,7 +10,6 @@ import (
 type CAU struct {
 	Base
 }
-
 const ParityRackIndex = config.RackSize - 1
 var round = 0
 var IsRunning = true   //标志是否进入下一轮迭代
@@ -81,7 +80,7 @@ func (p CAU) HandleReq(reqs []*config.ReqData)  {
 		//log.Printf("第%d轮 CAU：处理%d个block\n", round, len(curDistinctBlocks))
 		log.Printf("第%d轮 CAU：获取%d个请求，实际处理%d个block\n", round, len(curMatchBlocks), len(curDistinctBlocks))
 
-		cau()
+		p.cau()
 
 		for IsRunning {
 			
@@ -93,7 +92,7 @@ func (p CAU) HandleReq(reqs []*config.ReqData)  {
 	}
 }
 
-func cau() {
+func (p CAU) cau() {
 	stripes := turnBlocksToStripes()
 	for _, stripe := range stripes{
 		for i := 0; i < config.NumOfRacks; i++ {
@@ -388,8 +387,7 @@ func (p CAU) HandleCMD(cmd *config.CMD)  {
 		for _, _ = range cmd.ToIPs {
 			ackMaps.pushACK(cmd.SID)
 		}
-		//log.Printf("block %d is local\n", cmd.BlockID)
-		buff := common.ReadBlockWithSize(cmd.BlockID, cmd.SendSize)
+		buff := common.ReadBlockWithSize(cmd.BlockID, config.BlockSize)
 
 		for _, toIP := range cmd.ToIPs {
 			td := &config.TD{
