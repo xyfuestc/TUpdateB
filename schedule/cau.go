@@ -202,8 +202,6 @@ func dataUpdate(rackID int, stripe []int)  {
 	sort.Ints(unionParities)
 	fmt.Printf("DataUpdate: stripe: %v, parities: %v, unionParities: %v, curRackNodes: %v\n",
 		stripe, parities, unionParities, curRackNodes)
-
-
 }
 
 func parityUpdate(rackID int, stripe []int) {
@@ -290,7 +288,6 @@ func parityUpdate(rackID int, stripe []int) {
 			}
 		}
 	}
-
 	sort.Ints(unionParities)
 	fmt.Printf("ParityUpdate: stripe: %v, parities: %v, unionParities: %v, curRackNodes: %v\n",
 											stripe, parities, unionParities, curRackNodes)
