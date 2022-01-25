@@ -111,8 +111,8 @@ func SetPolicy(policyType config.PolicyType)  {
 		CurPolicy = CAU1{}
 	case config.CAURS:
 		CurPolicy = CAURS{}
-	case config.Forest:
-		CurPolicy = Forest{}
+	//case config.Forest:
+	//	CurPolicy = Forest{}
 	case config.TAR_CAU:
 		CurPolicy = TAR_CAU{}
 	}
