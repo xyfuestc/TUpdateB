@@ -3,7 +3,7 @@ package schedule
 import (
 	"EC/common"
 	"EC/config"
-	"fmt"
+	"log"
 	"sort"
 )
 
