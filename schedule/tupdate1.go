@@ -107,6 +107,8 @@ func (p TUpdate1) HandleTD(td *config.TD)  {
 					ToIP: toIP,
 					SID: cmd.SID,
 				}
+				sendSizeRate := float32(td.SendSize * 1.0) / float32(config.BlockSize) * 100.0
+				log.Printf("发送 block:%d sendSize: %.2f%% -> %s.\n", td.BlockID, sendSizeRate, toIP)
 				common.SendData(td, toIP, config.NodeTDListenPort, "")
 			}
 		}
