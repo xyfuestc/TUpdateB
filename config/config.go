@@ -21,7 +21,7 @@ const MaxBlockSize int = 1000000
 const TestFileSize = 10 * 1024 * Megabyte
 var MaxBlockIndex = TestFileSize / BlockSize - 1
 const NumOfAlgorithm int = 6   //采用3种算法执行相同任务
-var CurPolicyStr = []string{"Base", "CAU", "TUpdate1", "TUpdate", "TAR_CAU", "CAURS", "CAU1" }
+var CurPolicyStr = []string{"Base", "CAU", "TUpdate", "TUpdate1", "TAR_CAU", "CAURS", "CAU1" }
 var BitMatrix = make([]byte, K*M*W*W)
 const RackSize = M
 const NumOfRacks = N / RackSize
@@ -31,8 +31,8 @@ type Matrix []byte
 const (
 	BASE PolicyType = iota
 	CAU
-	T_Update1
 	T_Update
+	T_Update1
 	TAR_CAU
 	CAURS
 	CAU1
