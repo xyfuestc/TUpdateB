@@ -203,6 +203,7 @@ func alignRangeOfStripe(stripe []int) {
 	reqIndexList := make([]int, len(stripe))
 	for _, b := range stripe{
 		j, rangeL, rangeR := getBlockRangeFromDistinctReqs(b)
+		log.Printf("%d=(%d,%d)",j,rangeL,rangeR)
 		if j == -1 {
 			continue
 		}
@@ -219,6 +220,7 @@ func alignRangeOfStripe(stripe []int) {
 		log.Fatalln("error! range超出范围")
 	}
 	for i := range reqIndexList{
+		log.Printf("需要设置curDistinctReq[%d].RangeLeft=%d,RangeRight=%d", i, minRangeL, maxRangeR)
 		curDistinctReq[i].RangeLeft = minRangeL
 		curDistinctReq[i].RangeRight = maxRangeR
 	}
