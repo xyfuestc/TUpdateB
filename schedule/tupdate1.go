@@ -68,8 +68,8 @@ func (p TUpdate1) TUpdate1(distinctBlocks []int)  {
 }
 
 func (p TUpdate1) handleOneBlock(reqData * config.ReqData)  {
-	//tasks := GetBalanceTransmitTasks(reqData)
-	tasks := GetTransmitTasks(reqData)
+	tasks := GetBalanceTransmitTasks(reqData)
+	//tasks := GetTransmitTasks(reqData)
 	log.Printf("tasks: %v\n", tasks)
 	for _, task := range tasks {
 		fromIP := common.GetNodeIP(int(task.Start))
