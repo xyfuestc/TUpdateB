@@ -200,9 +200,13 @@ func tar_cau() {
 func alignRangeOfStripe(stripe []int) {
 	//1、寻找同一个stripe下最大范围的rangeL，rangeR
 	minRangeL, maxRangeR := config.BlockSize, 0
-	reqIndexList := make([]int, len(stripe))
+	reqIndexList := make([]int, 0, len(stripe))
+	log.Printf("len(stripe) = %d", len(stripe))
 	for _, b := range stripe{
 		j, rangeL, rangeR := getBlockRangeFromDistinctReqs(b)
+		//归一化
+		rangeL = rangeL % config.BlockSize
+		rangeR = rangeR % config.BlockSize
 		log.Printf("%d=(%d,%d)",j,rangeL,rangeR)
 		if j == -1 {
 			continue
@@ -216,9 +220,7 @@ func alignRangeOfStripe(stripe []int) {
 		//记录哪些block需要统一range
 		reqIndexList = append(reqIndexList, j)
 	}
-	if (maxRangeR - minRangeL) > config.BlockSize {
-		log.Fatalln("error! range超出范围")
-	}
+	log.Printf("len(reqIndexList) = %d", len(reqIndexList))
 	for i := range reqIndexList{
 		log.Printf("需要设置curDistinctReq[%d].RangeLeft=%d,RangeRight=%d", i, minRangeL, maxRangeR)
 		curDistinctReq[i].RangeLeft = minRangeL
