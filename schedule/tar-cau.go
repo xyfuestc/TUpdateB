@@ -202,7 +202,10 @@ func alignRangeOfStripe(stripe []int) {
 	minRangeL, maxRangeR := config.BlockSize, 0
 	reqIndexList := make([]int, len(stripe))
 	for _, b := range stripe{
-		j, rangeL, rangeR := getRangeFromBlockID(b)
+		j, rangeL, rangeR := getBlockRangeFromDistinctReqs(b)
+		if j == -1 {
+			continue
+		}
 		if rangeL < minRangeL {
 			minRangeL = rangeL
 		}
@@ -272,7 +275,7 @@ func tar_dataUpdate(rackID int, stripe []int)  {
 				//省略了合并操作，直接只发一条
 				log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
 					rootP, common.GetNodeIP(rootP), b, common.GetNodeIP(parityID))
-				_, rangeLeft, rangeRight := getRangeFromBlockID(b)
+				_, rangeLeft, rangeRight := getBlockRangeFromDistinctReqs(b)
 				cmd := &config.CMD{
 					SID: sid,
 					BlockID: b,
@@ -306,7 +309,7 @@ func tar_dataUpdate(rackID int, stripe []int)  {
 		for _, b := range blocks {
 			log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
 				nodeID, common.GetNodeIP(nodeID), b, common.GetNodeIP(rootP))
-			_, rangeLeft, rangeRight := getRangeFromBlockID(b)
+			_, rangeLeft, rangeRight := getBlockRangeFromDistinctReqs(b)
 			cmd := &config.CMD{
 				SID: sid,
 				BlockID: b,
@@ -328,7 +331,7 @@ func tar_dataUpdate(rackID int, stripe []int)  {
 		stripe, parities, unionParities, curRackNodes)
 }
 
-func getRangeFromBlockID(blockID int) (i, rangeLeft, rangeRight int) {
+func getBlockRangeFromDistinctReqs(blockID int) (i, rangeLeft, rangeRight int) {
 	j := findBlockIndexInReqs(curDistinctReq, blockID)
 	return j, curDistinctReq[j].RangeLeft, curDistinctReq[j].RangeRight
 }
@@ -389,7 +392,7 @@ func tar_parityUpdate(rackID int, stripe []int) {
 				helpers = append(helpers, b)
 			}
 		}
-		_, rangeLeft, rangeRight := getRangeFromBlockID(blocks[0])
+		_, rangeLeft, rangeRight := getBlockRangeFromDistinctReqs(blocks[0])
 		cmd := &config.CMD{
 			SID: sid,
 			BlockID: blocks[0],
@@ -422,7 +425,7 @@ func tar_parityUpdate(rackID int, stripe []int) {
 		if curID != rootD {
 			//传输blocks到rootD
 			for _, b := range blocks{
-				_, rangeLeft,rangeRight := getRangeFromBlockID(b)
+				_, rangeLeft,rangeRight := getBlockRangeFromDistinctReqs(b)
 				cmd := &config.CMD{
 					SID: sid,
 					BlockID: b,
