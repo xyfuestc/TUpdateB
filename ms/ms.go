@@ -145,6 +145,7 @@ func settingCurrentPolicy(policyType int)  {
 	}
 	config.NumOfMB = NumOfMB
 	config.BlockSize = NumOfMB * config.Megabyte
+	config.RSBlockSize = config.Megabyte * NumOfMB * config.W
 	for _, ip := range config.NodeIPs{
 		common.SendData(p, ip, config.NodeSettingsListenPort, "")
 	}
