@@ -266,7 +266,7 @@ func (p CAURS) HandleCMD(cmd *config.CMD)  {
 		for _, _ = range cmd.ToIPs {
 			ackMaps.pushACK(cmd.SID)
 		}
-		//log.Printf("block %d is local\n", cmd.BlockID)
+		log.Printf("block %d size :%d\n", cmd.BlockID, cmd.SendSize)
 		buff := common.ReadBlockWithSize(cmd.BlockID, cmd.SendSize)
 
 		for _, toIP := range cmd.ToIPs {
