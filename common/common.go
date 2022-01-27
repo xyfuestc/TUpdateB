@@ -128,7 +128,7 @@ func ReadBlockWithSize(blockID, size int) []byte  {
 		log.Fatalln("打开文件出错: ", err)
 	}
 	defer file.Close()
-	log.Printf("block %d's index is : %d", index)
+	log.Printf("block %d's index is : %d", blockID, index)
 	readSize, err := file.ReadAt(buff, int64(index * size))
 
 	if err != nil {
