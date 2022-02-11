@@ -64,7 +64,7 @@ func (p TAR_CAU) HandleTD(td *config.TD) {
 	//记录当前轮次接收到的blockID
 	curReceivedTDs.pushTD(td)
 	//校验节点本地数据更新
-	localID := arrays.Contains(config.NodeIPs, common.GetLocalIP())
+	localID := arrays.ContainsString(config.NodeIPs, common.GetLocalIP())
 	if localID >= config.K {
 		go common.WriteDeltaBlock(td.BlockID, td.Buff)
 	}

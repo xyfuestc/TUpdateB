@@ -20,14 +20,17 @@ const MaxBaseBatchSize int = 30
 const MaxBlockSize int = 1000000
 const TestFileSize = 10 * 1024 * Megabyte
 var MaxBlockIndex = TestFileSize / BlockSize - 1
-const NumOfAlgorithm int = 6   //采用3种算法执行相同任务
-var CurPolicyStr = []string{"Base", "CAU", "TUpdate", "TUpdate1", "TAR_CAU", "CAURS", "CAU1" }
+const NumOfAlgorithm int = 8  //采用3种算法执行相同任务
+var CurPolicyStr = []string{"Base", "CAU", "TUpdate", "TUpdate1", "TAR_CAU", "CAURS", "CAU1", "BaseMulticast" }
 var BitMatrix = make([]byte, K*M*W*W)
 const RackSize = M
 const NumOfRacks = N / RackSize
 type OPType int
 var RS *reedsolomon.RS
 type Matrix []byte
+const MulticastAddr = "224.0.0.250"
+const MulticastAddrWithPort = "224.0.0.250:9981"
+const MulticastAddrPort  = 9981
 const (
 	BASE PolicyType = iota
 	CAU
@@ -36,6 +39,7 @@ const (
 	TAR_CAU
 	CAURS
 	CAU1
+	BASEMulticast
 )
 const (
 	Timestamp int  = iota    // default 0
@@ -60,6 +64,7 @@ type Policy struct {
 	Type      int
 	NumOfMB   int
 	TraceName string
+	Multicast bool
 }
 
 const (
@@ -77,7 +82,7 @@ const BaseIP string = "192.168.1."
 var MSIP = BaseIP + "108"
 const DataFilePath string = "../../test"
 const StartIP int = 172
-var NodeIPs =[N]string{
+var NodeIPs =[]string{
 	BaseIP+"110", BaseIP+"111", BaseIP+"112", BaseIP+"113",     //rack0
 	BaseIP+"120", BaseIP+"121", BaseIP+"122", BaseIP+"123",     //rack1
 	BaseIP+"130", BaseIP+"131", BaseIP+"132", BaseIP+"133",     //rack2
@@ -91,11 +96,10 @@ type TD struct {
 	StripeID           int
 	BlockID            int
 	ToIP               string
-	SenderIP           string
 	FromIP             string
-	NextIPs            []string
 	Buff               []byte
 	SID                int
+	MultiTargetIPs     []string
 }
 
 //传输命令格式

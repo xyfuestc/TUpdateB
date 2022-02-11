@@ -1,0 +1,160 @@
+package schedule
+
+import (
+	"EC/common"
+	"EC/config"
+	"encoding/gob"
+	"fmt"
+	"log"
+	"net"
+)
+
+/*BaseMulticast: delta + handle one block + XOR + star-structured + multicast */
+type BaseMulticast struct {
+
+}
+func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
+	//利用多播将数据发出
+	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID)
+	//buff := common.ReadBlock(cmd.BlockID)
+	log.Printf("读取到数据 block %d: %v\n", cmd.BlockID, len(buff))
+	for _, _ = range cmd.ToIPs {
+		ackMaps.pushACK(cmd.SID)
+	}
+	td := &config.TD{
+		BlockID: cmd.BlockID,
+		Buff: buff,
+		FromIP: cmd.FromIP,
+		MultiTargetIPs: cmd.ToIPs,
+		SID: cmd.SID,
+	}
+	ip := net.ParseIP(config.MulticastAddr)
+	srcAddr := &net.UDPAddr{IP: net.IPv4zero, Port: 0}
+	dstAddr := &net.UDPAddr{IP: ip, Port: config.MulticastAddrPort}
+
+	conn, err := net.DialUDP("udp", srcAddr, dstAddr)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer conn.Close()
+	//conn.Write([]byte("hello"))
+
+	//2.发送数据
+	enc := gob.NewEncoder(conn)
+	err = enc.Encode(td)
+	if err != nil {
+		if conn != nil {
+			conn.Close()
+		}
+		log.Fatal("common: SendData gob encode error:  ", err, " target: ", dstAddr)
+	}
+	log.Printf("HandleCMD: 发送td(sid:%d, blockID:%d)，从%s到%v \n", cmd.SID, cmd.BlockID, common.GetLocalIP(), cmd.ToIPs)
+
+}
+func (p BaseMulticast) HandleTD(td *config.TD)  {
+	handleOneTD(td)
+}
+func (p BaseMulticast) HandleACK(ack *config.ACK)  {
+	ackMaps.popACK(ack.SID)
+	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
+		//ms不需要反馈ack
+		if common.GetLocalIP() != config.MSIP {
+			ReturnACK(ack)
+		}else if ACKIsEmpty() { //检查是否全部完成，若完成，进入下一轮
+			IsRunning = false
+		}
+	}
+}
+
+func (p BaseMulticast) Init()  {
+	ackMaps = &ACKMap{
+		RequireACKs: make(map[int]int),
+	}
+	ackIPMaps = &ACKIPMap{
+		ACKReceiverIPs: map[int]string{},
+	}
+	actualBlocks = 0
+	round = 0
+	totalCrossRackTraffic = 0
+	//加入多播组
+	JoinMulticastGroup()
+}
+
+func JoinMulticastGroup() {
+	//parityRack所有节点加入组播
+
+}
+func (p BaseMulticast) HandleReq(reqs []*config.ReqData)  {
+	//actualBlocks = len(reqs)
+	totalReqs = reqs
+
+	for len(totalReqs) > 0 {
+		//过滤blocks
+		findDistinctReqs()
+		log.Printf("第%d轮 BaseMulticast：处理%d个block\n", round, len(curDistinctReq))
+		//执行base
+		p.base(curDistinctReq)
+
+		for IsRunning {
+
+		}
+		log.Printf("本轮结束！\n")
+		log.Printf("======================================\n")
+		round++
+		p.Clear()
+	}
+
+
+}
+func (p BaseMulticast) base(reqs []*config.ReqData)  {
+	for _, _ = range reqs {
+		ackMaps.pushACK(sid)
+		sid++
+	}
+	sid = 0
+	for _, req := range reqs {
+		req := config.ReqData{
+			BlockID: req.BlockID,
+			SID:     sid,
+		}
+		p.handleOneBlock(req)
+		sid++
+	}
+}
+func (p BaseMulticast) handleOneBlock(reqData config.ReqData)  {
+	nodeID := common.GetNodeID(reqData.BlockID)
+	fromIP := common.GetNodeIP(nodeID)
+	toIPs := common.GetRelatedParityIPs(reqData.BlockID)
+	common.SendCMD(fromIP, toIPs, reqData.SID, reqData.BlockID)
+	//跨域流量统计
+	totalCrossRackTraffic += len(toIPs) * config.BlockSize
+	log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", reqData.SID,
+		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, toIPs)
+}
+func (p BaseMulticast) RecordSIDAndReceiverIP(sid int, ip string)  {
+	ackIPMaps.recordIP(sid, ip)
+}
+func (p BaseMulticast) Clear()  {
+	sid = 0
+	ackMaps = &ACKMap{
+		RequireACKs: make(map[int]int),
+	}
+	ackIPMaps = &ACKIPMap{
+		ACKReceiverIPs: map[int]string{},
+	}
+	IsRunning = true
+}
+func (p BaseMulticast) IsFinished() bool {
+	return len(totalReqs) == 0 && ackMaps.isEmpty()
+}
+
+func (p BaseMulticast) GetActualBlocks() int {
+	return actualBlocks
+}
+func Hit(sid int) bool {
+	if _, ok := ackIPMaps.getIP(sid); ok{
+		return true
+	}else{
+		return false
+	}
+}

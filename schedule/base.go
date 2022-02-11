@@ -101,6 +101,8 @@ func SetPolicy(policyType config.PolicyType)  {
 	switch policyType {
 	case config.BASE:
 		CurPolicy = Base{}
+	case config.BASEMulticast:
+		CurPolicy = BaseMulticast{}
 	case config.T_Update:
 		CurPolicy = TUpdate{}
 	case config.T_Update1:

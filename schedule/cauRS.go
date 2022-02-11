@@ -37,7 +37,7 @@ func (p CAURS) HandleTD(td *config.TD) {
 	curReceivedTDs.pushTD(td)
 	
 	//校验节点本地数据更新
-	localID := arrays.Contains(config.NodeIPs, common.GetLocalIP())
+	localID := arrays.ContainsString(config.NodeIPs, common.GetLocalIP())
 	if localID >= config.K {
 		go common.WriteDeltaBlock(td.BlockID, td.Buff)
 	}
@@ -266,7 +266,7 @@ func (p CAURS) HandleCMD(cmd *config.CMD)  {
 		for _, _ = range cmd.ToIPs {
 			ackMaps.pushACK(cmd.SID)
 		}
-		log.Printf("block %d size :%d\n", cmd.BlockID, cmd.SendSize)
+		//log.Printf("block %d size :%d\n", cmd.BlockID, cmd.SendSize)
 		buff := common.ReadBlockWithSize(cmd.BlockID, cmd.SendSize)
 
 		for _, toIP := range cmd.ToIPs {

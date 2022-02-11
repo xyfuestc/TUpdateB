@@ -14,7 +14,7 @@ import (
 	"time"
 )
 var numOfReq = 0
-var curPolicy = 0
+var curPolicy = 7
 var NumOfMB = 16 //以这个为准，会同步到各个节点
 var traceName = "hm_0"
 var XOROutFilePath = "../request/"+traceName+"_"+strconv.Itoa(NumOfMB)+"M.csv.txt"
@@ -64,6 +64,16 @@ func clearRound()  {
 
 }
 func main() {
+
+	//var arr = []int64{1, 3, 4, 8, 12, 4, 9}
+	//var i int
+	//i = arrays.ContainsInt(arr, 10)
+	//fmt.Println(i)      // 3
+	//
+	//i = arrays.Contains(arr, int64(0))
+	//fmt.Println(i)      // 4
+	//
+
 	//初始化
 	config.Init()
 
@@ -138,11 +148,15 @@ func getReqsFromTrace()  {
 }
 
 func settingCurrentPolicy(policyType int)  {
+
+	UsingMulticast := strings.Contains(config.CurPolicyStr[curPolicy], "Multicast")
 	p := &config.Policy{
 		Type:      policyType,
 		NumOfMB:   NumOfMB,
 		TraceName: traceName,
+		Multicast: UsingMulticast,
 	}
+	log.Printf("UsingMulticast: %v\n", UsingMulticast)
 	config.NumOfMB = NumOfMB
 	config.BlockSize = NumOfMB * config.Megabyte
 	config.RSBlockSize = config.Megabyte * NumOfMB * config.W
@@ -191,8 +205,3 @@ func listenACK(listen net.Listener) {
 		}
 	}
 }
-
-func clear()  {
-
-}
-

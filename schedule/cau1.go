@@ -28,8 +28,8 @@ func (p CAU1) Init()  {
 
 func (p CAU1) HandleTD(td *config.TD) {
 	//校验节点本地数据更新
-	//localID := arrays.Contains(config.NodeIPs, common.GetLocalIP())
-	localID := common.GetIDFromIP(common.GetLocalIP())
+	localID := arrays.ContainsString(config.NodeIPs, common.GetLocalIP())
+	//localID := common.GetIDFromIP(common.GetLocalIP())
 	if localID >= config.K {
 		log.Printf("cau1 localID:%d\n", localID)
 		go common.WriteDeltaBlock(td.BlockID, td.Buff)
