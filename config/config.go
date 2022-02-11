@@ -31,6 +31,7 @@ type Matrix []byte
 const MulticastAddr = "224.0.0.250"
 const MulticastAddrWithPort = "224.0.0.250:9981"
 const MulticastAddrPort  = 9981
+const MTUSize = 1024
 const (
 	BASE PolicyType = iota
 	CAU
@@ -91,14 +92,12 @@ var BeginTime = time.Now()
 
 //传输数据格式
 type TD struct {
-	SendSize           int
-	OPType             OPType
-	StripeID           int
+	SID                int
 	BlockID            int
+	SendSize           int
 	ToIP               string
 	FromIP             string
 	Buff               []byte
-	SID                int
 	MultiTargetIPs     []string
 }
 
@@ -125,6 +124,19 @@ type ReqData struct {
 
 type ReqType struct {
 	Type OPType
+}
+
+type MTU struct {
+	SID             int
+	BlockID         int
+	Index           int
+	Data            []byte
+	FromIP          string
+	MultiTargetIPs  []string
+	IsFragment      bool
+	FragmentID      int
+	FragmentCount   int
+	SendSize        int
 }
 
 type ACK struct {

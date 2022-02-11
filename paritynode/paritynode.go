@@ -52,21 +52,64 @@ func joinMulticastGroupAndListening() {
 	}
 	log.Printf("Multicast Listening: %v\n", addr)
 	data := make([]byte, config.RSBlockSize)
+	countMap := map[int]int{}
+	sidBuffs := map[int][]byte{}
 	for {
 		n, remoteAddr, err := listener.ReadFromUDP(data)
 		if err != nil {
 			log.Printf("error during read: %s", err)
 		}
-		var td config.TD
-		if err := gob.NewDecoder(bytes.NewReader(data[:n])).Decode(&td); err != nil {
+		var mtu config.MTU
+		if err := gob.NewDecoder(bytes.NewReader(data[:n])).Decode(&mtu); err != nil {
 			log.Fatalln("ParityNode Multicast Decode Error: ", err)
 		}
-		log.Printf("接收到多播数据！来自：<%s> sid: %v, blockID: %v, MultiTargetIPs: %v\n", remoteAddr, td.SID, td.BlockID, td.MultiTargetIPs)
+		log.Printf("接收到多播数据！来自：<%s> sid: %v, blockID: %v, MultiTargetIPs: %v\n", remoteAddr, mtu.SID, mtu.BlockID, mtu.MultiTargetIPs)
 
-		if i := arrays.ContainsString(td.MultiTargetIPs, common.GetLocalIP()); i >= 0 {
-			log.Printf("我需要处理！来自：<%s> sid: %v, blockID: %v\n", remoteAddr, td.SID, td.BlockID)
-			schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, td.FromIP)
-			schedule.GetCurPolicy().HandleTD(&td)
+		if i := arrays.ContainsString(mtu.MultiTargetIPs, common.GetLocalIP()); i >= 0 {
+			log.Printf("我需要处理！来自：<%s> sid: %v, blockID: %v\n", remoteAddr, mtu.SID, mtu.BlockID)
+
+			//如果不需要组包
+			if mtu.IsFragment == false {
+				schedule.GetCurPolicy().RecordSIDAndReceiverIP(mtu.SID, mtu.FromIP)
+				//构造td
+				td := &config.TD{
+					SID: mtu.SID,
+					Buff: sidBuffs[mtu.SID],
+					BlockID: mtu.BlockID,
+					MultiTargetIPs: mtu.MultiTargetIPs,
+					FromIP: mtu.FromIP,
+					SendSize: mtu.SendSize,
+				}
+				schedule.GetCurPolicy().HandleTD(td)
+				continue
+			}
+			//组包，第一次收到mtu，记录sid
+			if _, ok := countMap[mtu.SID]; !ok{
+				countMap[mtu.SID] = mtu.FragmentCount
+				schedule.GetCurPolicy().RecordSIDAndReceiverIP(mtu.SID, mtu.FromIP)
+			}
+
+			if countMap[mtu.SID] > 0 {
+				countMap[mtu.SID]--
+				sidBuffs[mtu.SID] = append(sidBuffs[mtu.SID], mtu.Data...)
+			}
+
+			if countMap[mtu.SID] == 0 {
+				//构造td
+				td := &config.TD{
+					SID: mtu.SID,
+					Buff: sidBuffs[mtu.SID],
+					BlockID: mtu.BlockID,
+					MultiTargetIPs: mtu.MultiTargetIPs,
+					FromIP: mtu.FromIP,
+					SendSize: mtu.SendSize,
+				}
+				schedule.GetCurPolicy().HandleTD(td)
+
+				delete(countMap, mtu.SID)
+				delete(sidBuffs, mtu.SID)
+
+			}
 		}
 
 	}

@@ -21,13 +21,9 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 	for _, _ = range cmd.ToIPs {
 		ackMaps.pushACK(cmd.SID)
 	}
-	td := &config.TD{
-		BlockID: cmd.BlockID,
-		Buff: buff,
-		FromIP: cmd.FromIP,
-		MultiTargetIPs: cmd.ToIPs,
-		SID: cmd.SID,
-	}
+
+
+
 	ip := net.ParseIP(config.MulticastAddr)
 	srcAddr := &net.UDPAddr{IP: net.IPv4zero, Port: 0}
 	dstAddr := &net.UDPAddr{IP: ip, Port: config.MulticastAddrPort}
@@ -41,7 +37,49 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 
 	//2.发送数据
 	enc := gob.NewEncoder(conn)
-	err = enc.Encode(td)
+	count :=  len(buff) / config.MTUSize
+	var sendData []byte
+
+	if count > 0 {  //分片发送数据
+		for index := 0; index < count+1; index++ {
+			length := 0
+			if index == count { // 处理最后一个分片
+				length = len(buff) - index*config.MTUSize
+			} else {
+				length = config.MTUSize
+			}
+			//如果刚好除尽，最后不用处理
+			if length == 0 {
+				break
+			}
+			sendData = buff[index*config.MTUSize : length]
+
+			mtu := &config.MTU{
+				BlockID: cmd.BlockID,
+				Data: sendData,
+				FromIP: cmd.FromIP,
+				MultiTargetIPs: cmd.ToIPs,
+				SID: cmd.SID,
+				IsFragment: true,
+				FragmentID: index,
+				FragmentCount: count,
+			}
+			err = enc.Encode(mtu)
+
+		}
+
+	}else{  //数据量小，不需要分片
+		mtu := &config.MTU{
+			BlockID: cmd.BlockID,
+			Data: sendData,
+			FromIP: cmd.FromIP,
+			MultiTargetIPs: cmd.ToIPs,
+			SID: cmd.SID,
+			IsFragment: false,
+		}
+		err = enc.Encode(mtu)
+	}
+
 	if err != nil {
 		if conn != nil {
 			conn.Close()
