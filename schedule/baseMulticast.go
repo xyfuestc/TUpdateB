@@ -21,9 +21,6 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 	for _, _ = range cmd.ToIPs {
 		ackMaps.pushACK(cmd.SID)
 	}
-
-
-
 	ip := net.ParseIP(config.MulticastAddr)
 	srcAddr := &net.UDPAddr{IP: net.IPv4zero, Port: 0}
 	dstAddr := &net.UDPAddr{IP: ip, Port: config.MulticastAddrPort}
@@ -52,7 +49,7 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 			if length == 0 {
 				break
 			}
-			sendData = buff[index*config.MTUSize : length]
+			sendData = buff[index*config.MTUSize : index*config.MTUSize+length]
 
 			mtu := &config.MTU{
 				BlockID: cmd.BlockID,
