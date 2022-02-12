@@ -59,6 +59,7 @@ func joinMulticastGroupAndListening() {
 		if err != nil {
 			log.Printf("error during read: %s", err)
 		}
+		log.Printf("data[n]=%v, size=%v\n", data[:n], n)
 		var mtu config.MTU
 		if err := gob.NewDecoder(bytes.NewReader(data[:n])).Decode(&mtu); err != nil {
 			log.Fatalln("ParityNode Multicast Decode Error: ", err)
