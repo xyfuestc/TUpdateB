@@ -328,3 +328,9 @@ func Delete(Array, indexes []int)  {
 	}
 	log.Printf("Delete: Array = %v\n", Array)
 }
+func PrintError(errMsg string, err error) {
+	if err != nil {
+		fmt.Print(errMsg)
+		fmt.Println(err.Error())
+	}
+}

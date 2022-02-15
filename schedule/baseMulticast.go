@@ -3,16 +3,15 @@ package schedule
 import (
 	"EC/common"
 	"EC/config"
-	"encoding/gob"
-	"fmt"
 	"log"
-	"net"
 )
 
 /*BaseMulticast: delta + handle one block + XOR + star-structured + multicast */
 type BaseMulticast struct {
 
 }
+var SendCh = make(chan config.MTU, 10)
+var ReceiveCh = make(chan config.MTU, 10)
 func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 	//利用多播将数据发出
 	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID)
@@ -21,19 +20,7 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 	for _, _ = range cmd.ToIPs {
 		ackMaps.pushACK(cmd.SID)
 	}
-	ip := net.ParseIP(config.MulticastAddr)
-	srcAddr := &net.UDPAddr{IP: net.IPv4zero, Port: 0}
-	dstAddr := &net.UDPAddr{IP: ip, Port: config.MulticastAddrPort}
-
-	conn, err := net.DialUDP("udp", srcAddr, dstAddr)
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer conn.Close()
-	//conn.Write([]byte("hello"))
-
 	//2.发送数据
-	enc := gob.NewEncoder(conn)
 	count :=  len(buff) / config.MTUSize
 	var sendData []byte
 
@@ -50,8 +37,7 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 				break
 			}
 			sendData = buff[index*config.MTUSize : index*config.MTUSize+length]
-
-			mtu := &config.MTU{
+			message := &config.MTU{
 				BlockID: cmd.BlockID,
 				Data: sendData,
 				FromIP: cmd.FromIP,
@@ -61,12 +47,10 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 				FragmentID: index,
 				FragmentCount: count,
 			}
-			err = enc.Encode(mtu)
-
+			SendCh <- *message
 		}
-
 	}else{  //数据量小，不需要分片
-		mtu := &config.MTU{
+		message := &config.MTU{
 			BlockID: cmd.BlockID,
 			Data: sendData,
 			FromIP: cmd.FromIP,
@@ -74,14 +58,7 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 			SID: cmd.SID,
 			IsFragment: false,
 		}
-		err = enc.Encode(mtu)
-	}
-
-	if err != nil {
-		if conn != nil {
-			conn.Close()
-		}
-		log.Fatal("common: SendData gob encode error:  ", err, " target: ", dstAddr)
+		SendCh <- *message
 	}
 	log.Printf("HandleCMD: 发送td(sid:%d, blockID:%d)，从%s到%v \n", cmd.SID, cmd.BlockID, common.GetLocalIP(), cmd.ToIPs)
 

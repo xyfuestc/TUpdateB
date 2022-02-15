@@ -76,6 +76,7 @@ func main() {
 	go listenTD(l3)
 	go listenACK(l2)
 	go listenSettings(l4)
+	go common.Multicast(schedule.SendCh)
 	listenCMD(l1)
 }
 func listenCMD(listen net.Listener) {

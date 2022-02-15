@@ -31,7 +31,9 @@ type Matrix []byte
 const MulticastAddr = "224.0.0.250"
 const MulticastAddrWithPort = "224.0.0.250:9981"
 const MulticastAddrPort  = 9981
-const MTUSize = 1024
+const MTUSize = 4096 // 4K
+const MaxDatagramSize = 8192 // 8 * 1024 = 8KB
+
 const (
 	BASE PolicyType = iota
 	CAU
