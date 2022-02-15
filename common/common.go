@@ -334,3 +334,14 @@ func PrintError(errMsg string, err error) {
 		fmt.Println(err.Error())
 	}
 }
+func PrintMessage(data config.MTU) {
+	fmt.Println("=== Data received ===")
+	fmt.Println("ID: ", data.SID)
+	fmt.Println("BlockID: ", data.BlockID)
+	fmt.Println("FromIP:", data.FromIP)
+	fmt.Println("MultiTargetIPs:", data.MultiTargetIPs)
+	fmt.Println("FragmentCount:", data.FragmentCount)
+	fmt.Println("IsFragment:", data.IsFragment)
+	fmt.Println("= Data =")
+	fmt.Println("Content:", data.Data)
+}

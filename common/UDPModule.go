@@ -4,7 +4,6 @@ import (
 	"EC/config"
 	"bytes"
 	"encoding/gob"
-	"fmt"
 	"github.com/wxnacy/wgo/arrays"
 	"net"
 )
@@ -20,14 +19,7 @@ func Run(sendCh chan config.MTU) <-chan config.MTU  {
 	//go msgSorter(receive)
 	return receive
 }
-func msgSorter(sendCh <-chan Packet)  {
-	for  {
-		select {
-		case message := <- sendCh:
-			PrintMessage(message)
-		}
-	}
-}
+
 /*发送数据到多播地址*/
 func Multicast(send chan config.MTU) {
 	addr, err := net.ResolveUDPAddr("udp", config.MulticastAddrWithPort)
@@ -67,12 +59,3 @@ func ListenMulticast(receive chan config.MTU) {
 	}
 }
 
-func PrintMessage(data Packet) {
-	fmt.Println("=== Data received ===")
-	fmt.Println("ID: ", data.ID)
-	fmt.Println("SourceIP: ", data.SourceIP)
-	fmt.Println("DestinationIP:", data.DestinationIP)
-	fmt.Println("Response:", data.Response)
-	fmt.Println("= Data =")
-	fmt.Println("Content:", data.Content)
-}

@@ -205,6 +205,7 @@ func MsgSorter(receive <-chan config.MTU)  {
 	for  {
 		select {
 		case message := <-receive:
+			common.PrintMessage(message)
 			if message.IsFragment == false {    //不需要组包
 				schedule.GetCurPolicy().RecordSIDAndReceiverIP(message.SID, message.FromIP)
 				//构造td
