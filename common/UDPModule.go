@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"github.com/wxnacy/wgo/arrays"
-	"log"
 	"net"
 )
 
@@ -26,6 +25,7 @@ func Multicast(send chan config.MTU) {
 	addr, err := net.ResolveUDPAddr("udp", config.MulticastAddrWithPort)
 	PrintError("ResolvingUDPAddr in Multicast failed: ", err)
 	conn, err := net.DialUDP("udp", nil, addr)
+	PrintError("DialUDP error in Multicast: ", err)
 	var buffer bytes.Buffer
 	encoder := gob.NewEncoder(&buffer)
 	for  {
@@ -33,7 +33,7 @@ func Multicast(send chan config.MTU) {
 		err := encoder.Encode(message)
 		PrintError("Encode error in Multicast: ", err)
 		_, err = conn.Write(buffer.Bytes())
-		log.Printf("发送数据: %v\n", message)
+		//log.Printf("发送数据: %v\n", message)
 		PrintError("conn write error in Multicast: ", err)
 		buffer.Reset()
 	}
@@ -55,6 +55,7 @@ func ListenMulticast(receive chan config.MTU) {
 		buffer := bytes.NewBuffer(inputBytes[:length])
 		decoder := gob.NewDecoder(buffer)
 		_ = decoder.Decode(&message)
+		PrintMessage(message)
 		if i := arrays.ContainsString(message.MultiTargetIPs, GetLocalIP()); i >= 0 {
 			receive <- message
 		}
