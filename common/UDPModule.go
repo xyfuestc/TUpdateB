@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"github.com/wxnacy/wgo/arrays"
+	"log"
 	"net"
 )
 
@@ -32,6 +33,7 @@ func Multicast(send chan config.MTU) {
 		err := encoder.Encode(message)
 		PrintError("Encode error in Multicast: ", err)
 		_, err = conn.Write(buffer.Bytes())
+		log.Printf("发送数据: %v\n", message)
 		PrintError("conn write error in Multicast: ", err)
 		buffer.Reset()
 	}
