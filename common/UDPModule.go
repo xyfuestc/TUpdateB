@@ -48,7 +48,7 @@ func ListenMulticast(receive chan config.MTU) {
 	defer conn.Close()
 	var message config.MTU
 	for  {
-		inputBytes := make([]byte, config.MTUSize)
+		inputBytes := make([]byte, config.MaxDatagramSize)
 		length, _, err := conn.ReadFromUDP(inputBytes)
 		PrintError("read UDP error in ListenMulticast: ", err)
 		err = json.Unmarshal(inputBytes[:length], &message)
