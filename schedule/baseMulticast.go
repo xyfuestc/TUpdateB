@@ -4,6 +4,7 @@ import (
 	"EC/common"
 	"EC/config"
 	"log"
+	"time"
 )
 
 /*BaseMulticast: delta + handle one block + XOR + star-structured + multicast */
@@ -48,6 +49,7 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 				FragmentCount: count,
 			}
 			SendCh <- *message
+			time.Sleep(2 * time.Second)
 			//log.Printf("发送sid: %v的第%v（共%d）个分片数据.", cmd.SID, index, count)
 		}
 	}else{  //数据量小，不需要分片
@@ -60,6 +62,8 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 			IsFragment: false,
 		}
 		SendCh <- *message
+		time.Sleep(2 * time.Second)
+
 	}
 	log.Printf("HandleCMD: 发送td(sid:%d, blockID:%d)，从%s到%v \n", cmd.SID, cmd.BlockID, common.GetLocalIP(), cmd.ToIPs)
 
@@ -89,14 +93,9 @@ func (p BaseMulticast) Init()  {
 	actualBlocks = 0
 	round = 0
 	totalCrossRackTraffic = 0
-	//加入多播组
-	JoinMulticastGroup()
 }
 
-func JoinMulticastGroup() {
-	//parityRack所有节点加入组播
 
-}
 func (p BaseMulticast) HandleReq(reqs []*config.ReqData)  {
 	//actualBlocks = len(reqs)
 	totalReqs = reqs
