@@ -330,8 +330,7 @@ func Delete(Array, indexes []int)  {
 }
 func PrintError(errMsg string, err error) {
 	if err != nil {
-		fmt.Print(errMsg)
-		fmt.Println(err.Error())
+		log.Fatalln(errMsg, err.Error())
 	}
 }
 func PrintMessage(data config.MTU) {

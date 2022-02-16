@@ -157,7 +157,12 @@ func (p BaseMulticast) Clear()  {
 	IsRunning = true
 }
 func (p BaseMulticast) IsFinished() bool {
-	return len(totalReqs) == 0 && ackMaps.isEmpty()
+	isFinished :=  len(totalReqs) == 0 && ackMaps.isEmpty()
+	if isFinished {
+		close(SendCh)
+		close(ReceiveCh)
+	}
+	return isFinished
 }
 
 func (p BaseMulticast) GetActualBlocks() int {

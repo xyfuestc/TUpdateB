@@ -29,7 +29,8 @@ type OPType int
 var RS *reedsolomon.RS
 type Matrix []byte
 const MulticastAddr = "224.0.0.250"
-const MulticastAddrWithPort = "224.0.0.250:9981"
+//const MulticastAddrWithPort = "224.0.0.250:9981"
+const MulticastAddrWithPort = "224.0.0.1:9999"
 const MulticastAddrPort  = 9981
 const MTUSize = 4096 // 4K
 const MaxDatagramSize = 8192 // 8 * 1024 = 8KB
@@ -129,16 +130,16 @@ type ReqType struct {
 }
 
 type MTU struct {
-	SID             int
-	BlockID         int
-	Index           int
-	Data            []byte
-	FromIP          string
-	MultiTargetIPs  []string
-	IsFragment      bool
-	FragmentID      int
-	FragmentCount   int
-	SendSize        int
+	SID            int      `json:"sid,omitempty"`
+	BlockID        int      `json:"block_id,omitempty"`
+	Index          int      `json:"index,omitempty"`
+	Data           []byte   `json:"data,omitempty"`
+	FromIP         string   `json:"from_ip,omitempty"`
+	MultiTargetIPs []string `json:"multi_target_ips,omitempty"`
+	IsFragment     bool     `json:"is_fragment,omitempty"`
+	FragmentID     int      `json:"fragment_id,omitempty"`
+	FragmentCount  int      `json:"fragment_count,omitempty"`
+	SendSize       int      `json:"send_size,omitempty"`
 }
 
 type ACK struct {

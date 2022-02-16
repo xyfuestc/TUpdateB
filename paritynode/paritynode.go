@@ -217,7 +217,7 @@ func MsgSorter(receive <-chan config.MTU)  {
 					FromIP:         message.FromIP,
 					SendSize:       message.SendSize,
 				}
-				schedule.GetCurPolicy().HandleTD(td)
+				go schedule.GetCurPolicy().HandleTD(td)
 			}else{ //需要组包
 				if _, ok := countMap[message.SID]; !ok{ //第一次收到，记录sid
 					countMap[message.SID] = message.FragmentCount - 1
@@ -236,7 +236,7 @@ func MsgSorter(receive <-chan config.MTU)  {
 							 FromIP:         message.FromIP,
 							 SendSize:       message.SendSize,
 						 }
-						 schedule.GetCurPolicy().HandleTD(td)
+						 go schedule.GetCurPolicy().HandleTD(td)
 
 						 delete(countMap, message.SID)
 						 delete(sidBuffs, message.SID)
