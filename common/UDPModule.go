@@ -33,8 +33,8 @@ func Multicast(send chan config.MTU) {
 		//err := encoder.Encode(message)
 		PrintError("Encode error in Multicast: ", err)
 		_, err = conn.Write(msg)
-		//log.Printf("发送数据: %v\n", message)
 		PrintError("conn write error in Multicast: ", err)
+		log.Printf("发送sid: %v的第%v（共%d）个分片数据.", message.SID, message.FragmentID, message.FragmentCount)
 	}
 }
 

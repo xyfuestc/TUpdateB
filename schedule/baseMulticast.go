@@ -48,6 +48,7 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 				FragmentCount: count,
 			}
 			SendCh <- *message
+			//log.Printf("发送sid: %v的第%v（共%d）个分片数据.", cmd.SID, index, count)
 		}
 	}else{  //数据量小，不需要分片
 		message := &config.MTU{

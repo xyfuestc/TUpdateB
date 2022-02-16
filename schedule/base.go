@@ -63,17 +63,6 @@ func (M *ACKMap) isEmpty() bool {
 	return true
 }
 
-func (M *ACKMap) rest() map[int]int {
-	restACKs := make(map[int]int)
-	M.RLock()
-	for i, num := range M.RequireACKs {
-		if num > 0 {
-			restACKs[i] = num
-		}
-	}
-	M.RUnlock()
-	return restACKs
-}
 
 type ACKIPMap struct {
 	sync.RWMutex
