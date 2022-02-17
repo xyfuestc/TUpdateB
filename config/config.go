@@ -14,7 +14,7 @@ var NumOfMB = 4
 var BlockSize = Megabyte * NumOfMB //1MB
 var RSBlockSize = Megabyte * NumOfMB * W
 const Megabyte = 1024 * 1024      //1MB
-const MaxBatchSize int = 30
+const MaxBatchSize int = 100
 const MaxRSBatchSize int = 1
 const MaxBaseBatchSize int = 100
 const MaxBlockSize int = 1000
@@ -41,9 +41,9 @@ const (
 	T_Update
 	T_Update1
 	TAR_CAU
-	CAURS
 	CAU1
 	BASEMulticast
+	CAURS
 )
 const (
 	Timestamp int  = iota    // default 0
