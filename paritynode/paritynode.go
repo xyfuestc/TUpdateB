@@ -201,7 +201,7 @@ func listenSettings(listen net.Listener) {
 
 func MsgSorter(receive <-chan config.MTU)  {
 	//countMap := map[int]int{}
-	sidBuffs := map[int][]byte{}
+	//sidBuffs := map[int][]byte{}
 	for  {
 		select {
 		case message := <-receive:
@@ -211,7 +211,7 @@ func MsgSorter(receive <-chan config.MTU)  {
 				//构造td
 				td := &config.TD{
 					SID:            message.SID,
-					Buff:           sidBuffs[message.SID],
+					Buff:           message.Data,
 					BlockID:        message.BlockID,
 					MultiTargetIPs: message.MultiTargetIPs,
 					FromIP:         message.FromIP,
@@ -245,7 +245,7 @@ func MsgSorter(receive <-chan config.MTU)  {
 			//	}
 			//}
 				go schedule.GetCurPolicy().HandleTD(td)
-				log.Printf("MsgSorter：接收数据完成，执行HandleTD.\n")
+				log.Printf("MsgSorter：接收数据完成，执行HandleTD, tdSize: %d.\n", td.SendSize)
 
 			//}else{
 		}
