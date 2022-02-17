@@ -10,7 +10,7 @@ const K int = 8
 const M int = 4
 const W int = 4
 const N int = K + M
-var NumOfMB = 64
+var NumOfMB = 4
 var BlockSize = Megabyte * NumOfMB //1MB
 var RSBlockSize = Megabyte * NumOfMB * W
 const Megabyte = 1024 * 1024      //1MB
@@ -32,8 +32,8 @@ const MulticastAddr = "224.0.0.250"
 //const MulticastAddrWithPort = "224.0.0.250:9981"
 const MulticastAddrWithPort = "224.0.0.1:9999"
 const MulticastAddrPort  = 9981
-const MTUSize = 4096 // 4K
-const MaxDatagramSize = 8192 // 8 * 1024 = 8KB
+const MTUSize = 2147483647 // 4K
+const MaxDatagramSize = 2147483647 // 8 * 1024 = 8KB
 
 const (
 	BASE PolicyType = iota

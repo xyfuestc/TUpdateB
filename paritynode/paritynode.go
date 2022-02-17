@@ -200,13 +200,13 @@ func listenSettings(listen net.Listener) {
 }
 
 func MsgSorter(receive <-chan config.MTU)  {
-	countMap := map[int]int{}
+	//countMap := map[int]int{}
 	sidBuffs := map[int][]byte{}
 	for  {
 		select {
 		case message := <-receive:
 			//common.PrintMessage(message)
-			if message.IsFragment == false {    //不需要组包
+			//if message.IsFragment == false {    //不需要组包
 				schedule.GetCurPolicy().RecordSIDAndReceiverIP(message.SID, message.FromIP)
 				//构造td
 				td := &config.TD{
@@ -216,38 +216,38 @@ func MsgSorter(receive <-chan config.MTU)  {
 					MultiTargetIPs: message.MultiTargetIPs,
 					FromIP:         message.FromIP,
 					SendSize:       message.SendSize,
-				}
+				}//需要组包
+			//	if _, ok := countMap[message.SID]; !ok{ //第一次收到，记录sid
+			//		countMap[message.SID] = message.FragmentCount - 1
+			//		log.Printf("MsgSorter：还需要接收%v个分片数据.\n", countMap[message.SID])
+			//		schedule.GetCurPolicy().RecordSIDAndReceiverIP(message.SID, message.FromIP)
+			//		sidBuffs[message.SID] = message.Data
+			//	} else if countMap[message.SID] > 0 {  //组包
+			//		countMap[message.SID]--
+			//		log.Printf("MsgSorter：还需要接收%v个分片数据.\n", countMap[message.SID])
+			//		sidBuffs[message.SID] = append(sidBuffs[message.SID], message.Data...)
+			//		 if countMap[message.SID] == 0 { //组包完成，合并之后处理td
+			//			 //构造td
+			//			 td := &config.TD{
+			//				 SID:            message.SID,
+			//				 Buff:           sidBuffs[message.SID],
+			//				 BlockID:        message.BlockID,
+			//				 MultiTargetIPs: message.MultiTargetIPs,
+			//				 FromIP:         message.FromIP,
+			//				 SendSize:       message.SendSize,
+			//			 }
+			//			 go schedule.GetCurPolicy().HandleTD(td)
+			//			 log.Printf("MsgSorter：分片组包完成，执行HandleTD.\n")
+			//
+			//			 delete(countMap, message.SID)
+			//			 delete(sidBuffs, message.SID)
+			//		 }
+			//	}
+			//}
 				go schedule.GetCurPolicy().HandleTD(td)
 				log.Printf("MsgSorter：接收数据完成，执行HandleTD.\n")
 
-			}else{ //需要组包
-				if _, ok := countMap[message.SID]; !ok{ //第一次收到，记录sid
-					countMap[message.SID] = message.FragmentCount - 1
-					log.Printf("MsgSorter：还需要接收%v个分片数据.\n", countMap[message.SID])
-					schedule.GetCurPolicy().RecordSIDAndReceiverIP(message.SID, message.FromIP)
-					sidBuffs[message.SID] = message.Data
-				} else if countMap[message.SID] > 0 {  //组包
-					countMap[message.SID]--
-					log.Printf("MsgSorter：还需要接收%v个分片数据.\n", countMap[message.SID])
-					sidBuffs[message.SID] = append(sidBuffs[message.SID], message.Data...)
-					 if countMap[message.SID] == 0 { //组包完成，合并之后处理td
-						 //构造td
-						 td := &config.TD{
-							 SID:            message.SID,
-							 Buff:           sidBuffs[message.SID],
-							 BlockID:        message.BlockID,
-							 MultiTargetIPs: message.MultiTargetIPs,
-							 FromIP:         message.FromIP,
-							 SendSize:       message.SendSize,
-						 }
-						 go schedule.GetCurPolicy().HandleTD(td)
-						 log.Printf("MsgSorter：分片组包完成，执行HandleTD.\n")
-
-						 delete(countMap, message.SID)
-						 delete(sidBuffs, message.SID)
-					 }
-				}
-			}
+			//}else{
 		}
 
 	}

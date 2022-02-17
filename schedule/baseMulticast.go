@@ -4,7 +4,6 @@ import (
 	"EC/common"
 	"EC/config"
 	"log"
-	"time"
 )
 
 /*BaseMulticast: delta + handle one block + XOR + star-structured + multicast */
@@ -22,49 +21,50 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 		ackMaps.pushACK(cmd.SID)
 	}
 	//2.发送数据
-	count :=  len(buff) / config.MTUSize
-	var sendData []byte
+	//count :=  len(buff) / config.MTUSize
+	//var sendData []byte
 
-	if count > 0 {  //分片发送数据
-		for index := 0; index < count+1; index++ {
-			length := 0
-			if index == count { // 处理最后一个分片
-				length = len(buff) - index*config.MTUSize
-			} else {
-				length = config.MTUSize
-			}
-			//如果刚好除尽，最后不用处理
-			if length == 0 {
-				break
-			}
-			sendData = buff[index*config.MTUSize : index*config.MTUSize+length]
-			message := &config.MTU{
-				BlockID: cmd.BlockID,
-				Data: sendData,
-				FromIP: cmd.FromIP,
-				MultiTargetIPs: cmd.ToIPs,
-				SID: cmd.SID,
-				IsFragment: true,
-				FragmentID: index,
-				FragmentCount: count,
-			}
-			SendCh <- *message
-			time.Sleep(2 * time.Second)
-			//log.Printf("发送sid: %v的第%v（共%d）个分片数据.", cmd.SID, index, count)
-		}
-	}else{  //数据量小，不需要分片
+	//if count > 0 {  //分片发送数据
+	//	for index := 0; index < count+1; index++ {
+	//		length := 0
+	//		if index == count { // 处理最后一个分片
+	//			length = len(buff) - index*config.MTUSize
+	//		} else {
+	//			length = config.MTUSize
+	//		}
+	//		//如果刚好除尽，最后不用处理
+	//		if length == 0 {
+	//			break
+	//		}
+	//		sendData = buff[index*config.MTUSize : index*config.MTUSize+length]
+	//		message := &config.MTU{
+	//			BlockID: cmd.BlockID,
+	//			Data: sendData,
+	//			FromIP: cmd.FromIP,
+	//			MultiTargetIPs: cmd.ToIPs,
+	//			SID: cmd.SID,
+	//			IsFragment: true,
+	//			FragmentID: index,
+	//			FragmentCount: count,
+	//		}
+	//		SendCh <- *message
+	//		time.Sleep(2 * time.Second)
+	//		//log.Printf("发送sid: %v的第%v（共%d）个分片数据.", cmd.SID, index, count)
+	//	}
+	//}
+	//else{  //数据量小，不需要分片
 		message := &config.MTU{
 			BlockID: cmd.BlockID,
-			Data: sendData,
+			Data: buff,
 			FromIP: cmd.FromIP,
 			MultiTargetIPs: cmd.ToIPs,
 			SID: cmd.SID,
 			IsFragment: false,
 		}
 		SendCh <- *message
-		time.Sleep(2 * time.Second)
+		//time.Sleep(2 * time.Second)
 
-	}
+	//}
 	log.Printf("HandleCMD: 发送td(sid:%d, blockID:%d)，从%s到%v \n", cmd.SID, cmd.BlockID, common.GetLocalIP(), cmd.ToIPs)
 
 }

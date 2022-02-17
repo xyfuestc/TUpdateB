@@ -4,7 +4,6 @@ import (
 	"EC/common"
 	"EC/config"
 	"encoding/json"
-	"github.com/satori/go.uuid"
 	"github.com/wxnacy/wgo/arrays"
 	"log"
 	"net"
@@ -23,7 +22,9 @@ func TestSend(t *testing.T) {
 	sendCh := make(chan config.MTU, 10)
 	receive := make(chan config.MTU, 10)
 	go common.Multicast(sendCh)
-	go common.ListenMulticast(receive)
+	//go common.ListenMulticast(receive)
+
+	data := common.ReadBlockWithSize(0, config.BlockSize)
 
 	go RunPrintMsg(receive)
 	time.Sleep(1 * time.Second)
@@ -36,10 +37,10 @@ func TestSend(t *testing.T) {
 			MultiTargetIPs: []string{common.GetLocalIP()},
 			IsFragment: count % 2 == 0,
 			FragmentCount: count,
-			Data: []byte( uuid.NewV4().String()),
+			Data: data,
 		}
 		sendCh <- *msg
-		time.Sleep(3 * time.Second)
+		time.Sleep(500 * time.Millisecond)
 		count += 1
 	}
 }
