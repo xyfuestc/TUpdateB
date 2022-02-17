@@ -16,7 +16,7 @@ var RSBlockSize = Megabyte * NumOfMB * W
 const Megabyte = 1024 * 1024      //1MB
 const MaxBatchSize int = 30
 const MaxRSBatchSize int = 1
-const MaxBaseBatchSize int = 30
+const MaxBaseBatchSize int = 100
 const MaxBlockSize int = 1000000
 const TestFileSize = 10 * 1024 * Megabyte
 var MaxBlockIndex = TestFileSize / BlockSize - 1
@@ -32,8 +32,8 @@ const MulticastAddr = "224.0.0.250"
 //const MulticastAddrWithPort = "224.0.0.250:9981"
 const MulticastAddrWithPort = "224.0.0.1:9999"
 const MulticastAddrPort  = 9981
-const MTUSize = 2147483647 // 4K
-const MaxDatagramSize = 2147483647 // 8 * 1024 = 8KB
+const MTUSize = 4 * 1024 // 4K
+const MaxDatagramSize = 8 * 1024 // 8 * 1024 = 8KB
 
 const (
 	BASE PolicyType = iota

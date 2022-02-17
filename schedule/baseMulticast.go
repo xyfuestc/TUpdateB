@@ -4,6 +4,7 @@ import (
 	"EC/common"
 	"EC/config"
 	"log"
+	"time"
 )
 
 /*BaseMulticast: delta + handle one block + XOR + star-structured + multicast */
@@ -15,6 +16,7 @@ var ReceiveCh = make(chan config.MTU, 10)
 func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 	//利用多播将数据发出
 	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID)
+
 	//buff := common.ReadBlock(cmd.BlockID)
 	log.Printf("读取到数据 block %d: %v\n", cmd.BlockID, len(buff))
 	for _, _ = range cmd.ToIPs {
@@ -55,14 +57,14 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 	//else{  //数据量小，不需要分片
 		message := &config.MTU{
 			BlockID: cmd.BlockID,
-			Data: buff,
+			Data: buff[:cmd.SendSize],
 			FromIP: cmd.FromIP,
 			MultiTargetIPs: cmd.ToIPs,
 			SID: cmd.SID,
 			IsFragment: false,
 		}
 		SendCh <- *message
-		//time.Sleep(2 * time.Second)
+		time.Sleep(500 * time.Millisecond)
 
 	//}
 	log.Printf("HandleCMD: 发送td(sid:%d, blockID:%d)，从%s到%v \n", cmd.SID, cmd.BlockID, common.GetLocalIP(), cmd.ToIPs)
@@ -102,10 +104,15 @@ func (p BaseMulticast) HandleReq(reqs []*config.ReqData)  {
 
 	for len(totalReqs) > 0 {
 		//过滤blocks
-		findDistinctReqs()
-		log.Printf("第%d轮 BaseMulticast：处理%d个block\n", round, len(curDistinctReq))
+		////findDistinctReqs()
+		//log.Printf("第%d轮 BaseMulticast：处理%d个block\n", round, len(curDistinctReq))
+		////执行base
+		//p.base(curDistinctReq)
+		batchReqs := getBatchReqs()
+		actualBlocks += len(batchReqs)
+		log.Printf("第%d轮 BaseMulticast：处理%d个block\n", round, len(batchReqs))
 		//执行base
-		p.base(curDistinctReq)
+		p.base(batchReqs)
 
 		for IsRunning {
 
@@ -137,9 +144,23 @@ func (p BaseMulticast) handleOneBlock(reqData config.ReqData)  {
 	nodeID := common.GetNodeID(reqData.BlockID)
 	fromIP := common.GetNodeIP(nodeID)
 	toIPs := common.GetRelatedParityIPs(reqData.BlockID)
-	common.SendCMD(fromIP, toIPs, reqData.SID, reqData.BlockID)
+	//common.SendCMD(fromIP, toIPs, reqData.SID, reqData.BlockID)
+
+	rangeLeft, rangeRight := reqData.RangeLeft, reqData.RangeRight
+	cmd := &config.CMD{
+		SID: sid,
+		BlockID: reqData.BlockID,
+		ToIPs: toIPs,
+		FromIP: fromIP,
+		Helpers: make([]int, 0, 1),
+		Matched: 0,
+		SendSize: rangeRight - rangeLeft,
+		//SendSize: config.BlockSize,
+	}
+	common.SendData(cmd, fromIP, config.NodeCMDListenPort, "")
+
 	//跨域流量统计
-	totalCrossRackTraffic += len(toIPs) * config.BlockSize
+	totalCrossRackTraffic += len(toIPs) * (rangeRight - rangeLeft)
 	log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", reqData.SID,
 		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, toIPs)
 }
