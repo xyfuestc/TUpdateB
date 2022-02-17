@@ -17,10 +17,10 @@ const Megabyte = 1024 * 1024      //1MB
 const MaxBatchSize int = 30
 const MaxRSBatchSize int = 1
 const MaxBaseBatchSize int = 100
-const MaxBlockSize int = 1000000
+const MaxBlockSize int = 1000
 const TestFileSize = 10 * 1024 * Megabyte
 var MaxBlockIndex = TestFileSize / BlockSize - 1
-const NumOfAlgorithm int = 7  //采用3种算法执行相同任务
+const NumOfAlgorithm int = 8 //采用3种算法执行相同任务
 var CurPolicyStr = []string{"Base", "CAU", "TUpdate", "TUpdate1", "TAR_CAU", "CAU1", "BaseMulticast", "CAURS" }
 var BitMatrix = make([]byte, K*M*W*W)
 const RackSize = M
@@ -117,7 +117,6 @@ type CMD struct {
 }
 type ReqData struct {
 	SID         int
-	//OPType   OPType
 	BlockID     int
 	AckID       int
 	StripeID    int
