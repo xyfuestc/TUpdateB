@@ -114,7 +114,7 @@ func main() {
 	go listenACK(l3)
 	go listenSettings(l4)
 	go common.ListenMulticast(schedule.ReceiveCh)
-	//go common.HandlingACK(schedule.ReceiveAck)
+	go common.HandlingACK(schedule.ReceiveAck)
 	go MsgSorter(schedule.ReceiveCh, schedule.ReceiveAck)
 	listenTD(l1)
 
@@ -228,6 +228,12 @@ func MsgSorter(receive <-chan config.MTU, ackCh chan<- config.ACK)  {
 				}
 				go schedule.GetCurPolicy().HandleTD(td)
 				log.Printf("MsgSorter：接收数据完成，执行HandleTD, td: sid: %v, sendSize: %v.\n", td.SID, td.SendSize)
+				ack := config.ACK{
+					BlockID: message.BlockID,
+					SID: message.SID,
+					FragmentID:message.FragmentID,
+				}
+				ackCh <- ack
 			//} else { //需要组包
 				//if _, ok := countMap[message.SID]; !ok { //第一次收到，记录sid
 				//	countMap[message.SID] = message.FragmentCount - 1

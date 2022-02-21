@@ -21,7 +21,7 @@ type Message struct {
 func TestMulticast(t *testing.T) {
 	schedule.SetPolicy(config.BASEMulticast)
 	go common.ListenMulticast(schedule.ReceiveCh)
-	//go common.HandlingACK(schedule.ReceiveAck)
+	go common.HandlingACK(schedule.ReceiveAck)
 	go MsgSorter(schedule.ReceiveCh, schedule.ReceiveAck)
 	for  {
 		

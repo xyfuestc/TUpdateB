@@ -3,14 +3,16 @@ package schedule
 import (
 	"EC/common"
 	"EC/config"
+	"fmt"
 	"log"
+	"time"
 )
 
 /*BaseMulticast: delta + handle one block + XOR + star-structured + multicast */
 type BaseMulticast struct {
 
 }
-var SendCh = make(chan config.MTU, 10)
+var SendCh = make(chan config.MTU)
 var ReceiveCh = make(chan config.MTU, 10)
 var ReceiveAck = make(chan config.ACK)
 var SentMsgLog = map[string]config.MTU{}
@@ -37,6 +39,15 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 		IsFragment:     false,
 	}
 	SendCh <- *message
+	//确认收到ack
+	select {
+	case ack := <- ReceiveAck:
+		fmt.Printf("确认收到ack: %+v\n", ack)
+	case <-time.After(2 * time.Millisecond):
+		fmt.Printf("%v ack返回超时！\n", message.SID)
+		SendCh <- *message
+	}
+
 	log.Printf("HandleCMD: 发送td(sid:%d, blockID:%d)，从%s到%v \n", cmd.SID, cmd.BlockID, common.GetLocalIP(), cmd.ToIPs)
 
 }
@@ -131,8 +142,8 @@ func (p BaseMulticast) handleOneBlock(reqData config.ReqData)  {
 
 	//跨域流量统计
 	totalCrossRackTraffic += len(toIPs) * (rangeRight - rangeLeft)
-	log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", reqData.SID,
-		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, toIPs)
+	log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v. SendSize: %v\n", reqData.SID,
+		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, toIPs, cmd.SendSize)
 }
 func (p BaseMulticast) RecordSIDAndReceiverIP(sid int, ip string)  {
 	ackIPMaps.recordIP(sid, ip)
