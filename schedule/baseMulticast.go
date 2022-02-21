@@ -88,12 +88,12 @@ func (p BaseMulticast) HandleReq(reqs []*config.ReqData)  {
 		////findDistinctReqs()
 		//log.Printf("第%d轮 BaseMulticast：处理%d个block\n", round, len(curDistinctReq))
 		////执行base
-		//p.base(curDistinctReq)
+		//p.baseMulti(curDistinctReq)
 		batchReqs := getBatchReqs()
 		actualBlocks += len(batchReqs)
 		log.Printf("第%d轮 BaseMulticast：处理%d个block\n", round, len(batchReqs))
 		//执行base
-		p.base(batchReqs)
+		p.baseMulti(batchReqs)
 
 		for IsRunning {
 
@@ -106,18 +106,14 @@ func (p BaseMulticast) HandleReq(reqs []*config.ReqData)  {
 
 
 }
-func (p BaseMulticast) base(reqs []*config.ReqData)  {
+func (p BaseMulticast) baseMulti(reqs []*config.ReqData)  {
 	for _, _ = range reqs {
 		ackMaps.pushACK(sid)
 		sid++
 	}
 	sid = 0
 	for _, req := range reqs {
-		req := config.ReqData{
-			BlockID: req.BlockID,
-			SID:     sid,
-		}
-		p.handleOneBlock(req)
+		p.handleOneBlock(*req)
 		sid++
 	}
 }
