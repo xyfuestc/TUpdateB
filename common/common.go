@@ -344,3 +344,12 @@ func PrintMessage(data config.MTU) {
 	fmt.Println("= Data =")
 	fmt.Println("Content:", data.Data)
 }
+
+func StringConcat(A, split, B string) string  {
+	var s strings.Builder
+	s.WriteString(A)
+	s.WriteString(split)
+	s.WriteString(B)
+
+	return s.String()
+}

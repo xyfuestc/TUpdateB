@@ -50,3 +50,4 @@ func PrintMessage(data config.MTU) {
 	fmt.Println("= Data =")
 	fmt.Println("Content:", data.Data)
 }
+

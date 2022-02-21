@@ -3,6 +3,7 @@ package common
 import (
 	"EC/config"
 	"encoding/json"
+	"github.com/mailru/easyjson"
 	"github.com/wxnacy/wgo/arrays"
 	"log"
 	"net"
@@ -29,12 +30,58 @@ func Multicast(send chan config.MTU) {
 	//encoder := gob.NewEncoder(&buffer)
 	for  {
 		message := <-send
-		msg, err := json.Marshal(message)
+		//msg, err := json.Marshal(message)
+		msg, err := easyjson.Marshal(message)
 		//err := encoder.Encode(message)
 		PrintError("Encode error in Multicast: ", err)
 		_, err = conn.Write(msg)
 		PrintError("conn write error in Multicast: ", err)
 		log.Printf("发送sid: %v的第%v（共%d）个分片数据.", message.SID, message.FragmentID, message.FragmentCount)
+	}
+}
+
+/*发送数据到原地址*/
+func HandlingACK(ackCh chan config.ACK) {
+	for  {
+		ack := <-ackCh
+		receiverAddr := StringConcat(GetNodeIP(GetNodeID(ack.BlockID)), "", config.MulticastAddrListenACK)
+		addr, err := net.ResolveUDPAddr("udp", receiverAddr)
+		PrintError("ResolvingUDPAddr in Multicast failed: ", err)
+		conn, err := net.DialUDP("udp", nil, addr)
+		PrintError("DialUDP error in Multicast: ", err)
+		//msg, err := json.Marshal(ack)
+		msg, err := easyjson.Marshal(ack)
+		//err := encoder.Encode(ack)
+		PrintError("Encode error in Multicast: ", err)
+		_, err = conn.Write(msg)
+		PrintError("conn write error in Multicast: ", err)
+		log.Printf("返回ack: %+v\n.", ack)
+	}
+}
+
+func ListenACK(receiveACKCh chan config.ACK)  {
+	addr, err := net.ResolveUDPAddr("udp", config.MulticastAddrListenACK)
+	PrintError("resolve error in ListenMulticast: ", err)
+	conn, err := net.ListenMulticastUDP("udp", nil, addr)
+	err = conn.SetReadBuffer(config.MaxDatagramSize)
+	PrintError("set read buffer error in ListenMulticast: ", err)
+	defer conn.Close()
+	var ack config.ACK
+	for  {
+		inputBytes := make([]byte, config.MaxDatagramSize)
+		length, _, err := conn.ReadFromUDP(inputBytes)
+		PrintError("read UDP error in ListenMulticast: ", err)
+		err = easyjson.Unmarshal(inputBytes[:length], &ack)
+		if err != nil {
+			log.Printf("error decoding ack response: %v", err)
+			if e, ok := err.(*json.SyntaxError); ok {
+				log.Printf("syntax error at byte offset %d", e.Offset)
+			}
+			log.Printf("ack response: %q", inputBytes[:length])
+			//return err
+		}
+		receiveACKCh <- ack
+
 	}
 }
 
@@ -51,7 +98,7 @@ func ListenMulticast(receive chan config.MTU) {
 		inputBytes := make([]byte, config.MaxDatagramSize)
 		length, _, err := conn.ReadFromUDP(inputBytes)
 		PrintError("read UDP error in ListenMulticast: ", err)
-		err = json.Unmarshal(inputBytes[:length], &message)
+		err = easyjson.Unmarshal(inputBytes[:length], &message)
 		if err != nil {
 			log.Printf("error decoding message response: %v", err)
 			if e, ok := err.(*json.SyntaxError); ok {

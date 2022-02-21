@@ -31,8 +31,8 @@ type Matrix []byte
 const MulticastAddr = "224.0.0.250"
 //const MulticastAddrWithPort = "224.0.0.250:9981"
 const MulticastAddrWithPort = "224.0.0.1:9999"
-const MulticastAddrPort  = 9981
-const MTUSize = 4 * 1024 // 4K
+const MulticastAddrListenACK  = ":9981"
+const MTUSize = 8 * 1024 // 4K
 const MaxDatagramSize = 8 * 1024 // 8 * 1024 = 8KB
 
 const (
@@ -141,10 +141,12 @@ type MTU struct {
 	SendSize       int      `json:"send_size,omitempty"`
 }
 
+
 type ACK struct {
-	SID     int
-	AckID   int
-	BlockID int
+	SID         int
+	AckID       int
+	BlockID     int
+	FragmentID  int
 }
 
 type WaitingACKItem struct {
