@@ -65,18 +65,6 @@ func clearRound()  {
 }
 func main() {
 
-	//addr, err := net.ResolveUDPAddr("udp", common.StringConcat("localhost","", config.MulticastAddrListenACK))
-	//common.PrintError("resolve error in ListenMulticast: ", err)
-	//fmt.Println(addr)
-	//var arr = []int64{1, 3, 4, 8, 12, 4, 9}
-	//var i int
-	//i = arrays.ContainsInt(arr, 10)
-	//fmt.Println(i)      // 3
-	//
-	//i = arrays.Contains(arr, int64(0))
-	//fmt.Println(i)      // 4
-	//
-
 	//初始化
 	config.Init()
 
