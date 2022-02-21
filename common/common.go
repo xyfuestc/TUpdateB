@@ -156,20 +156,20 @@ func GetNodeID(blockID int) int {
 func GetNodeIP(nodeID int) string {
 	return config.NodeIPs[nodeID]
 }
-func RandWriteBlockAndRetDelta(blockID int) []byte  {
+func RandWriteBlockAndRetDelta(blockID, size int) []byte  {
 	//newDataStr := RandStringBytesMaskImpr(config.NumOfMB)
-	newDataStr := uniuri.NewLen(config.BlockSize)
+	newDataStr := uniuri.NewLen(size)
 
 	newBuff := []byte(newDataStr)
 	/*****read old data*******/
-	oldBuff := ReadBlockWithSize(blockID, config.BlockSize)
+	oldBuff := ReadBlockWithSize(blockID, size)
 	/*****compute new delta data*******/
-	deltaBuff := make([]byte, config.BlockSize, config.BlockSize)
+	deltaBuff := make([]byte, size, size)
 	for i := 0; i < len(newBuff); i++ {
 		deltaBuff[i] = newBuff[i] ^ oldBuff[i]
 	}
 	/*****write new data*******/
-	go WriteBlockWithSize(blockID, newBuff, config.BlockSize)
+	go WriteBlockWithSize(blockID, newBuff, size)
 
 	return deltaBuff
 }

@@ -77,7 +77,7 @@ func main() {
 	go listenACK(l2)
 	go listenSettings(l4)
 	//go timeout()
-	go common.ListenACK(schedule.ReceiveAck)
+	//go common.ListenACK(schedule.ReceiveAck)
 	go common.Multicast(schedule.SendCh)
 	listenCMD(l1)
 }

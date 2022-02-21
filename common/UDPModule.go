@@ -44,7 +44,8 @@ func Multicast(send chan config.MTU) {
 func HandlingACK(ackCh chan config.ACK) {
 	for  {
 		ack := <-ackCh
-		receiverAddr := StringConcat(GetNodeIP(GetNodeID(ack.BlockID)), "", config.MulticastAddrListenACK)
+		//receiverAddr := StringConcat(GetNodeIP(GetNodeID(ack.BlockID)), "", config.MulticastAddrListenACK)
+		receiverAddr := StringConcat("localhost", "", config.MulticastAddrListenACK)
 		addr, err := net.ResolveUDPAddr("udp", receiverAddr)
 		PrintError("ResolvingUDPAddr in Multicast failed: ", err)
 		conn, err := net.DialUDP("udp", nil, addr)
@@ -55,13 +56,14 @@ func HandlingACK(ackCh chan config.ACK) {
 		PrintError("Encode error in Multicast: ", err)
 		_, err = conn.Write(msg)
 		PrintError("conn write error in Multicast: ", err)
-		log.Printf("返回ack: %+v\n.", ack)
+		log.Printf("向 %v 发送 ack: %+v\n.", GetLocalIP(), ack)
 	}
 }
 
 func ListenACK(receiveACKCh chan config.ACK)  {
 	addr, err := net.ResolveUDPAddr("udp", StringConcat("localhost","", config.MulticastAddrListenACK))
 	PrintError("resolve error in ListenMulticast: ", err)
+	log.Printf("listening multicast ack at %v...\n", addr)
 	conn, err := net.ListenUDP("udp", addr)
 	//err = conn.SetReadBuffer(config.MaxDatagramSize)
 	PrintError("set read buffer error in ListenMulticast: ", err)
@@ -89,6 +91,7 @@ func ListenACK(receiveACKCh chan config.ACK)  {
 func ListenMulticast(receive chan config.MTU) {
 	addr, err := net.ResolveUDPAddr("udp", config.MulticastAddrWithPort)
 	PrintError("resolve error in ListenMulticast: ", err)
+	log.Printf("listening multicast at %v...\n", addr)
 	conn, err := net.ListenMulticastUDP("udp", nil, addr)
 	err = conn.SetReadBuffer(config.MaxDatagramSize)
 	PrintError("set read buffer error in ListenMulticast: ", err)

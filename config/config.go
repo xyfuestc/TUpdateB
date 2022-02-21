@@ -84,7 +84,7 @@ type PolicyType int
 
 const BaseIP string = "192.168.1."
 var MSIP = BaseIP + "108"
-const DataFilePath string = "../../test"
+const DataFilePath string = "../test"
 const StartIP int = 172
 var NodeIPs =[]string{
 	BaseIP+"110", BaseIP+"111", BaseIP+"112", BaseIP+"113",     //rack0

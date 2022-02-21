@@ -120,7 +120,7 @@ func (p Base) HandleCMD(cmd *config.CMD) {
 }
 
 func handleOneCMD(cmd *config.CMD)  {
-	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID)
+	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID, config.BlockSize)
 	//buff := common.ReadBlock(cmd.BlockID)
 	log.Printf("读取到数据 block %d: %v\n", cmd.BlockID, len(buff))
 	for _, _ = range cmd.ToIPs {

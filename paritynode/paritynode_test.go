@@ -3,6 +3,7 @@ package main
 import (
 	"EC/common"
 	"EC/config"
+	"EC/schedule"
 	"encoding/json"
 	"github.com/wxnacy/wgo/arrays"
 	"log"
@@ -10,7 +11,6 @@ import (
 
 	//"strconv"
 	"testing"
-	"time"
 )
 type Message struct {
 	ID uint64 `json:"id"`
@@ -18,30 +18,13 @@ type Message struct {
 	MultiTargetIPs []string `json:"multiTargetIPs"`
 }
 
-func TestSend(t *testing.T) {
-	sendCh := make(chan config.MTU, 10)
-	receive := make(chan config.MTU, 10)
-	go common.Multicast(sendCh)
-	//go common.ListenMulticast(receive)
-
-	data := common.ReadBlockWithSize(0, config.BlockSize)
-
-	go RunPrintMsg(receive)
-	time.Sleep(1 * time.Second)
-	count := 0
-	for{
-		msg := &config.MTU{
-			SID: count,
-			BlockID: count,
-			FromIP: common.GetLocalIP(),
-			MultiTargetIPs: []string{common.GetLocalIP()},
-			IsFragment: count % 2 == 0,
-			FragmentCount: count,
-			Data: data,
-		}
-		sendCh <- *msg
-		time.Sleep(500 * time.Millisecond)
-		count += 1
+func TestMulticast(t *testing.T) {
+	schedule.SetPolicy(config.BASEMulticast)
+	go common.ListenMulticast(schedule.ReceiveCh)
+	//go common.HandlingACK(schedule.ReceiveAck)
+	go MsgSorter(schedule.ReceiveCh, schedule.ReceiveAck)
+	for  {
+		
 	}
 }
 func ListenMulticast(receive chan Message) {
