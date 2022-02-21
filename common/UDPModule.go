@@ -44,8 +44,8 @@ func Multicast(send chan config.MTU) {
 func HandlingACK(ackCh chan config.ACK) {
 	for  {
 		ack := <-ackCh
-		//receiverAddr := StringConcat(GetNodeIP(GetNodeID(ack.BlockID)), "", config.MulticastAddrListenACK)
-		receiverAddr := StringConcat("localhost", "", config.MulticastAddrListenACK)
+		receiverAddr := StringConcat(GetNodeIP(GetNodeID(ack.BlockID)), "", config.MulticastAddrListenACK)
+		//receiverAddr := StringConcat("localhost", "", config.MulticastAddrListenACK)
 		addr, err := net.ResolveUDPAddr("udp", receiverAddr)
 		PrintError("ResolvingUDPAddr in Multicast failed: ", err)
 		conn, err := net.DialUDP("udp", nil, addr)
