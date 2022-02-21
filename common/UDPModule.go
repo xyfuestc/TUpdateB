@@ -60,10 +60,10 @@ func HandlingACK(ackCh chan config.ACK) {
 }
 
 func ListenACK(receiveACKCh chan config.ACK)  {
-	addr, err := net.ResolveUDPAddr("udp", config.MulticastAddrListenACK)
+	addr, err := net.ResolveUDPAddr("udp", StringConcat("localhost","", config.MulticastAddrListenACK))
 	PrintError("resolve error in ListenMulticast: ", err)
-	conn, err := net.ListenMulticastUDP("udp", nil, addr)
-	err = conn.SetReadBuffer(config.MaxDatagramSize)
+	conn, err := net.ListenUDP("udp", addr)
+	//err = conn.SetReadBuffer(config.MaxDatagramSize)
 	PrintError("set read buffer error in ListenMulticast: ", err)
 	defer conn.Close()
 	var ack config.ACK
