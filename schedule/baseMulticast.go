@@ -15,7 +15,7 @@ type BaseMulticast struct {
 var SendCh = make(chan config.MTU)
 var ReceiveCh = make(chan config.MTU, 10)
 var ReceiveAck = make(chan config.ACK)
-var SentMsgLog = map[string]config.MTU{}
+//var SentMsgLog = map[string]config.MTU{}
 func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 	//利用多播将数据发出
 	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID, cmd.SendSize)
@@ -146,14 +146,20 @@ func (p BaseMulticast) Clear()  {
 		ACKReceiverIPs: map[int]string{},
 	}
 	IsRunning = true
+
 }
 func (p BaseMulticast) IsFinished() bool {
 	isFinished :=  len(totalReqs) == 0 && ackMaps.isEmpty()
 	if isFinished {
-		close(SendCh)
-		close(ReceiveCh)
+		CloseAllChannels()
 	}
 	return isFinished
+}
+
+func CloseAllChannels()  {
+	close(ReceiveAck)
+	close(SendCh)
+	close(ReceiveCh)
 }
 
 func (p BaseMulticast) GetActualBlocks() int {
@@ -247,13 +253,16 @@ func GetFragments(cmd *config.CMD) []*config.MTU {
 }
 func SendMessageAndWaitingForACK(message *config.MTU)  {
 	SendCh <- *message
-	//确认收到ack
-	select {
-	case ack := <- ReceiveAck:
-		fmt.Printf("确认收到ack: %+v\n", ack)
-	case <-time.After(2 * time.Millisecond):
-		fmt.Printf("%v ack返回超时！\n", message.SID)
-		//SendMessageAndWaitingForACK(message)
-		SendCh <- *message
+	for {
+		//确认收到ack
+		select {
+		case ack := <-ReceiveAck:
+			fmt.Printf("确认收到ack: %+v\n", ack)
+			break
+		case <-time.After(2 * time.Millisecond):
+			fmt.Printf("%v ack返回超时！\n", message.SID)
+			//SendMessageAndWaitingForACK(message)
+			SendCh <- *message
+		}
 	}
 }
