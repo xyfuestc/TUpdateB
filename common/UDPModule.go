@@ -56,7 +56,7 @@ func HandlingACK(ackCh chan config.ACK) {
 		PrintError("Encode error in Multicast: ", err)
 		_, err = conn.Write(msg)
 		PrintError("conn write error in Multicast: ", err)
-		log.Printf("向 %v 发送 ack: %+v\n.", GetLocalIP(), ack)
+		log.Printf("向 %v 发送 ack: %+v\n.", receiverAddr, ack)
 	}
 }
 
@@ -107,7 +107,7 @@ func ListenMulticast(receive chan config.MTU) {
 			if e, ok := err.(*json.SyntaxError); ok {
 				log.Printf("syntax error at byte offset %d", e.Offset)
 			}
-			log.Printf("message response: %q", inputBytes[:length])
+			//log.Printf("message response: %q", inputBytes[:length])
 			//return err
 		}
 		if i := arrays.ContainsString(message.MultiTargetIPs, GetLocalIP()); i >= 0 {

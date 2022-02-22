@@ -5,6 +5,7 @@ import (
 	"EC/config"
 	"EC/schedule"
 	"encoding/json"
+	"fmt"
 	"github.com/wxnacy/wgo/arrays"
 	"log"
 	"net"
@@ -19,6 +20,10 @@ type Message struct {
 }
 
 func TestMulticast(t *testing.T) {
+	nodeID := common.GetNodeID(2021)
+	fromIP := common.GetNodeIP(nodeID)
+	fmt.Println(fromIP)
+
 	schedule.SetPolicy(config.BASEMulticast)
 	go common.ListenMulticast(schedule.ReceiveCh)
 	go common.HandlingACK(schedule.ReceiveAck)
@@ -46,7 +51,7 @@ func ListenMulticast(receive chan Message) {
 			if e, ok := err.(*json.SyntaxError); ok {
 				log.Printf("syntax error at byte offset %d", e.Offset)
 			}
-			log.Printf("message response: %q", inputBytes[:length])
+			//log.Printf("message response: %q", inputBytes[:length])
 			//return err
 		}
 		//common.PrintError("unmarshal error in listenMulticast: ", err)

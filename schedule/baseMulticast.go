@@ -37,17 +37,9 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 		SID:            cmd.SID,
 		//FragmentID:     0,
 		IsFragment:     false,
+		SendSize:       cmd.SendSize,
 	}
-	SendCh <- *message
-	//确认收到ack
-	select {
-	case ack := <- ReceiveAck:
-		fmt.Printf("确认收到ack: %+v\n", ack)
-	case <-time.After(2 * time.Millisecond):
-		fmt.Printf("%v ack返回超时！\n", message.SID)
-		SendCh <- *message
-	}
-
+	SendMessageAndWaitingForACK(message)
 	log.Printf("HandleCMD: 发送td(sid:%d, blockID:%d)，从%s到%v \n", cmd.SID, cmd.BlockID, common.GetLocalIP(), cmd.ToIPs)
 
 }
@@ -252,4 +244,15 @@ func GetFragments(cmd *config.CMD) []*config.MTU {
 		//}
 	}
 	return fragments
+}
+func SendMessageAndWaitingForACK(message *config.MTU)  {
+	SendCh <- *message
+	//确认收到ack
+	select {
+	case ack := <- ReceiveAck:
+		fmt.Printf("确认收到ack: %+v\n", ack)
+	case <-time.After(2 * time.Millisecond):
+		fmt.Printf("%v ack返回超时！\n", message.SID)
+		SendMessageAndWaitingForACK(message)
+	}
 }

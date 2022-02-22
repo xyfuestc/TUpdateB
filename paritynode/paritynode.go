@@ -217,6 +217,7 @@ func MsgSorter(receive <-chan config.MTU, ackCh chan<- config.ACK)  {
 			//common.PrintMessage(message)
 			//if message.IsFragment == false { //不需要组包
 				schedule.GetCurPolicy().RecordSIDAndReceiverIP(message.SID, message.FromIP)
+				log.Printf("记录ACKIP：sid: %v, fromIP: %v\n", message.SID, message.FromIP)
 				//构造td
 				td := &config.TD{
 					SID:            message.SID,

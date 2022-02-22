@@ -38,10 +38,10 @@ func TestMulticast(t *testing.T)  {
 		}
 	}
 	for  {
-		select {
-		case ack := <-schedule.ReceiveAck:
-			fmt.Printf("确认收到ack: %+v\n", ack)
-		}
+		//select {
+		//case ack := <-schedule.ReceiveAck:
+		//	fmt.Printf("确认收到ack: %+v\n", ack)
+		//}
 	}
 
 

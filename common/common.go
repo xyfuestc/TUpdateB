@@ -164,7 +164,7 @@ func RandWriteBlockAndRetDelta(blockID, size int) []byte  {
 	/*****read old data*******/
 	oldBuff := ReadBlockWithSize(blockID, size)
 	/*****compute new delta data*******/
-	deltaBuff := make([]byte, size, size)
+	deltaBuff := make([]byte, size)
 	for i := 0; i < len(newBuff); i++ {
 		deltaBuff[i] = newBuff[i] ^ oldBuff[i]
 	}
