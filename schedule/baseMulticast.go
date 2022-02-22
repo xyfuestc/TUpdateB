@@ -113,6 +113,7 @@ func (p BaseMulticast) baseMulti(reqs []*config.ReqData)  {
 	}
 	sid = 0
 	for _, req := range reqs {
+		req.SID = sid
 		p.handleOneBlock(*req)
 		sid++
 	}
