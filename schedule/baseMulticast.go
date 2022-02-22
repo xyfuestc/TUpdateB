@@ -39,7 +39,8 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 		IsFragment:     false,
 		SendSize:       cmd.SendSize,
 	}
-	SendMessageAndWaitingForACK(message)
+	SendCh <- *message
+	//SendMessageAndWaitingForACK(message)
 	log.Printf("HandleCMD: 发送td(sid:%d, blockID:%d)，从%s到%v \n", cmd.SID, cmd.BlockID, common.GetLocalIP(), cmd.ToIPs)
 
 }
