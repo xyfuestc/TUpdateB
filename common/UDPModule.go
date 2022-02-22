@@ -107,8 +107,6 @@ func ListenMulticast(receive chan config.MTU) {
 			if e, ok := err.(*json.SyntaxError); ok {
 				log.Printf("syntax error at byte offset %d", e.Offset)
 			}
-			//log.Printf("message response: %q", inputBytes[:length])
-			//return err
 		}
 		if i := arrays.ContainsString(message.MultiTargetIPs, GetLocalIP()); i >= 0 {
 			receive <- message

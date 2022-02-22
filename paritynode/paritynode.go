@@ -8,7 +8,6 @@ import (
 	"net"
 )
 var connections []net.Conn
-var usingMulticast = false
 func handleCMD(conn net.Conn)  {
 	defer conn.Close()
 	cmd := common.GetCMD(conn)
@@ -31,50 +30,7 @@ func setPolicy(conn net.Conn)  {
 	config.RSBlockSize = p.NumOfMB * config.Megabyte * config.W
 	log.Printf("收到来自 %s 的命令，设置当前算法设置为%s, 当前XOR的blockSize=%vMB，RS的blockSize=%vMB, UsingMulticast=%v.\n",
 		common.GetConnIP(conn), config.CurPolicyStr[p.Type], config.BlockSize/config.Megabyte, config.RSBlockSize/config.Megabyte, p.Multicast)
-
 }
-//func joinMulticastGroupAndListening() {
-//	//如果第二参数为nil,它会使用系统指定多播接口，但是不推荐这样使用
-//	addr, err := net.ResolveUDPAddr("udp", config.MulticastAddrWithPort)
-//	if err != nil {
-//		log.Fatalln(err)
-//	}
-//	listener, err := net.ListenMulticastUDP("udp", nil, addr)
-//	if err != nil {
-//		log.Fatalln(err)
-//		return
-//	}
-//	log.Printf("Multicast Listening: %v\n", addr)
-//	data := make([]byte, config.RSBlockSize)
-//
-//	for {
-//		n, remoteAddr, err := listener.ReadFromUDP(data)
-//		if err != nil {
-//			log.Printf("error during read: %s", err)
-//		}
-//		log.Printf("data[n]=%v, size=%v\n", data[:n], n)
-//		var mtu config.MTU
-//
-//		buffer := bytes.NewBuffer(data[:n])
-//		decoder := gob.NewDecoder(buffer)
-//		err = decoder.Decode(&mtu)
-//		if err != nil {
-//			log.Fatalln("ParityNode Multicast Decode Error: ", err)
-//			return
-//		}
-//		//
-//		//
-//		//if err := gob.NewDecoder(bytes.NewReader(data[:n])).Decode(&mtu); err != nil {
-//		//	log.Fatalln("ParityNode Multicast Decode Error: ", err)
-//		//}
-//		log.Printf("接收到多播数据！来自：<%s> sid: %v, blockID: %v, MultiTargetIPs: %v\n", remoteAddr, mtu.SID, mtu.BlockID, mtu.MultiTargetIPs)
-//
-//		if i := arrays.ContainsString(mtu.MultiTargetIPs, common.GetLocalIP()); i >= 0 {
-//			log.Printf("我需要处理！来自：<%s> sid: %v, blockID: %v\n", remoteAddr, mtu.SID, mtu.BlockID)
-//
-//		}
-//	}
-//}
 func handleACK(conn net.Conn) {
 	defer conn.Close()
 	ack := common.GetACK(conn)
@@ -114,7 +70,7 @@ func main() {
 	go listenACK(l3)
 	go listenSettings(l4)
 	go common.ListenMulticast(schedule.ReceiveCh)
-	go common.HandlingACK(schedule.ReceiveAck)
+	//go common.HandlingACK(schedule.ReceiveAck)
 	go MsgSorter(schedule.ReceiveCh, schedule.ReceiveAck)
 	listenTD(l1)
 
@@ -199,13 +155,33 @@ func listenSettings(listen net.Listener) {
 		connections = append(connections, conn)
 	}
 }
-
-func MsgSorter(receive <-chan config.MTU, ackCh chan<- config.ACK)  {
-	//countMap := map[int]int{}
-	//sidBuffs := map[int][]byte{}
+func MsgSorter(receive <-chan config.MTU, ackCh chan<- config.ACK) {
 	for  {
 		select {
 		case message := <-receive:
+			schedule.GetCurPolicy().RecordSIDAndReceiverIP(message.SID, message.FromIP)
+			//log.Printf("记录ACKIP：sid: %v, fromIP: %v\n", message.SID, message.FromIP)
+			//构造td
+			td := &config.TD{
+				SID:            message.SID,
+				Buff:           message.Data,
+				BlockID:        message.BlockID,
+				MultiTargetIPs: message.MultiTargetIPs,
+				FromIP:         message.FromIP,
+				SendSize:       message.SendSize,
+			}
+			go schedule.GetCurPolicy().HandleTD(td)
+			//log.Printf("MsgSorter：接收数据完成，执行HandleTD, td: sid: %v, sendSize: %v.\n",
+			//																td.SID, td.SendSize)
+		}
+	}
+}
+//func MsgSorter(receive <-chan config.MTU, ackCh chan<- config.ACK)  {
+//	countMap := map[int]int{}
+//	sidBuffs := map[int][]byte{}
+//	for  {
+//		select {
+//		case message := <-receive:
 			//返回ack
 			//ack := config.ACK{
 			//	BlockID: message.BlockID,
@@ -216,25 +192,25 @@ func MsgSorter(receive <-chan config.MTU, ackCh chan<- config.ACK)  {
 			//处理消息
 			//common.PrintMessage(message)
 			//if message.IsFragment == false { //不需要组包
-				schedule.GetCurPolicy().RecordSIDAndReceiverIP(message.SID, message.FromIP)
-				log.Printf("记录ACKIP：sid: %v, fromIP: %v\n", message.SID, message.FromIP)
-				//构造td
-				td := &config.TD{
-					SID:            message.SID,
-					Buff:           message.Data,
-					BlockID:        message.BlockID,
-					MultiTargetIPs: message.MultiTargetIPs,
-					FromIP:         message.FromIP,
-					SendSize:       message.SendSize,
-				}
-				go schedule.GetCurPolicy().HandleTD(td)
-				log.Printf("MsgSorter：接收数据完成，执行HandleTD, td: sid: %v, sendSize: %v.\n", td.SID, td.SendSize)
-				ack := config.ACK{
-					BlockID: message.BlockID,
-					SID: message.SID,
-					FragmentID:message.FragmentID,
-				}
-				ackCh <- ack
+			//	schedule.GetCurPolicy().RecordSIDAndReceiverIP(message.SID, message.FromIP)
+			//	log.Printf("记录ACKIP：sid: %v, fromIP: %v\n", message.SID, message.FromIP)
+			//	//构造td
+			//	td := &config.TD{
+			//		SID:            message.SID,
+			//		Buff:           message.Data,
+			//		BlockID:        message.BlockID,
+			//		MultiTargetIPs: message.MultiTargetIPs,
+			//		FromIP:         message.FromIP,
+			//		SendSize:       message.SendSize,
+			//	}
+			//	go schedule.GetCurPolicy().HandleTD(td)
+			//	log.Printf("MsgSorter：接收数据完成，执行HandleTD, td: sid: %v, sendSize: %v.\n", td.SID, td.SendSize)
+				//ack := config.ACK{
+				//	BlockID: message.BlockID,
+				//	SID: message.SID,
+				//	FragmentID:message.FragmentID,
+				//}
+				//ackCh <- ack
 			//} else { //需要组包
 				//if _, ok := countMap[message.SID]; !ok { //第一次收到，记录sid
 				//	countMap[message.SID] = message.FragmentCount - 1
@@ -264,12 +240,12 @@ func MsgSorter(receive <-chan config.MTU, ackCh chan<- config.ACK)  {
 				//}
 			//}
 
-		}
-
-
-
-	}
-
-}
+//		}
+//
+//
+//
+//	}
+//
+//}
 
 

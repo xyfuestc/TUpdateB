@@ -160,6 +160,7 @@ func CloseAllChannels()  {
 	close(ReceiveAck)
 	close(SendCh)
 	close(ReceiveCh)
+
 }
 
 func (p BaseMulticast) GetActualBlocks() int {
@@ -253,7 +254,7 @@ func GetFragments(cmd *config.CMD) []*config.MTU {
 }
 func SendMessageAndWaitingForACK(message *config.MTU)  {
 	SendCh <- *message
-	for {
+	//for {
 		//确认收到ack
 		select {
 		case ack := <-ReceiveAck:
@@ -264,5 +265,5 @@ func SendMessageAndWaitingForACK(message *config.MTU)  {
 			//SendMessageAndWaitingForACK(message)
 			SendCh <- *message
 		}
-	}
+	//}
 }

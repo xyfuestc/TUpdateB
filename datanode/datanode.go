@@ -8,7 +8,6 @@ import (
 	"net"
 )
 var connections []net.Conn
-
 func handleCMD(conn net.Conn)  {
 	defer conn.Close()
 	cmd := common.GetCMD(conn)
