@@ -253,6 +253,7 @@ func SendMessageAndWaitingForACK(message *config.MTU)  {
 		fmt.Printf("确认收到ack: %+v\n", ack)
 	case <-time.After(2 * time.Millisecond):
 		fmt.Printf("%v ack返回超时！\n", message.SID)
-		SendMessageAndWaitingForACK(message)
+		//SendMessageAndWaitingForACK(message)
+		SendCh <- *message
 	}
 }
