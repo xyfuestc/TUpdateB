@@ -53,6 +53,7 @@ func clearUpdates() {
 	numOfReq = 0
 	finished = true
 	_ = totalReqs
+	close(receivedAckCh)
 }
 /*每种算法结束后，清空操作*/
 func clearRound()  {
@@ -182,11 +183,15 @@ func start()  {
 	_ = totalReqs
 }
 func msgSorter(receivedAckCh <-chan config.ACK)  {
-	for ack := range receivedAckCh {
-		schedule.GetCurPolicy().HandleACK(&ack)
+	for  {
+		select {
+		case ack := <- receivedAckCh:
+			schedule.GetCurPolicy().HandleACK(&ack)
+			checkFinish()
+		}
 	}
 
-	checkFinish()
+
 }
 func listenACK(listen net.Listener) {
 
