@@ -86,6 +86,9 @@ var ackMaps *ACKMap
 var ackIPMaps *ACKIPMap
 var sid = 0
 var totalCrossRackTraffic = 0
+var ReceivedAckCh = make(chan config.ACK, 10)
+var ReceivedTDCh = make(chan config.TD, 10)
+var ReceivedCMDCh = make(chan config.CMD, 10)
 func SetPolicy(policyType config.PolicyType)  {
 	switch policyType {
 	case config.BASE:
@@ -266,7 +269,11 @@ func ACKIsEmpty() bool {
 }
 
 func (p Base) IsFinished() bool {
-	return len(totalReqs) == 0 && ackMaps.isEmpty()
+	isFinished := len(totalReqs) == 0 && ackMaps.isEmpty()
+	if isFinished {
+		CloseAllChannels()
+	}
+	return isFinished
 }
 
 func (p Base) GetActualBlocks() int {

@@ -18,8 +18,8 @@ func TestMulticast(t *testing.T)  {
 
 
 	schedule.SetPolicy(config.BASEMulticast)
-	go common.ListenACK(schedule.ReceiveAck)
-	go common.Multicast(schedule.SendCh)
+	go common.ListenACK(schedule.MulticastReceiveAckCh)
+	go common.Multicast(schedule.MulticastSendMTUCh)
 	for i := 0; i < 100; i++ {
 		cmd := &config.CMD{
 			SID:      i,
@@ -30,20 +30,20 @@ func TestMulticast(t *testing.T)  {
 		}
 		fragments := schedule.GetFragments(cmd)
 		for _, f := range fragments {
-			schedule.SendCh <- *f
+			schedule.MulticastSendMTUCh <- *f
 			select {
-			case ack := <- schedule.ReceiveAck:
+			case ack := <- schedule.MulticastReceiveAckCh:
 				fmt.Printf("确认收到ack: %+v\n", ack)
 			case <-time.After(2 * time.Millisecond):
 				fmt.Printf("%v ack返回超时！\n", f.SID)
-				schedule.SendCh <- *f
+				schedule.MulticastSendMTUCh <- *f
 			}
 			//msgLog[common.StringConcat(strconv.Itoa(f.SID), ":", strconv.Itoa(f.FragmentID))] = *f
 		}
 	}
 	for  {
 		//select {
-		//case ack := <-schedule.ReceiveAck:
+		//case ack := <-schedule.MulticastReceiveAckCh:
 		//	fmt.Printf("确认收到ack: %+v\n", ack)
 		//}
 	}

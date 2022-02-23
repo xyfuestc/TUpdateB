@@ -7,30 +7,32 @@ import (
 	"log"
 	"net"
 	"github.com/pkg/profile"
+	"os"
+	"os/signal"
 )
 var connections []net.Conn
 
-func handleCMD(conn net.Conn)  {
-	defer conn.Close()
-	cmd := common.GetCMD(conn)
-	schedule.GetCurPolicy().RecordSIDAndReceiverIP(cmd.SID, common.GetConnIP(conn))
-	log.Printf("收到来自 %s 的命令: 将 sid: %d, block: %d 的更新数据发送给 %v.\n", common.GetConnIP(conn), cmd.SID, cmd.BlockID, cmd.ToIPs)
-	schedule.GetCurPolicy().HandleCMD(&cmd)
-}
+//func handleCMD(conn net.Conn)  {
+//	defer conn.Close()
+//	cmd := common.GetCMD(conn)
+//	schedule.GetCurPolicy().RecordSIDAndReceiverIP(cmd.SID, common.GetConnIP(conn))
+//	log.Printf("收到来自 %s 的命令: 将 sid: %d, block: %d 的更新数据发送给 %v.\n", common.GetConnIP(conn), cmd.SID, cmd.BlockID, cmd.ToIPs)
+//	schedule.GetCurPolicy().HandleCMD(&cmd)
+//}
 
-func handleACK(conn net.Conn) {
-	defer conn.Close()
-	ack := common.GetACK(conn)
-	schedule.GetCurPolicy().HandleACK(&ack)
-}
-
-func handleTD(conn net.Conn)  {
-	defer conn.Close()
-	td := common.GetTD(conn)
-	log.Printf("收到来自 %s 的TD，sid: %d, blockID: %d.\n", common.GetConnIP(conn), td.SID, td.BlockID)
-	schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
-	schedule.GetCurPolicy().HandleTD(&td)
-}
+//func handleACK(conn net.Conn) {
+//	defer conn.Close()
+//	ack := common.GetACK(conn)
+//	schedule.GetCurPolicy().HandleACK(&ack)
+//}
+//
+//func handleTD(conn net.Conn)  {
+//	defer conn.Close()
+//	td := common.GetTD(conn)
+//	log.Printf("收到来自 %s 的TD，sid: %d, blockID: %d.\n", common.GetConnIP(conn), td.SID, td.BlockID)
+//	schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
+//	schedule.GetCurPolicy().HandleTD(&td)
+//}
 
 func setPolicy(conn net.Conn)  {
 	defer conn.Close()
@@ -45,13 +47,54 @@ func setPolicy(conn net.Conn)  {
 	log.Printf("收到来自 %s 的命令，设置当前算法设置为%s, 当前blockSize=%vMB.\n",
 		common.GetConnIP(conn), config.CurPolicyStr[p.Type], config.BlockSize/config.Megabyte)
 }
+func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, receivedCMDCh <-chan config.CMD)  {
+	for  {
+		select {
+		case ack := <-receivedAckCh:
+			schedule.GetCurPolicy().HandleACK(&ack)
 
+		case td := <-receivedTDCh:
+			schedule.GetCurPolicy().HandleTD(&td)
+
+		case cmd := <-receivedCMDCh:
+			schedule.GetCurPolicy().HandleCMD(&cmd)
+
+		}
+	}
+}
 func main() {
 	defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
 
-
 	config.Init()
 
+	//监听并接收ack，检测程序结束
+	listenAndReceive(config.NumOfWorkers)
+
+
+	//当发生意外退出时，安全释放所有资源
+	registerSafeExit()
+
+	//清除连接
+	defer func() {
+		for _, conn := range connections {
+			conn.Close()
+		}
+	}()
+
+	for  {
+		
+	}
+
+	//go listenTD(l3)
+	//go listenACK(l2)
+	//go listenSettings(l4)
+	//go timeout()
+	//go common.ListenACK(schedule.MulticastReceiveAckCh)
+
+	//listenCMD(l1)
+}
+
+func listenAndReceive(maxWorkers int) {
 	log.Printf("listening cmd in %s:%s\n", common.GetLocalIP(), config.NodeCMDListenPort)
 	l1, err := net.Listen("tcp", common.GetLocalIP() +  ":" + config.NodeCMDListenPort)
 	if err != nil {
@@ -76,20 +119,15 @@ func main() {
 		log.Printf("listening settings failed, err:%v\n", err)
 		return
 	}
-	//清除连接
-	defer func() {
-		for _, conn := range connections {
-			conn.Close()
-		}
-	}()
 
-	go listenTD(l3)
-	go listenACK(l2)
-	go listenSettings(l4)
-	//go timeout()
-	//go common.ListenACK(schedule.ReceiveAck)
-	go common.Multicast(schedule.SendCh)
-	listenCMD(l1)
+	for i := 0; i < maxWorkers; i++ {
+		go msgSorter(schedule.ReceivedAckCh, schedule.ReceivedTDCh, schedule.ReceivedCMDCh)
+		go listenCMD(l1)
+		go listenACK(l2)
+		go listenTD(l3)
+		go listenSettings(l4)
+		go common.Multicast(schedule.MulticastSendMTUCh)
+	}
 }
 func listenCMD(listen net.Listener) {
 	defer listen.Close()
@@ -100,7 +138,11 @@ func listenCMD(listen net.Listener) {
 			log.Printf("accept failed, err:%v\n", err)
 			continue
 		}
-		go handleCMD(conn)
+		cmd := common.GetCMD(conn)
+		schedule.GetCurPolicy().RecordSIDAndReceiverIP(cmd.SID, common.GetConnIP(conn))
+		schedule.ReceivedCMDCh <- cmd
+		log.Printf("收到来自 %s 的命令: 将 sid: %d, block: %d 的更新数据发送给 %v.\n", common.GetConnIP(conn), cmd.SID, cmd.BlockID, cmd.ToIPs)
+
 		connections = append(connections, conn)
 		if len(connections)%100 == 0 {
 			log.Printf("total number of connections: %v", len(connections))
@@ -121,7 +163,9 @@ func listenACK(listen net.Listener) {
 			log.Printf("accept err: %v", e)
 			return
 		}
-		go handleACK(conn)
+		ack := common.GetACK(conn)
+		schedule.ReceivedAckCh <- ack
+
 		connections = append(connections, conn)
 		if len(connections)%100 == 0 {
 			log.Printf("total number of connections: %v", len(connections))
@@ -142,7 +186,11 @@ func listenTD(listen net.Listener) {
 			log.Printf("accept err: %v", e)
 			return
 		}
-		go handleTD(conn)
+		td := common.GetTD(conn)
+		schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
+		schedule.ReceivedTDCh <- td
+		log.Printf("收到来自 %s 的TD，sid: %d, blockID: %d.\n", common.GetConnIP(conn), td.SID, td.BlockID)
+
 		connections = append(connections, conn)
 		if len(connections)%100 == 0 {
 			log.Printf("total number of connections: %v", len(connections))
@@ -163,11 +211,28 @@ func listenSettings(listen net.Listener) {
 			log.Printf("accept err: %v", e)
 			return
 		}
-		go setPolicy(conn)
+		setPolicy(conn)
 		connections = append(connections, conn)
 	}
 }
+func registerSafeExit()  {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		for range c {
+			clearAll()
+			os.Exit(0)
+		}
+	}()
+}
 
+func clearAll() {
+	for _, conn := range connections {
+		conn.Close()
+	}
+	schedule.GetCurPolicy().Clear()
+	schedule.CloseAllChannels()
+}
 
 
 

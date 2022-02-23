@@ -7,6 +7,8 @@ import (
 	"github.com/pkg/profile"
 	"log"
 	"net"
+	"os"
+	"os/signal"
 )
 var connections []net.Conn
 func handleCMD(conn net.Conn)  {
@@ -67,6 +69,9 @@ func main() {
 		log.Printf("listening settings failed, err:%v\n", err)
 		return
 	}
+	//当发生意外退出时，安全释放所有资源
+	registerSafeExit()
+
 	//清除连接
 	defer func() {
 		for _, conn := range connections {
@@ -76,9 +81,9 @@ func main() {
 	go listenCMD(l2)
 	go listenACK(l3)
 	go listenSettings(l4)
-	go common.ListenMulticast(schedule.ReceiveCh)
-	//go common.HandlingACK(schedule.ReceiveAck)
-	go MsgSorter(schedule.ReceiveCh, schedule.ReceiveAck)
+	go common.ListenMulticast(schedule.MulticastReceiveMTUCh)
+	//go common.HandlingACK(schedule.MulticastReceiveAckCh)
+	go MsgSorter(schedule.MulticastReceiveMTUCh, schedule.MulticastReceiveAckCh)
 	listenTD(l1)
 
 }
@@ -256,3 +261,21 @@ func MsgSorter(receive <-chan config.MTU, ackCh chan<- config.ACK) {
 //}
 
 
+func registerSafeExit()  {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		for range c {
+			clearAll()
+			os.Exit(0)
+		}
+	}()
+}
+
+func clearAll() {
+	for _, conn := range connections {
+		conn.Close()
+	}
+	schedule.GetCurPolicy().Clear()
+	schedule.CloseAllChannels()
+}

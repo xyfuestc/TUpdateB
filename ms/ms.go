@@ -10,6 +10,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
 	"time"
@@ -27,7 +28,7 @@ var endTime time.Time
 var totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 var finished = false
 var connections []net.Conn
-var receivedAckCh = make(chan config.ACK, 10)
+//var receivedAckCh = make(chan config.ACK, 10)
 func checkFinish() {
 	//defer conn.Close()
 	//ack := common.GetACK(conn)
@@ -48,12 +49,12 @@ func checkFinish() {
 	}
 }
 /*所有算法跑完，清空操作*/
-func clearUpdates() {
+func clearAll() {
 	actualUpdatedBlocks = 0
 	numOfReq = 0
 	finished = true
 	_ = totalReqs
-	close(receivedAckCh)
+	close(schedule.ReceivedAckCh)
 }
 /*每种算法结束后，清空操作*/
 func clearRound()  {
@@ -70,7 +71,9 @@ func main() {
 	log.Printf("ms启动...")
 	log.Printf("监听ack: %s:%s\n", common.GetLocalIP(), config.NodeACKListenPort)
 
-
+	//当发生意外退出时，释放所有资源
+	registerSafeExit()
+	//监听并接收ack，检测程序结束
 	listenAndReceive(config.NumOfWorkers)
 
 	getReqsFromTrace()
@@ -86,7 +89,7 @@ func main() {
 		curPolicy++
 	}
 	//清空
-	clearUpdates()
+	clearAll()
 }
 func listenAndReceive(maxWorkers int)  {
 	l2, err := net.Listen("tcp", common.GetLocalIP() + ":" + config.NodeACKListenPort)
@@ -95,7 +98,7 @@ func listenAndReceive(maxWorkers int)  {
 	}
 
 	for i := 0; i < maxWorkers; i++ {
-		go msgSorter(receivedAckCh)
+		go msgSorter(schedule.ReceivedAckCh)
 		go listenACK(l2)
 	}
 }
@@ -180,7 +183,6 @@ func start()  {
 	log.Printf(" [%s]算法开始运行，总共block请求数量为：%d\n", config.CurPolicyStr[curPolicy], numOfReq)
 	schedule.SetPolicy(config.PolicyType(curPolicy))
 	schedule.GetCurPolicy().HandleReq(totalReqs)
-	_ = totalReqs
 }
 func msgSorter(receivedAckCh <-chan config.ACK)  {
 	for  {
@@ -215,11 +217,23 @@ func listenACK(listen net.Listener) {
 		}
 
 		ack := common.GetACK(conn)
-		receivedAckCh <- ack
+		schedule.ReceivedAckCh <- ack
 
 		connections = append(connections, conn)
 		if len(connections)%100 == 0 {
 			log.Printf("total number of connections: %v", len(connections))
 		}
 	}
+}
+func registerSafeExit()  {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		for range c {
+			clearAll()
+			schedule.GetCurPolicy().Clear()
+			schedule.CloseAllChannels()
+			os.Exit(0)
+		}
+	}()
 }

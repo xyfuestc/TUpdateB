@@ -99,6 +99,8 @@ var ReqBufferPool sync.Pool
 var XORBlockBufferPool sync.Pool
 var RSBlockBufferPool sync.Pool
 var NumOfWorkers int
+
+
 //传输数据格式
 type TD struct {
 	SID                int

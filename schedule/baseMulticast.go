@@ -12,9 +12,9 @@ import (
 type BaseMulticast struct {
 
 }
-var SendCh = make(chan config.MTU)
-var ReceiveCh = make(chan config.MTU, 10)
-var ReceiveAck = make(chan config.ACK)
+var MulticastSendMTUCh = make(chan config.MTU)
+var MulticastReceiveMTUCh = make(chan config.MTU, 10)
+var MulticastReceiveAckCh = make(chan config.ACK)
 //var SentMsgLog = map[string]config.MTU{}
 func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 	//利用多播将数据发出
@@ -27,7 +27,7 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 	}
 	//fragments := GetFragments(cmd)
 	//for _, f := range fragments {
-	//	SendCh <- *f
+	//	MulticastSendMTUCh <- *f
 	//}
 	message := &config.MTU{
 		BlockID:        cmd.BlockID,
@@ -39,7 +39,7 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 		IsFragment:     false,
 		SendSize:       cmd.SendSize,
 	}
-	SendCh <- *message
+	MulticastSendMTUCh <- *message
 	//SendMessageAndWaitingForACK(message)
 	log.Printf("HandleCMD: 发送td(sid:%d, blockID:%d)，从%s到%v \n", cmd.SID, cmd.BlockID, common.GetLocalIP(), cmd.ToIPs)
 
@@ -158,10 +158,14 @@ func (p BaseMulticast) IsFinished() bool {
 }
 
 func CloseAllChannels()  {
-	close(ReceiveAck)
-	close(SendCh)
-	close(ReceiveCh)
-
+	//base
+	close(ReceivedAckCh)
+	close(ReceivedTDCh)
+	close(ReceivedCMDCh)
+	//multicast
+	close(MulticastReceiveAckCh)
+	close(MulticastSendMTUCh)
+	close(MulticastReceiveMTUCh)
 }
 
 func (p BaseMulticast) GetActualBlocks() int {
@@ -207,9 +211,9 @@ func GetFragments(cmd *config.CMD) []*config.MTU {
 				FragmentCount:  count,
 			}
 			fragments = append(fragments, message)
-			//SendCh <- *message
+			//MulticastSendMTUCh <- *message
 			//select {
-			//case ack := <-ReceiveAck:
+			//case ack := <-MulticastReceiveAckCh:
 			//	fmt.Printf("SID %v: Frag %v send success.\n", message.SID, message.FragmentID)
 			//case <-time.After(time.Second):
 			//	fmt.Printf("timeout! SID %v: Frag %v send failed.\n", message.SID, message.FragmentID)
@@ -239,9 +243,9 @@ func GetFragments(cmd *config.CMD) []*config.MTU {
 				SendSize: cmd.SendSize,
 			}
 			fragments = append(fragments, message)
-			//SendCh <- *message
+			//MulticastSendMTUCh <- *message
 			//select {
-			//case <-ReceiveAck:
+			//case <-MulticastReceiveAckCh:
 			//	fmt.Printf("SID %v: Frag %v send success.\n", message.SID, message.FragmentID)
 			//	break
 			//case <-time.After(time.Second):
@@ -254,17 +258,17 @@ func GetFragments(cmd *config.CMD) []*config.MTU {
 	return fragments
 }
 func SendMessageAndWaitingForACK(message *config.MTU)  {
-	SendCh <- *message
+	MulticastSendMTUCh <- *message
 	//for {
 		//确认收到ack
 		select {
-		case ack := <-ReceiveAck:
+		case ack := <-MulticastReceiveAckCh:
 			fmt.Printf("确认收到ack: %+v\n", ack)
 			break
 		case <-time.After(2 * time.Millisecond):
 			fmt.Printf("%v ack返回超时！\n", message.SID)
 			//SendMessageAndWaitingForACK(message)
-			SendCh <- *message
+			MulticastSendMTUCh <- *message
 		}
 	//}
 }

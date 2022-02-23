@@ -25,9 +25,9 @@ func TestMulticast(t *testing.T) {
 	fmt.Println(fromIP)
 
 	schedule.SetPolicy(config.BASEMulticast)
-	go common.ListenMulticast(schedule.ReceiveCh)
-	go common.HandlingACK(schedule.ReceiveAck)
-	go MsgSorter(schedule.ReceiveCh, schedule.ReceiveAck)
+	go common.ListenMulticast(schedule.MulticastReceiveMTUCh)
+	go common.HandlingACK(schedule.MulticastReceiveAckCh)
+	go MsgSorter(schedule.MulticastReceiveMTUCh, schedule.MulticastReceiveAckCh)
 	for  {
 		
 	}
