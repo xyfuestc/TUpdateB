@@ -6,8 +6,10 @@ import (
 	"EC/schedule"
 	"log"
 	"net"
+	"github.com/pkg/profile"
 )
 var connections []net.Conn
+
 func handleCMD(conn net.Conn)  {
 	defer conn.Close()
 	cmd := common.GetCMD(conn)
@@ -15,11 +17,13 @@ func handleCMD(conn net.Conn)  {
 	log.Printf("收到来自 %s 的命令: 将 sid: %d, block: %d 的更新数据发送给 %v.\n", common.GetConnIP(conn), cmd.SID, cmd.BlockID, cmd.ToIPs)
 	schedule.GetCurPolicy().HandleCMD(&cmd)
 }
+
 func handleACK(conn net.Conn) {
 	defer conn.Close()
 	ack := common.GetACK(conn)
 	schedule.GetCurPolicy().HandleACK(&ack)
 }
+
 func handleTD(conn net.Conn)  {
 	defer conn.Close()
 	td := common.GetTD(conn)
@@ -27,18 +31,25 @@ func handleTD(conn net.Conn)  {
 	schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
 	schedule.GetCurPolicy().HandleTD(&td)
 }
+
 func setPolicy(conn net.Conn)  {
 	defer conn.Close()
 	p := common.GetPolicy(conn)
 	schedule.SetPolicy(config.PolicyType(p.Type))
 	config.BlockSize = p.NumOfMB * config.Megabyte
 	config.RSBlockSize = p.NumOfMB * config.Megabyte * config.W
+
+	log.Printf("初始化共享池...\n")
+	config.InitBufferPool()
+
 	log.Printf("收到来自 %s 的命令，设置当前算法设置为%s, 当前blockSize=%vMB.\n",
 		common.GetConnIP(conn), config.CurPolicyStr[p.Type], config.BlockSize/config.Megabyte)
 }
 
-
 func main() {
+	defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
+
+
 	config.Init()
 
 	log.Printf("listening cmd in %s:%s\n", common.GetLocalIP(), config.NodeCMDListenPort)

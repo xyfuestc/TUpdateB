@@ -3,7 +3,8 @@ package config
 import (
 	"github.com/templexxx/reedsolomon"
 	"log"
-	"time"
+	"runtime"
+	"sync"
 )
 
 const K int = 8
@@ -14,8 +15,8 @@ var NumOfMB = 4
 var BlockSize = Megabyte * NumOfMB //1MB
 var RSBlockSize = Megabyte * NumOfMB * W
 const Megabyte = 1024 * 1024      //1MB
-const MaxBatchSize int = 50
-const MaxRSBatchSize int = 1
+const MaxBatchSize int = 100
+const MaxRSBatchSize int = 100
 const MaxBaseBatchSize int = 100
 const MaxBlockSize int = 1000
 const TestFileSize = 10 * 1024 * Megabyte
@@ -91,8 +92,13 @@ var NodeIPs =[]string{
 	BaseIP+"120", BaseIP+"121", BaseIP+"122", BaseIP+"123",     //rack1
 	BaseIP+"130", BaseIP+"131", BaseIP+"132", BaseIP+"133",     //rack2
 }
-var BeginTime = time.Now()
-
+//共享池
+var TDBufferPool sync.Pool
+var CMDBufferPool sync.Pool
+var ReqBufferPool sync.Pool
+var XORBlockBufferPool sync.Pool
+var RSBlockBufferPool sync.Pool
+var NumOfWorkers int
 //传输数据格式
 type TD struct {
 	SID                int
@@ -182,13 +188,42 @@ type Rack struct {
 }
 
 func Init(){
-	log.Printf("Init GM...\n")
+
+	log.Printf("Init (K, M, W) and XOR relations...\n")
 	r, _ := reedsolomon.New(K, M)
 	RS = r
-	//fmt.Println(RS.GenMatrix)
 	BitMatrix = GenerateBitMatrix(RS.GenMatrix, K, M, W)
-	//log.Printf("%v", BitMatrix)
 
+	//init num of go workers
+	NumOfWorkers = runtime.NumCPU()
+
+}
+func InitBufferPool()  {
+	ReqBufferPool = sync.Pool{
+		New: func() interface{} {
+			return new(ReqData)
+		},
+	}
+	CMDBufferPool = sync.Pool{
+		New: func() interface{} {
+			return new(CMD)
+		},
+	}
+	TDBufferPool = sync.Pool{
+		New: func() interface{} {
+			return new(TD)
+		},
+	}
+	XORBlockBufferPool = sync.Pool{
+		New: func() interface{} {
+			return make([]byte, BlockSize)
+		},
+	}
+	RSBlockBufferPool = sync.Pool{
+		New: func() interface{} {
+			return make([]byte, RSBlockSize)
+		},
+	}
 }
 
 func GenerateBitMatrix(matrix []byte, k, m, w int) []byte {

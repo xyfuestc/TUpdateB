@@ -10,7 +10,6 @@ type CAURS struct {
 	Base
 }
 
-
 func (p CAURS) Init()  {
 	totalCrossRackTraffic = 0
 	ackMaps = &ACKMap{
@@ -136,7 +135,9 @@ func findRSDistinctBlocks() {
 }
 
 func (p CAURS) HandleReq(reqs []*config.ReqData)  {
+
 	totalReqs = reqs
+	_ = reqs
 	log.Printf("一共接收到%d个请求...\n", len(totalReqs))
 
 	for len(totalReqs) > 0 {
@@ -167,6 +168,7 @@ func cau_rs() {
 			}
 		}
 	}
+	_ = stripes
 }
 
 func dataUpdateRS(rackID int, stripe []int)  {

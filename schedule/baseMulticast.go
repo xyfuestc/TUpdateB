@@ -73,8 +73,8 @@ func (p BaseMulticast) Init()  {
 
 
 func (p BaseMulticast) HandleReq(reqs []*config.ReqData)  {
-	//actualBlocks = len(reqs)
 	totalReqs = reqs
+	_ = reqs
 
 	for len(totalReqs) > 0 {
 		//过滤blocks

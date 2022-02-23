@@ -5,6 +5,7 @@ import (
 	"EC/config"
 	"EC/schedule"
 	"bufio"
+	"github.com/pkg/profile"
 	"io"
 	"log"
 	"net"
@@ -21,16 +22,16 @@ var XOROutFilePath = "../request/"+traceName+"_"+strconv.Itoa(NumOfMB)+"M.csv.tx
 var RSOutFilePath = "../request/"+traceName+"_"+strconv.Itoa(NumOfMB*config.W)+"M.csv.txt"
 var OutFilePath = XOROutFilePath
 var actualUpdatedBlocks = 0
-var sidCounter = 0
 var beginTime time.Time
 var endTime time.Time
 var totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 var finished = false
 var connections []net.Conn
-func handleACK(conn net.Conn) {
-	defer conn.Close()
-	ack := common.GetACK(conn)
-	schedule.GetCurPolicy().HandleACK(&ack)
+var receivedAckCh = make(chan config.ACK, 10)
+func checkFinish() {
+	//defer conn.Close()
+	//ack := common.GetACK(conn)
+	//schedule.GetCurPolicy().HandleACK(&ack)
 	if schedule.GetCurPolicy().IsFinished() {
 		log.Printf("=====================================\n")
 		endTime = time.Now()
@@ -44,39 +45,34 @@ func handleACK(conn net.Conn) {
 
 		schedule.GetCurPolicy().Clear()
 		clearRound()
-
 	}
 }
+/*所有算法跑完，清空操作*/
 func clearUpdates() {
 	actualUpdatedBlocks = 0
 	numOfReq = 0
 	finished = true
-	totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
+	_ = totalReqs
 }
+/*每种算法结束后，清空操作*/
 func clearRound()  {
-	//清空totalReqs
 	totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
-	sidCounter = 0
-
 	finished = true
 	actualUpdatedBlocks = 0
-
-
 }
 func main() {
-
+	defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
 	//初始化
 	config.Init()
 
 	//监听ack
 	log.Printf("ms启动...")
 	log.Printf("监听ack: %s:%s\n", common.GetLocalIP(), config.NodeACKListenPort)
-	l2, err := net.Listen("tcp", common.GetLocalIP() + ":" + config.NodeACKListenPort)
-	if err != nil {
-		log.Fatalln("listening ack err: ", err)
-	}
-	go listenACK(l2)
 
+
+	listenAndReceive(config.NumOfWorkers)
+
+	getReqsFromTrace()
 	for curPolicy < config.NumOfAlgorithm {
 		start()
 		//保证主线程运行
@@ -91,17 +87,31 @@ func main() {
 	//清空
 	clearUpdates()
 }
+func listenAndReceive(maxWorkers int)  {
+	l2, err := net.Listen("tcp", common.GetLocalIP() + ":" + config.NodeACKListenPort)
+	if err != nil {
+		log.Fatalln("listening ack err in listenAndReceive: ", err)
+	}
 
+	for i := 0; i < maxWorkers; i++ {
+		go msgSorter(receivedAckCh)
+		go listenACK(l2)
+	}
+}
 func setCurrentTrace() {
-	//CAURS算法
-	if curPolicy == len(config.CurPolicyStr) - 1 {
+	//CAURS算法（必须保证CAURS在最后）
+	if config.CurPolicyStr[curPolicy] == "CAURS" {
 		OutFilePath = RSOutFilePath
+		getReqsFromTrace()
 	}
 }
 
 func getReqsFromTrace()  {
 
+	totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
+
 	blockFile, err := os.Open(OutFilePath)
+	defer blockFile.Close()
 	//处理block请求
 	if err != nil {
 		log.Fatalln("Error: ", err)
@@ -132,14 +142,11 @@ func getReqsFromTrace()  {
 		}
 		totalReqs = append(totalReqs, req)
 
-		sidCounter++
 	}
-	defer blockFile.Close()
-	numOfReq = sidCounter
+	numOfReq = len(totalReqs)
 }
 
 func settingCurrentPolicy(policyType int)  {
-
 	UsingMulticast := strings.Contains(config.CurPolicyStr[curPolicy], "Multicast")
 	p := &config.Policy{
 		Type:      policyType,
@@ -147,10 +154,14 @@ func settingCurrentPolicy(policyType int)  {
 		TraceName: traceName,
 		Multicast: UsingMulticast,
 	}
-	log.Printf("UsingMulticast: %v\n", UsingMulticast)
+
 	config.NumOfMB = NumOfMB
 	config.BlockSize = NumOfMB * config.Megabyte
 	config.RSBlockSize = config.Megabyte * NumOfMB * config.W
+
+	log.Printf("初始化共享池...\n")
+	config.InitBufferPool()
+
 	for _, ip := range config.NodeIPs{
 		common.SendData(p, ip, config.NodeSettingsListenPort, "")
 	}
@@ -159,15 +170,23 @@ func settingCurrentPolicy(policyType int)  {
 }
 
 func start()  {
-	setCurrentTrace()
-	getReqsFromTrace()
+	setCurrentTrace() //专门针对CAURS改变数据源
 
 	beginTime = time.Now()
 	log.Printf(" 设置当前算法：[%s], 当前数据集为：%s, blockSize=%vMB.\n", config.CurPolicyStr[curPolicy], OutFilePath, NumOfMB)
 	settingCurrentPolicy(curPolicy)
-	log.Printf(" [%s]算法开始运行...总共block请求数量为：%d\n", config.CurPolicyStr[curPolicy], sidCounter)
+
+	log.Printf(" [%s]算法开始运行，总共block请求数量为：%d\n", config.CurPolicyStr[curPolicy], numOfReq)
 	schedule.SetPolicy(config.PolicyType(curPolicy))
 	schedule.GetCurPolicy().HandleReq(totalReqs)
+	_ = totalReqs
+}
+func msgSorter(receivedAckCh <-chan config.ACK)  {
+	for ack := range receivedAckCh {
+		schedule.GetCurPolicy().HandleACK(&ack)
+	}
+
+	checkFinish()
 }
 func listenACK(listen net.Listener) {
 
@@ -182,14 +201,17 @@ func listenACK(listen net.Listener) {
 		conn, e := listen.Accept()
 		if e != nil {
 			if ne, ok := e.(net.Error); ok && ne.Temporary() {
-				log.Printf("accept temp err: %v", ne)
+				log.Printf("accept temp err in listenACK: %v", ne)
 				continue
 			}
 
-			log.Printf("accept err: %v", e)
+			log.Printf("accept err in listenACK: %v", e)
 			return
 		}
-		go handleACK(conn)
+
+		ack := common.GetACK(conn)
+		receivedAckCh <- ack
+
 		connections = append(connections, conn)
 		if len(connections)%100 == 0 {
 			log.Printf("total number of connections: %v", len(connections))

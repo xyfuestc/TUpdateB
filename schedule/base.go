@@ -183,6 +183,7 @@ func (p Base) Init()  {
 	actualBlocks = 0
 	round = 0
 	totalCrossRackTraffic = 0
+
 }
 
 func getBatchReqs() []*config.ReqData {
@@ -199,8 +200,9 @@ func getBatchReqs() []*config.ReqData {
 }
 
 func (p Base) HandleReq(reqs []*config.ReqData)  {
-	//actualBlocks = len(reqs)
+
 	totalReqs = reqs
+	_ = reqs
 
 	for len(totalReqs) > 0 {
 		//过滤blocks

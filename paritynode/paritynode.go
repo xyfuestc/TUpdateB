@@ -4,6 +4,7 @@ import (
 	"EC/common"
 	"EC/config"
 	"EC/schedule"
+	"github.com/pkg/profile"
 	"log"
 	"net"
 )
@@ -28,6 +29,10 @@ func setPolicy(conn net.Conn)  {
 	schedule.SetPolicy(config.PolicyType(p.Type))
 	config.BlockSize = p.NumOfMB * config.Megabyte
 	config.RSBlockSize = p.NumOfMB * config.Megabyte * config.W
+
+	log.Printf("初始化共享池...\n")
+	config.InitBufferPool()
+
 	log.Printf("收到来自 %s 的命令，设置当前算法设置为%s, 当前XOR的blockSize=%vMB，RS的blockSize=%vMB, UsingMulticast=%v.\n",
 		common.GetConnIP(conn), config.CurPolicyStr[p.Type], config.BlockSize/config.Megabyte, config.RSBlockSize/config.Megabyte, p.Multicast)
 }
@@ -37,6 +42,8 @@ func handleACK(conn net.Conn) {
 	schedule.GetCurPolicy().HandleACK(&ack)
 }
 func main() {
+	defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
+
 	config.Init()
 	log.Printf("listening td in %s:%s\n", common.GetLocalIP(), config.NodeTDListenPort)
 	l1, err := net.Listen("tcp", common.GetLocalIP() + ":" + config.NodeTDListenPort)

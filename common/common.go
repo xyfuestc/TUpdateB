@@ -121,7 +121,7 @@ func GetRelatedParityIPs(blockID int) []string {
 func ReadBlockWithSize(blockID, size int) []byte  {
 	index := GetIndex(blockID)
 	//read data from disk
-	var buff = make([]byte, size, size)
+	buff := make([]byte, size)
 	file, err := os.OpenFile(config.DataFilePath, os.O_RDONLY, 0)
 
 	if err != nil {
@@ -130,6 +130,7 @@ func ReadBlockWithSize(blockID, size int) []byte  {
 	defer file.Close()
 	//log.Printf("block %d's index is : %d", blockID, index)
 	readSize, err := file.ReadAt(buff, int64(index * size))
+
 
 	if err != nil {
 		log.Fatal("读取文件失败：", err)
@@ -169,7 +170,7 @@ func RandWriteBlockAndRetDelta(blockID, size int) []byte  {
 		deltaBuff[i] = newBuff[i] ^ oldBuff[i]
 	}
 	/*****write new data*******/
-	go WriteBlockWithSize(blockID, newBuff, size)
+	WriteBlockWithSize(blockID, newBuff, size)
 
 	return deltaBuff
 }
