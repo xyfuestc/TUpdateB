@@ -4,9 +4,9 @@ import (
 	"EC/common"
 	"EC/config"
 	"EC/schedule"
+	"github.com/pkg/profile"
 	"log"
 	"net"
-	"github.com/pkg/profile"
 	"os"
 	"os/signal"
 )
@@ -40,9 +40,6 @@ func setPolicy(conn net.Conn)  {
 	schedule.SetPolicy(config.PolicyType(p.Type))
 	config.BlockSize = p.NumOfMB * config.Megabyte
 	config.RSBlockSize = p.NumOfMB * config.Megabyte * config.W
-
-	log.Printf("初始化共享池...\n")
-	config.InitBufferPool()
 
 	log.Printf("收到来自 %s 的命令，设置当前算法设置为%s, 当前blockSize=%vMB.\n",
 		common.GetConnIP(conn), config.CurPolicyStr[p.Type], config.BlockSize/config.Megabyte)
@@ -141,6 +138,8 @@ func listenCMD(listen net.Listener) {
 		cmd := common.GetCMD(conn)
 		schedule.GetCurPolicy().RecordSIDAndReceiverIP(cmd.SID, common.GetConnIP(conn))
 		schedule.ReceivedCMDCh <- cmd
+		config.CMDBufferPool.Put(cmd)
+
 		log.Printf("收到来自 %s 的命令: 将 sid: %d, block: %d 的更新数据发送给 %v.\n", common.GetConnIP(conn), cmd.SID, cmd.BlockID, cmd.ToIPs)
 
 		connections = append(connections, conn)
@@ -165,6 +164,7 @@ func listenACK(listen net.Listener) {
 		}
 		ack := common.GetACK(conn)
 		schedule.ReceivedAckCh <- ack
+		config.AckBufferPool.Put(ack)
 
 		connections = append(connections, conn)
 		if len(connections)%100 == 0 {
@@ -189,6 +189,8 @@ func listenTD(listen net.Listener) {
 		td := common.GetTD(conn)
 		schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
 		schedule.ReceivedTDCh <- td
+		config.TDBufferPool.Put(td)
+
 		log.Printf("收到来自 %s 的TD，sid: %d, blockID: %d.\n", common.GetConnIP(conn), td.SID, td.BlockID)
 
 		connections = append(connections, conn)

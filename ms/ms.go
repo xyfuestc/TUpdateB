@@ -163,8 +163,6 @@ func settingCurrentPolicy(policyType int)  {
 	config.BlockSize = NumOfMB * config.Megabyte
 	config.RSBlockSize = config.Megabyte * NumOfMB * config.W
 
-	log.Printf("初始化共享池...\n")
-	config.InitBufferPool()
 
 	for _, ip := range config.NodeIPs{
 		common.SendData(p, ip, config.NodeSettingsListenPort, "")

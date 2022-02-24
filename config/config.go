@@ -96,8 +96,9 @@ var NodeIPs =[]string{
 var TDBufferPool sync.Pool
 var CMDBufferPool sync.Pool
 var ReqBufferPool sync.Pool
-var XORBlockBufferPool sync.Pool
-var RSBlockBufferPool sync.Pool
+var AckBufferPool sync.Pool
+//var XORBlockBufferPool sync.Pool
+var BlockBufferPool sync.Pool
 var NumOfWorkers int
 
 
@@ -199,11 +200,18 @@ func Init(){
 	//init num of go workers
 	NumOfWorkers = runtime.NumCPU()
 
+	log.Printf("初始化共享池...\n")
+	InitBufferPool()
 }
 func InitBufferPool()  {
 	ReqBufferPool = sync.Pool{
 		New: func() interface{} {
 			return new(ReqData)
+		},
+	}
+	AckBufferPool = sync.Pool{
+		New: func() interface{} {
+			return new(ACK)
 		},
 	}
 	CMDBufferPool = sync.Pool{
@@ -216,12 +224,12 @@ func InitBufferPool()  {
 			return new(TD)
 		},
 	}
-	XORBlockBufferPool = sync.Pool{
-		New: func() interface{} {
-			return make([]byte, BlockSize)
-		},
-	}
-	RSBlockBufferPool = sync.Pool{
+	//XORBlockBufferPool = sync.Pool{
+	//	New: func() interface{} {
+	//		return make([]byte, BlockSize)
+	//	},
+	//}
+	BlockBufferPool = sync.Pool{
 		New: func() interface{} {
 			return make([]byte, RSBlockSize)
 		},

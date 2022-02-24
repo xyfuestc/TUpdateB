@@ -31,7 +31,7 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 	//}
 	message := &config.MTU{
 		BlockID:        cmd.BlockID,
-		Data:           buff,
+		Data:           buff[:cmd.SendSize],
 		FromIP:         cmd.FromIP,
 		MultiTargetIPs: cmd.ToIPs,
 		SID:            cmd.SID,
@@ -40,6 +40,8 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 		SendSize:       cmd.SendSize,
 	}
 	MulticastSendMTUCh <- *message
+
+	config.BlockBufferPool.Put(buff)
 	//SendMessageAndWaitingForACK(message)
 	log.Printf("HandleCMD: 发送td(sid:%d, blockID:%d)，从%s到%v \n", cmd.SID, cmd.BlockID, common.GetLocalIP(), cmd.ToIPs)
 
@@ -183,7 +185,7 @@ func GetFragments(cmd *config.CMD) []*config.MTU {
 	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID, cmd.SendSize)
 
 	//2.发送数据
-	count := len(buff) / config.MTUSize
+	count := cmd.SendSize / config.MTUSize
 	fragments := make([]*config.MTU, 0, count)
 	var sendData []byte
 
@@ -191,7 +193,7 @@ func GetFragments(cmd *config.CMD) []*config.MTU {
 		for index := 0; index < count+1; index++ {
 			length := 0
 			if index == count { // 处理最后一个分片
-				length = len(buff) - index*config.MTUSize
+				length = cmd.SendSize - index*config.MTUSize
 			} else {
 				length = config.MTUSize
 			}
@@ -234,7 +236,7 @@ func GetFragments(cmd *config.CMD) []*config.MTU {
 		//for {
 			message := &config.MTU{
 				BlockID:        cmd.BlockID,
-				Data:           buff,
+				Data:           buff[:cmd.SendSize],
 				FromIP:         cmd.FromIP,
 				MultiTargetIPs: cmd.ToIPs,
 				SID:            cmd.SID,
@@ -255,6 +257,7 @@ func GetFragments(cmd *config.CMD) []*config.MTU {
 			//time.Sleep(500 * time.Millisecond)
 		//}
 	}
+	config.BlockBufferPool.Put(buff)
 	return fragments
 }
 func SendMessageAndWaitingForACK(message *config.MTU)  {

@@ -129,20 +129,31 @@ func handleOneCMD(cmd *config.CMD)  {
 	for _, _ = range cmd.ToIPs {
 		ackMaps.pushACK(cmd.SID)
 	}
-	for _, parityIP := range cmd.ToIPs{
-		td := &config.TD{
-			BlockID: cmd.BlockID,
-			Buff: buff,
-			FromIP: cmd.FromIP,
-			ToIP: parityIP,
-			SID: cmd.SID,
-		}
+	for _, parityIP := range cmd.ToIPs {
+		//td := &config.TD{
+		//	BlockID: cmd.BlockID,
+		//	Buff: buff[:config.BlockSize],
+		//	FromIP: cmd.FromIP,
+		//	ToIP: parityIP,
+		//	SID: cmd.SID,
+		//}
+		td := config.TDBufferPool.Get().(*config.TD)
+		td.BlockID = cmd.BlockID
+		td.Buff = buff[:config.BlockSize]
+		td.FromIP = cmd.FromIP
+		td.ToIP = parityIP
+		td.SID = cmd.SID
+		//common.SendData(td, parityIP, config.NodeTDListenPort, "")
 
 		begin := time.Now().UnixNano() / 1e6
 		go common.SendData(td, parityIP, config.NodeTDListenPort, "")
 		end := time.Now().UnixNano() / 1e6
+
 		log.Printf("发送td(sid:%d, blockID:%d),从%s到%s, 用时：%vms \n", cmd.SID, cmd.BlockID, common.GetLocalIP(), parityIP, end-begin)
+
+		config.TDBufferPool.Put(td)
 	}
+	config.BlockBufferPool.Put(buff)
 }
 func (p Base) HandleTD(td *config.TD)  {
 	handleOneTD(td)
@@ -150,11 +161,14 @@ func (p Base) HandleTD(td *config.TD)  {
 func handleOneTD(td *config.TD)  {
 	go common.WriteDeltaBlock(td.BlockID, td.Buff)
 	//返回ack
-	ack := &config.ACK{
-		SID:     td.SID,
-		BlockID: td.BlockID,
-	}
+	ack := config.AckBufferPool.Get().(*config.ACK)
+	ack.SID = td.SID
+	ack.BlockID = td.BlockID
+
 	ReturnACK(ack)
+
+	config.AckBufferPool.Put(ack)
+
 }
 func (p Base) HandleACK(ack *config.ACK)  {
 	ackMaps.popACK(ack.SID)
@@ -174,6 +188,8 @@ func ReturnACK(ack *config.ACK) {
 	}else{
 		log.Fatal("returnACK error! ack: ", ack, " ackReceiverIPs: ", ackIPMaps)
 	}
+
+	//config.AckBufferPool.Put(ack)
 }
 
 func (p Base) Init()  {
@@ -250,6 +266,7 @@ func (p Base) handleOneBlock(reqData config.ReqData)  {
 	totalCrossRackTraffic += len(toIPs) * config.BlockSize
 	log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", reqData.SID,
 		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, toIPs)
+
 }
 func (p Base) RecordSIDAndReceiverIP(sid int, ip string)  {
 	ackIPMaps.recordIP(sid, ip)

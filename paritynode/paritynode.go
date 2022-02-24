@@ -11,16 +11,16 @@ import (
 	"os/signal"
 )
 var connections []net.Conn
-func handleCMD(conn net.Conn)  {
-
-}
-func handleTD(conn net.Conn)  {
-	defer conn.Close()
-	td := common.GetTD(conn)
-	log.Printf("收到来自 %s 的TD，sid: %d, blockID: %d.\n", common.GetConnIP(conn), td.SID, td.BlockID)
-	schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
-	schedule.GetCurPolicy().HandleTD(&td)
-}
+//func handleCMD(conn net.Conn)  {
+//
+//}
+//func handleTD(conn net.Conn)  {
+//	defer conn.Close()
+//	td := common.GetTD(conn)
+//	log.Printf("收到来自 %s 的TD，sid: %d, blockID: %d.\n", common.GetConnIP(conn), td.SID, td.BlockID)
+//	schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
+//	schedule.GetCurPolicy().HandleTD(&td)
+//}
 func setPolicy(conn net.Conn)  {
 	defer conn.Close()
 	p := common.GetPolicy(conn)
@@ -28,17 +28,15 @@ func setPolicy(conn net.Conn)  {
 	config.BlockSize = p.NumOfMB * config.Megabyte
 	config.RSBlockSize = p.NumOfMB * config.Megabyte * config.W
 
-	log.Printf("初始化共享池...\n")
-	config.InitBufferPool()
 
 	log.Printf("收到来自 %s 的命令，设置当前算法设置为%s, 当前XOR的blockSize=%vMB，RS的blockSize=%vMB, UsingMulticast=%v.\n",
 		common.GetConnIP(conn), config.CurPolicyStr[p.Type], config.BlockSize/config.Megabyte, config.RSBlockSize/config.Megabyte, p.Multicast)
 }
-func handleACK(conn net.Conn) {
-	defer conn.Close()
-	ack := common.GetACK(conn)
-	schedule.GetCurPolicy().HandleACK(&ack)
-}
+//func handleACK(conn net.Conn) {
+//	defer conn.Close()
+//	ack := common.GetACK(conn)
+//	schedule.GetCurPolicy().HandleACK(&ack)
+//}
 func main() {
 	defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
 
@@ -113,6 +111,7 @@ func listenACK(listen net.Listener) {
 		}
 		ack := common.GetACK(conn)
 		schedule.ReceivedAckCh <- ack
+		config.AckBufferPool.Put(ack)
 
 		connections = append(connections, conn)
 		if len(connections)%100 == 0 {
@@ -137,6 +136,7 @@ func listenCMD(listen net.Listener) {
 		cmd := common.GetCMD(conn)
 		schedule.GetCurPolicy().RecordSIDAndReceiverIP(cmd.SID, common.GetConnIP(conn))
 		schedule.ReceivedCMDCh <- cmd
+		config.CMDBufferPool.Put(cmd)
 		log.Printf("收到来自 %s 的命令: 将 sid: %d, block: %d 的更新数据发送给 %v.\n", common.GetConnIP(conn), cmd.SID, cmd.BlockID, cmd.ToIPs)
 
 		connections = append(connections, conn)
@@ -162,6 +162,7 @@ func listenTD(listen net.Listener) {
 		td := common.GetTD(conn)
 		schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
 		schedule.ReceivedTDCh <- td
+		config.TDBufferPool.Put(td)
 		log.Printf("收到来自 %s 的TD，sid: %d, blockID: %d.\n", common.GetConnIP(conn), td.SID, td.BlockID)
 
 		connections = append(connections, conn)
@@ -203,22 +204,30 @@ func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, r
 		case mtu := <-receivedMultiMTUCh:
 			td := GetTDFromMulticast(mtu)
 			schedule.GetCurPolicy().HandleTD(td)
+			config.TDBufferPool.Put(td)
 
 		}
 	}
 }
 func GetTDFromMulticast(message config.MTU) *config.TD  {
 	//构造td
-	td := &config.TD{
-		SID:            message.SID,
-		Buff:           message.Data,
-		BlockID:        message.BlockID,
-		MultiTargetIPs: message.MultiTargetIPs,
-		FromIP:         message.FromIP,
-		SendSize:       message.SendSize,
-	}
-	go schedule.GetCurPolicy().HandleTD(td)
-	log.Printf("MsgSorter：接收数据完成，执行HandleTD, td: sid: %v, sendSize: %v.\n", td.SID, td.SendSize)
+	//td := &config.TD{
+	//	SID:            message.SID,
+	//	Buff:           message.Data,
+	//	BlockID:        message.BlockID,
+	//	MultiTargetIPs: message.MultiTargetIPs,
+	//	FromIP:         message.FromIP,
+	//	SendSize:       message.SendSize,
+	//}
+	td := config.TDBufferPool.Get().(*config.TD)
+	td.BlockID = message.BlockID
+	td.Buff = message.Data
+	td.FromIP = message.FromIP
+	td.MultiTargetIPs = message.MultiTargetIPs
+	td.SID = message.SID
+	td.SendSize = message.SendSize
+
+	log.Printf("GetTDFromMulticast：接收数据完成...td: sid: %v, sendSize: %v.\n", td.SID, td.SendSize)
 	return td
 }
 //func MsgSorter(receive <-chan config.MTU, ackCh chan<- config.ACK)  {

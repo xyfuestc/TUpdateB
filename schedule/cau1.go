@@ -267,15 +267,30 @@ func (p CAU1) HandleCMD(cmd *config.CMD)  {
 		buff := common.ReadBlockWithSize(cmd.BlockID, cmd.SendSize)
 
 		for _, toIP := range cmd.ToIPs {
-			td := &config.TD{
-				BlockID: cmd.BlockID,
-				Buff: buff,
-				FromIP: cmd.FromIP,
-				ToIP: toIP,
-				SID: cmd.SID,
-			}
+			//td := &config.TD{
+			//	BlockID: cmd.BlockID,
+			//	Buff: buff,
+			//	FromIP: cmd.FromIP,
+			//	ToIP: toIP,
+			//	SID: cmd.SID,
+			//}
+			//
+			//common.SendData(td, toIP, config.NodeTDListenPort, "")
+
+			td := config.TDBufferPool.Get().(*config.TD)
+			td.BlockID = cmd.BlockID
+			td.Buff = buff
+			td.FromIP = cmd.FromIP
+			td.ToIP = toIP
+			td.SID = cmd.SID
+			td.SendSize = cmd.SendSize
+			//sendSizeRate := float32(td.SendSize*1.0) / float32(config.BlockSize) * 100.0
+			//log.Printf("发送 block:%d sendSize:%.2f%% 的数据到%s.\n", td.BlockID, sendSizeRate, toIP)
 			common.SendData(td, toIP, config.NodeTDListenPort, "")
+
+			config.TDBufferPool.Put(td)
 		}
+		config.BlockBufferPool.Put(buff)
 	}else{
 		CMDList.pushCMD(cmd)
 	}

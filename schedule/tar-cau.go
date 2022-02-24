@@ -92,18 +92,26 @@ func handleWaitingCMDs(td *config.TD) {
 		for _, i := range indexes {
 			cmd := i
 			toIP := cmd.ToIPs[0]
-			td := &config.TD{
-				BlockID: cmd.BlockID,
-				Buff:    td.Buff,
-				FromIP:  cmd.FromIP,
-				ToIP:    toIP,
-				SID:     cmd.SID,
-				SendSize: cmd.SendSize,
-			}
-			sendSizeRate := float32(td.SendSize * 1.0) / float32(config.BlockSize) * 100.0
+			//td := &config.TD{
+			//	BlockID: cmd.BlockID,
+			//	Buff:    td.Buff,
+			//	FromIP:  cmd.FromIP,
+			//	ToIP:    toIP,
+			//	SID:     cmd.SID,
+			//	SendSize: cmd.SendSize,
+			//}
+			sendTD := config.TDBufferPool.Get().(*config.TD)
+			sendTD.BlockID = cmd.BlockID
+			sendTD.Buff = td.Buff[:cmd.SendSize]
+			sendTD.FromIP = cmd.FromIP
+			sendTD.ToIP = toIP
+			sendTD.SID = cmd.SID
+			sendTD.SendSize = cmd.SendSize
+			sendSizeRate := float32(sendTD.SendSize * 1.0) / float32(config.BlockSize) * 100.0
 			log.Printf("发送 block:%d sendSize: %.2f%% -> %s.\n", td.BlockID, sendSizeRate, toIP)
-			common.SendData(td, toIP, config.NodeTDListenPort, "")
+			common.SendData(sendTD, toIP, config.NodeTDListenPort, "")
 
+			config.TDBufferPool.Put(sendTD)
 		}
 	}
 }
@@ -156,7 +164,7 @@ func findDistinctReqs() {
 	}else { //处理最后不到100个请求
 		curMatchReqs = totalReqs
 		turnMatchReqsToDistinctReqs(curMatchReqs)
-		totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
+		_ = totalReqs
 	}
 }
 
@@ -280,17 +288,30 @@ func tar_dataUpdate(rackID int, stripe []int)  {
 				log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
 					rootP, common.GetNodeIP(rootP), b, common.GetNodeIP(parityID))
 				_, rangeLeft, rangeRight := getBlockRangeFromDistinctReqs(b)
-				cmd := &config.CMD{
-					SID: sid,
-					BlockID: b,
-					ToIPs: []string{common.GetNodeIP(parityID)},
-					FromIP: common.GetNodeIP(rootP),
-					Helpers: blocks,
-					Matched: 0,
-					SendSize: rangeRight - rangeLeft,
-					//SendSize: config.BlockSize,
-				}
+				//cmd := &config.CMD{
+				//	SID: sid,
+				//	BlockID: b,
+				//	ToIPs: []string{common.GetNodeIP(parityID)},
+				//	FromIP: common.GetNodeIP(rootP),
+				//	Helpers: blocks,
+				//	Matched: 0,
+				//	SendSize: rangeRight - rangeLeft,
+				//	//SendSize: config.BlockSize,
+				//}
+				//common.SendData(cmd, common.GetNodeIP(rootP), config.NodeCMDListenPort, "")
+
+				cmd := config.CMDBufferPool.Get().(*config.CMD)
+				cmd.SID = sid
+				cmd.BlockID = b
+				cmd.ToIPs = []string{common.GetNodeIP(parityID)}
+				cmd.FromIP = common.GetNodeIP(rootP)
+				cmd.Helpers = blocks
+				cmd.Matched = 0
+				cmd.SendSize = rangeRight - rangeLeft
+
 				common.SendData(cmd, common.GetNodeIP(rootP), config.NodeCMDListenPort, "")
+
+				config.CMDBufferPool.Put(cmd)
 
 				sid++
 				break
@@ -314,16 +335,30 @@ func tar_dataUpdate(rackID int, stripe []int)  {
 			log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
 				nodeID, common.GetNodeIP(nodeID), b, common.GetNodeIP(rootP))
 			_, rangeLeft, rangeRight := getBlockRangeFromDistinctReqs(b)
-			cmd := &config.CMD{
-				SID: sid,
-				BlockID: b,
-				ToIPs: []string{common.GetNodeIP(rootP)},
-				FromIP: common.GetNodeIP(nodeID),
-				Helpers: make([]int, 0, 1),
-				Matched: 0,
-				SendSize: rangeRight - rangeLeft,
-			}
+			//cmd := &config.CMD{
+			//	SID: sid,
+			//	BlockID: b,
+			//	ToIPs: []string{common.GetNodeIP(rootP)},
+			//	FromIP: common.GetNodeIP(nodeID),
+			//	Helpers: make([]int, 0, 1),
+			//	Matched: 0,
+			//	SendSize: rangeRight - rangeLeft,
+			//}
+			//common.SendData(cmd, common.GetNodeIP(nodeID), config.NodeCMDListenPort, "")
+
+			cmd := config.CMDBufferPool.Get().(*config.CMD)
+			cmd.SID = sid
+			cmd.BlockID = b
+			cmd.ToIPs = []string{common.GetNodeIP(rootP)}
+			cmd.FromIP = common.GetNodeIP(nodeID)
+			cmd.Helpers = make([]int, 0, 1)
+			cmd.Matched = 0
+			cmd.SendSize = rangeRight - rangeLeft
+
 			common.SendData(cmd, common.GetNodeIP(nodeID), config.NodeCMDListenPort, "")
+
+			config.CMDBufferPool.Put(cmd)
+
 			sid++
 			//统计跨域流量
 			totalCrossRackTraffic += rangeRight - rangeLeft
@@ -397,16 +432,28 @@ func tar_parityUpdate(rackID int, stripe []int) {
 			}
 		}
 		_, rangeLeft, rangeRight := getBlockRangeFromDistinctReqs(blocks[0])
-		cmd := &config.CMD{
-			SID: sid,
-			BlockID: blocks[0],
-			ToIPs: []string{common.GetNodeIP(parityID)},
-			FromIP: common.GetNodeIP(rootD),
-			Helpers: helpers,
-			Matched: 0,
-			SendSize: rangeRight - rangeLeft,
-		}
+		//cmd := &config.CMD{
+		//	SID: sid,
+		//	BlockID: blocks[0],
+		//	ToIPs: []string{common.GetNodeIP(parityID)},
+		//	FromIP: common.GetNodeIP(rootD),
+		//	Helpers: helpers,
+		//	Matched: 0,
+		//	SendSize: rangeRight - rangeLeft,
+		//}
+		cmd := config.CMDBufferPool.Get().(*config.CMD)
+		cmd.SID = sid
+		cmd.BlockID = blocks[0]
+		cmd.ToIPs = []string{common.GetNodeIP(parityID)}
+		cmd.FromIP = common.GetNodeIP(rootD)
+		cmd.Helpers = helpers
+		cmd.Matched = 0
+		cmd.SendSize = rangeRight - rangeLeft
+
 		common.SendData(cmd, common.GetNodeIP(rootD), config.NodeCMDListenPort, "")
+
+		config.CMDBufferPool.Put(cmd)
+
 		sid++
 		//统计跨域流量
 		totalCrossRackTraffic += rangeRight - rangeLeft
@@ -430,16 +477,29 @@ func tar_parityUpdate(rackID int, stripe []int) {
 			//传输blocks到rootD
 			for _, b := range blocks{
 				_, rangeLeft,rangeRight := getBlockRangeFromDistinctReqs(b)
-				cmd := &config.CMD{
-					SID: sid,
-					BlockID: b,
-					ToIPs: []string{common.GetNodeIP(rootD)},
-					FromIP: common.GetNodeIP(curID),
-					Helpers: make([]int, 0, 1),
-					Matched: 0,
-					SendSize: rangeRight - rangeLeft,
-				}
+				//cmd := &config.CMD{
+				//	SID: sid,
+				//	BlockID: b,
+				//	ToIPs: []string{common.GetNodeIP(rootD)},
+				//	FromIP: common.GetNodeIP(curID),
+				//	Helpers: make([]int, 0, 1),
+				//	Matched: 0,
+				//	SendSize: rangeRight - rangeLeft,
+				//}
+				//common.SendData(cmd, common.GetNodeIP(curID), config.NodeCMDListenPort, "")
+
+				cmd := config.CMDBufferPool.Get().(*config.CMD)
+				cmd.SID = sid
+				cmd.BlockID = b
+				cmd.ToIPs = []string{common.GetNodeIP(rootD)}
+				cmd.FromIP = common.GetNodeIP(rootD)
+				cmd.Helpers = make([]int, 0, 1)
+				cmd.Matched = 0
+				cmd.SendSize = rangeRight - rangeLeft
+
 				common.SendData(cmd, common.GetNodeIP(curID), config.NodeCMDListenPort, "")
+
+				config.CMDBufferPool.Put(cmd)
 
 				sid++
 			}
@@ -463,18 +523,30 @@ func (p TAR_CAU) HandleCMD(cmd *config.CMD)  {
 		log.Printf("读取 block:%d size:%.2f%% 本地数据.\n", cmd.BlockID, sendSizeRate)
 
 		for _, toIP := range cmd.ToIPs {
-			td := &config.TD{
-				BlockID: cmd.BlockID,
-				Buff: buff,
-				FromIP: cmd.FromIP,
-				ToIP: toIP,
-				SID: cmd.SID,
-				SendSize: cmd.SendSize,
-			}
+			//td := &config.TD{
+			//	BlockID: cmd.BlockID,
+			//	Buff: buff,
+			//	FromIP: cmd.FromIP,
+			//	ToIP: toIP,
+			//	SID: cmd.SID,
+			//	SendSize: cmd.SendSize,
+			//}
+			td := config.TDBufferPool.Get().(*config.TD)
+			td.BlockID = cmd.BlockID
+			td.Buff = buff[:cmd.SendSize]
+			td.FromIP = cmd.FromIP
+			td.ToIP = toIP
+			td.SID = cmd.SID
+			td.SendSize = cmd.SendSize
 			sendSizeRate := float32(td.SendSize*1.0) / float32(config.BlockSize) * 100.0
 			log.Printf("发送 block:%d sendSize:%.2f%% 的数据到%s.\n", td.BlockID, sendSizeRate, toIP)
 			common.SendData(td, toIP, config.NodeTDListenPort, "")
+
+			config.TDBufferPool.Put(td)
 		}
+
+		config.BlockBufferPool.Put(buff)
+
 	}else if !curReceivedTDs.isEmpty() {  //如果已收到过相关td
 		CMDList.pushCMD(cmd)
 		for _, td := range curReceivedTDs.getTDs(){

@@ -170,16 +170,29 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 		for _, cmd := range cmds {
 			begin := time.Now().UnixNano() / 1e6
 			for _, toIP := range cmd.ToIPs {
-				td := &config.TD{
-					BlockID: cmd.BlockID,
-					Buff: td.Buff,
-					FromIP: cmd.FromIP,
-					ToIP: toIP,
-					SID: cmd.SID,
-				}
-				sendSizeRate := float32(td.SendSize * 1.0) / float32(config.BlockSize) * 100.0
-				log.Printf("发送 block:%d sendSize: %.2f%% -> %s.\n", td.BlockID, sendSizeRate, toIP)
-				common.SendData(td, toIP, config.NodeTDListenPort, "")
+				//td := &config.TD{
+				//	BlockID: cmd.BlockID,
+				//	Buff: td.Buff,
+				//	FromIP: cmd.FromIP,
+				//	ToIP: toIP,
+				//	SID: cmd.SID,
+				//}
+				//sendSizeRate := float32(td.SendSize * 1.0) / float32(config.BlockSize) * 100.0
+				//log.Printf("发送 block:%d sendSize: %.2f%% -> %s.\n", td.BlockID, sendSizeRate, toIP)
+				//common.SendData(td, toIP, config.NodeTDListenPort, "")
+
+				SendTD := config.TDBufferPool.Get().(*config.TD)
+				SendTD.BlockID = cmd.BlockID
+				SendTD.Buff = td.Buff[:cmd.SendSize]
+				SendTD.FromIP = cmd.FromIP
+				SendTD.ToIP = toIP
+				SendTD.SID = cmd.SID
+				SendTD.SendSize = cmd.SendSize
+				sendSizeRate := float32(SendTD.SendSize * 1.0) / float32(config.BlockSize) * 100.0
+				log.Printf("发送 block:%d sendSize: %.2f%% -> %s.\n", SendTD.BlockID, sendSizeRate, toIP)
+				common.SendData(SendTD, toIP, config.NodeTDListenPort, "")
+
+				config.TDBufferPool.Put(SendTD)
 			}
 			end := time.Now().UnixNano() / 1e6
 			log.Printf("发送 block %d 给 %v， 发送大小为：%vMB， 用时：%vms.\n", cmd.BlockID, cmd.ToIPs, len(td.Buff),
@@ -378,17 +391,27 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 		buff := common.ReadBlockWithSize(cmd.BlockID, config.BlockSize)
 
 		for _, toIP := range cmd.ToIPs {
-			td := &config.TD{
-				BlockID: cmd.BlockID,
-				Buff: buff,
-				FromIP: cmd.FromIP,
-				ToIP: toIP,
-				SID: cmd.SID,
-			}
+			//td := &config.TD{
+			//	BlockID: cmd.BlockID,
+			//	Buff: buff,
+			//	FromIP: cmd.FromIP,
+			//	ToIP: toIP,
+			//	SID: cmd.SID,
+			//}
+			td := config.TDBufferPool.Get().(*config.TD)
+			td.BlockID = cmd.BlockID
+			td.Buff = buff[:config.BlockSize]
+			td.FromIP = cmd.FromIP
+			td.ToIP = toIP
+			td.SID = cmd.SID
 			common.SendData(td, toIP, config.NodeTDListenPort, "")
+
+			config.TDBufferPool.Put(td)
 		}
 		end := time.Now().UnixNano() / 1e6
 		log.Printf("发送 block %d 给 %v 用时：%vms.\n", cmd.BlockID, cmd.ToIPs, end-begin)
+
+		config.BlockBufferPool.Put(buff)
 	}else{
 		cmd.Helpers = append(cmd.Helpers, cmd.BlockID)
 		log.Printf("添加sid: %d, blockID: %d, helpers: %v到cmdList.\n", cmd.SID, cmd.BlockID, cmd.Helpers)

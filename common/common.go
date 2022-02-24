@@ -56,6 +56,7 @@ func SendData(data interface{}, targetIP string, port string, retType string) in
 	//1.与目标建立连接
 	addr := fmt.Sprintf("%s:%s", targetIP, port)
 	conn, err := net.Dial("tcp", addr)
+	defer conn.Close()
 
 	if err != nil {
 		if conn != nil {
@@ -121,24 +122,26 @@ func GetRelatedParityIPs(blockID int) []string {
 func ReadBlockWithSize(blockID, size int) []byte  {
 	index := GetIndex(blockID)
 	//read data from disk
-	buff := make([]byte, size)
+	//buff := make([]byte, size)
+	buff := config.BlockBufferPool.Get().([]byte)
 	file, err := os.OpenFile(config.DataFilePath, os.O_RDONLY, 0)
 
 	if err != nil {
 		log.Fatalln("打开文件出错: ", err)
 	}
-	defer file.Close()
-	//log.Printf("block %d's index is : %d", blockID, index)
-	readSize, err := file.ReadAt(buff, int64(index * size))
 
+	defer file.Close()
+
+	readSize, err := file.ReadAt(buff[:size], int64(index * size))
 
 	if err != nil {
 		log.Fatal("读取文件失败：", err)
 	}
 	if readSize != size {
-		log.Fatal("读取数据块失败！读取大小为：", readSize)
+		log.Printf("读取大小为不一致 in ReadBlockWithSize：%+v, %+v", readSize, size)
 	}
-	return buff
+
+	return buff[:size]
 }
 func WriteBlockWithSize(blockID int, buff []byte, size int)  {
 	index := GetIndex(blockID)
@@ -148,7 +151,7 @@ func WriteBlockWithSize(blockID int, buff []byte, size int)  {
 		log.Fatalln("打开文件出错: ", err)
 	}
 	defer file.Close()
-	_, err = file.WriteAt(buff, int64(index * size))
+	_, err = file.WriteAt(buff[:size], int64(index * size))
 	log.Printf("write block %d with size: %dB done .\n", blockID, size)
 }
 func GetNodeID(blockID int) int {
@@ -160,26 +163,31 @@ func GetNodeIP(nodeID int) string {
 func RandWriteBlockAndRetDelta(blockID, size int) []byte  {
 	//newDataStr := RandStringBytesMaskImpr(config.NumOfMB)
 	newDataStr := uniuri.NewLen(size)
-
-	newBuff := []byte(newDataStr)
+	newBuff := config.BlockBufferPool.Get().([]byte)
+	copy(newBuff, newDataStr)
 	/*****read old data*******/
 	oldBuff := ReadBlockWithSize(blockID, size)
 	/*****compute new delta data*******/
-	deltaBuff := make([]byte, size)
-	for i := 0; i < len(newBuff); i++ {
+	deltaBuff := config.BlockBufferPool.Get().([]byte)
+	for i := 0; i < size; i++ {
 		deltaBuff[i] = newBuff[i] ^ oldBuff[i]
 	}
+
 	/*****write new data*******/
 	WriteBlockWithSize(blockID, newBuff, size)
 
-	return deltaBuff
+	//释放空间
+	config.BlockBufferPool.Put(oldBuff)
+	config.BlockBufferPool.Put(newBuff)
+
+	return deltaBuff[:size]
 }
-func WriteDeltaBlock(blockID int, deltaBuff []byte) []byte  {
+func WriteDeltaBlock(blockID int, deltaBuff []byte)   {
 	size := len(deltaBuff)
 	/*****read old data*******/
 	oldBuff := ReadBlockWithSize(blockID, size)
 	/*****compute new delta data*******/
-	newBuff := make([]byte, size)
+	newBuff := config.BlockBufferPool.Get().([]byte)
 	for i := 0; i < size; i++ {
 		newBuff[i] = deltaBuff[i] ^ oldBuff[i]
 	}
@@ -187,14 +195,16 @@ func WriteDeltaBlock(blockID int, deltaBuff []byte) []byte  {
 	WriteBlockWithSize(blockID, newBuff, size)
 	//log.Printf("成功写入blockID: %d, size: %d!\n", blockID, size)
 
-	return deltaBuff
+	//释放空间
+	config.BlockBufferPool.Put(oldBuff)
+	config.BlockBufferPool.Put(newBuff)
 }
 
 
 func GetCMD(conn net.Conn) config.CMD  {
 	dec := gob.NewDecoder(conn)
-	var cmd config.CMD
-	err := dec.Decode(&cmd)
+	cmd := config.CMDBufferPool.Get().(*config.CMD)
+	err := dec.Decode(cmd)
 	if err != nil {
 		if conn != nil {
 			conn.Close()
@@ -203,39 +213,54 @@ func GetCMD(conn net.Conn) config.CMD  {
 
 	}
 	conn.Close()
-	return cmd
+	return *cmd
 }
 func SendCMD(fromIP string, toIPs []string, sid, blockID int)  {
-	cmd := &config.CMD{
-		SID: sid,
-		BlockID: blockID,
-		ToIPs: toIPs,
-		FromIP: fromIP,
-		SendSize: config.BlockSize,
-		Helpers: make([]int, 0, 1),
-		Matched: 0,
-	}
+	//cmd := &config.CMD{
+	//	SID: sid,
+	//	BlockID: blockID,
+	//	ToIPs: toIPs,
+	//	FromIP: fromIP,
+	//	SendSize: config.BlockSize,
+	//	Helpers: make([]int, 0, 1),
+	//	Matched: 0,
+	//}
+	cmd := config.CMDBufferPool.Get().(*config.CMD)
+	cmd.SID = sid
+	cmd.BlockID = blockID
+	cmd.SendSize = config.BlockSize
+	cmd.Helpers = make([]int, 0, 1)
+	cmd.Matched = 0
+	cmd.ToIPs = toIPs
+	cmd.FromIP = fromIP
+
 	SendData(cmd, fromIP, config.NodeCMDListenPort, "")
+
+	config.CMDBufferPool.Put(cmd)
 }
 
 func SendCMDWithHelpers(fromIP string, toIPs []string, sid, blockID int, helpers []int)  {
-	cmd := &config.CMD{
-		SID: sid,
-		BlockID: blockID,
-		ToIPs: toIPs,
-		FromIP: fromIP,
-		SendSize: config.BlockSize,
-		Helpers: helpers,
-		Matched: 0,
-	}
+
+	cmd := config.CMDBufferPool.Get().(*config.CMD)
+	cmd.SID = sid
+	cmd.BlockID = blockID
+	cmd.SendSize = config.BlockSize
+	cmd.Helpers = helpers
+	cmd.Matched = 0
+	cmd.ToIPs = toIPs
+	cmd.FromIP = fromIP
+
 	SendData(cmd, fromIP, config.NodeCMDListenPort, "")
+
+	config.CMDBufferPool.Put(cmd)
 }
 
 func GetACK(conn net.Conn) config.ACK {
 	dec := gob.NewDecoder(conn)
 
-	var ack config.ACK
-	err := dec.Decode(&ack)
+	//var ack config.ACK
+	ack := config.AckBufferPool.Get().(*config.ACK)
+	err := dec.Decode(ack)
 	if err != nil {
 		if conn != nil {
 			conn.Close()
@@ -245,12 +270,13 @@ func GetACK(conn net.Conn) config.ACK {
 	}
 	log.Printf("received block %d's ack from %s, sid: %d\n", ack.BlockID, GetConnIP(conn), ack.SID)
 	conn.Close()
-	return ack
+	return *ack
 }
 func GetTD(conn net.Conn) config.TD {
 	//defer conn.Close()
 	dec := gob.NewDecoder(conn)
-	var td config.TD
+	//var td config.TD
+	td := config.TDBufferPool.Get().(*config.TD)
 	err := dec.Decode(&td)
 	if err != nil {
 		if conn != nil {
@@ -259,7 +285,7 @@ func GetTD(conn net.Conn) config.TD {
 		log.Fatalln("GetTD from ", GetConnIP(conn), "result in decoding error: ", err, "blockID: ", td.BlockID, "sid: ", td.SID)
 	}
 	conn.Close()
-	return td
+	return *td
 }
 func GetPolicy(conn net.Conn) config.Policy  {
 	//defer conn.Close()
@@ -311,24 +337,6 @@ func GetDataNodeIDFromIndex(rackID, i int) int {
 	return rackID * config.RackSize + i
 }
 
-func Delete(Array, indexes []int)  {
-	//删除
-	for i:= 0; i < len(Array);{
-		if j := arrays.Contains(indexes, Array[i]) ; j >= 0 {
-			//Array = append(Array[:i], Array[i+1:]...)
-			Array[i], Array[len(Array)-1] = Array[len(Array)-1], Array[i]
-			Array = Array[:len(Array)-1]
-
-			//indexes = append(indexes[:j], indexes[j+1:]...)
-			indexes[j], indexes[len(indexes)-1] = indexes[len(indexes)-1], indexes[j]
-			indexes = indexes[:len(indexes)-1]
-		}else{
-			i++
-		}
-
-	}
-	log.Printf("Delete: Array = %v\n", Array)
-}
 func PrintError(errMsg string, err error) {
 	if err != nil {
 		log.Fatalln(errMsg, err.Error())

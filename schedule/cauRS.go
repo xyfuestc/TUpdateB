@@ -168,7 +168,6 @@ func cau_rs() {
 			}
 		}
 	}
-	_ = stripes
 }
 
 func dataUpdateRS(rackID int, stripe []int)  {
@@ -214,6 +213,7 @@ func dataUpdateRS(rackID int, stripe []int)  {
 				rootP, common.GetNodeIP(rootP), b, common.GetNodeIP(parityID))
 
 			cmd := config.CMDBufferPool.Get().(*config.CMD)
+
 			cmd.SID = sid
 			cmd.BlockID = b
 			cmd.ToIPs = []string{common.GetNodeIP(parityID)}
@@ -221,6 +221,7 @@ func dataUpdateRS(rackID int, stripe []int)  {
 			cmd.Helpers = parities[i]
 			cmd.Matched = 0
 			cmd.SendSize = config.RSBlockSize
+
 			common.SendData(cmd, common.GetNodeIP(rootP), config.NodeCMDListenPort, "")
 			config.CMDBufferPool.Put(cmd)
 
@@ -264,7 +265,9 @@ func dataUpdateRS(rackID int, stripe []int)  {
 			cmd.Helpers = make([]int, 0, 1)
 			cmd.Matched = 0
 			cmd.SendSize = config.RSBlockSize
+
 			common.SendData(cmd, common.GetNodeIP(rootP), config.NodeCMDListenPort, "")
+
 			config.CMDBufferPool.Put(cmd)
 
 			sid++
@@ -287,18 +290,23 @@ func (p CAURS) HandleCMD(cmd *config.CMD)  {
 		buff := common.ReadBlockWithSize(cmd.BlockID, cmd.SendSize)
 
 		for _, toIP := range cmd.ToIPs {
-			td := &config.TD{
-				BlockID: cmd.BlockID,
-				Buff: buff,
-				FromIP: cmd.FromIP,
-				ToIP: toIP,
-				SID: cmd.SID,
-			}
+			td := config.TDBufferPool.Get().(*config.TD)
+			td.BlockID = cmd.BlockID
+			td.Buff = buff[:cmd.SendSize]
+			td.FromIP = cmd.FromIP
+			td.ToIP = toIP
+			td.SID = cmd.SID
 			common.SendData(td, toIP, config.NodeTDListenPort, "")
+			config.TDBufferPool.Put(td)
 		}
+
+		config.BlockBufferPool.Put(buff)
+
+
 	}else{
 		CMDList.pushCMD(cmd)
 	}
+
 }
 
 func (p CAURS) HandleACK(ack *config.ACK)  {
@@ -340,7 +348,6 @@ func (p CAURS) RecordSIDAndReceiverIP(sid int, ip string)()  {
 func (p CAURS) IsFinished() bool {
 	return len(totalReqs) == 0 && ackMaps.isEmpty()
 }
-
 
 func (p CAURS) GetActualBlocks() int {
 	return actualBlocks
