@@ -42,9 +42,11 @@ func handleACK(conn net.Conn) {
 func main() {
 	defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
 
+	config.Init()
+
 	//监听并接收ack，检测程序结束
 	listenAndReceive(config.NumOfWorkers)
-	
+
 	//当发生意外退出时，安全释放所有资源
 	registerSafeExit()
 

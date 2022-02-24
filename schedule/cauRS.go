@@ -130,7 +130,7 @@ func findRSDistinctBlocks() {
 				curDistinctBlocks = append(curDistinctBlocks, req.BlockID)
 			}
 		}
-		totalReqs = make([]*config.ReqData, 0, config.MaxRSBatchSize)
+		_ = totalReqs
 	}
 }
 
@@ -206,21 +206,24 @@ func dataUpdateRS(rackID int, stripe []int)  {
 	log.Printf("DataUpdate: parityNodeBlocks: %v\n", parities)
 
 	for i := 1; i < len(parities); i++ {
+
 		parityID := rootP + i
 		for _, b := range parities[i]{
+
 			log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
 				rootP, common.GetNodeIP(rootP), b, common.GetNodeIP(parityID))
 
-			cmd := &config.CMD{
-				SID: sid,
-				BlockID: b,
-				ToIPs: []string{common.GetNodeIP(parityID)},
-				FromIP: common.GetNodeIP(rootP),
-				Helpers: parities[i],
-				Matched: 0,
-				SendSize: config.RSBlockSize,
-			}
+			cmd := config.CMDBufferPool.Get().(*config.CMD)
+			cmd.SID = sid
+			cmd.BlockID = b
+			cmd.ToIPs = []string{common.GetNodeIP(parityID)}
+			cmd.FromIP = common.GetNodeIP(rootP)
+			cmd.Helpers = parities[i]
+			cmd.Matched = 0
+			cmd.SendSize = config.RSBlockSize
 			common.SendData(cmd, common.GetNodeIP(rootP), config.NodeCMDListenPort, "")
+			config.CMDBufferPool.Put(cmd)
+
 			sid++
 			break
 		}
@@ -239,18 +242,31 @@ func dataUpdateRS(rackID int, stripe []int)  {
 		nodeID := common.GetDataNodeIDFromIndex(rackID, i)
 		//传输blocks到rootP
 		for _, b := range blocks{
+
 			log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
 				nodeID, common.GetNodeIP(nodeID), b, common.GetNodeIP(rootP))
-			cmd := &config.CMD{
-				SID: sid,
-				BlockID: b,
-				ToIPs: []string{common.GetNodeIP(rootP)},
-				FromIP: common.GetNodeIP(nodeID),
-				Helpers: make([]int, 0, 1),
-				Matched: 0,
-				SendSize: config.RSBlockSize,
-			}
-			common.SendData(cmd, common.GetNodeIP(nodeID), config.NodeCMDListenPort, "")
+			//cmd := &config.CMD{
+			//	SID: sid,
+			//	BlockID: b,
+			//	ToIPs: []string{common.GetNodeIP(rootP)},
+			//	FromIP: common.GetNodeIP(nodeID),
+			//	Helpers: make([]int, 0, 1),
+			//	Matched: 0,
+			//	SendSize: config.RSBlockSize,
+			//}
+			//common.SendData(cmd, common.GetNodeIP(nodeID), config.NodeCMDListenPort, "")
+
+			cmd := config.CMDBufferPool.Get().(*config.CMD)
+			cmd.SID = sid
+			cmd.BlockID = b
+			cmd.ToIPs = []string{common.GetNodeIP(rootP)}
+			cmd.FromIP = common.GetNodeIP(nodeID)
+			cmd.Helpers = make([]int, 0, 1)
+			cmd.Matched = 0
+			cmd.SendSize = config.RSBlockSize
+			common.SendData(cmd, common.GetNodeIP(rootP), config.NodeCMDListenPort, "")
+			config.CMDBufferPool.Put(cmd)
+
 			sid++
 			//统计跨域流量
 			totalCrossRackTraffic += config.RSBlockSize
@@ -259,7 +275,6 @@ func dataUpdateRS(rackID int, stripe []int)  {
 	log.Printf("DataUpdate: stripe: %v, parities: %v, curRackNodes: %v\n",
 		stripe, parities, curRackNodes)
 }
-
 
 func (p CAURS) HandleCMD(cmd *config.CMD)  {
 	//handleOneCMD(cmd)
