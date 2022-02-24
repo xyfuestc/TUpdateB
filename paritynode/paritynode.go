@@ -12,11 +12,7 @@ import (
 )
 var connections []net.Conn
 func handleCMD(conn net.Conn)  {
-	defer conn.Close()
-	cmd := common.GetCMD(conn)
-	schedule.GetCurPolicy().RecordSIDAndReceiverIP(cmd.SID, common.GetConnIP(conn))
-	log.Printf("收到来自 %s 的命令: 将 sid: %d, block: %d 的更新数据发送给 %v.\n", common.GetConnIP(conn), cmd.SID, cmd.BlockID, cmd.ToIPs)
-	schedule.GetCurPolicy().HandleCMD(&cmd)
+
 }
 func handleTD(conn net.Conn)  {
 	defer conn.Close()
@@ -46,6 +42,26 @@ func handleACK(conn net.Conn) {
 func main() {
 	defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
 
+	//监听并接收ack，检测程序结束
+	listenAndReceive(config.NumOfWorkers)
+	
+	//当发生意外退出时，安全释放所有资源
+	registerSafeExit()
+
+	//清除连接
+	defer func() {
+		for _, conn := range connections {
+			conn.Close()
+		}
+	}()
+
+	for  {
+
+	}
+}
+
+func listenAndReceive(workers int) {
+
 	config.Init()
 	log.Printf("listening td in %s:%s\n", common.GetLocalIP(), config.NodeTDListenPort)
 	l1, err := net.Listen("tcp", common.GetLocalIP() + ":" + config.NodeTDListenPort)
@@ -69,22 +85,15 @@ func main() {
 		log.Printf("listening settings failed, err:%v\n", err)
 		return
 	}
-	//当发生意外退出时，安全释放所有资源
-	registerSafeExit()
-
-	//清除连接
-	defer func() {
-		for _, conn := range connections {
-			conn.Close()
-		}
-	}()
-	go listenCMD(l2)
-	go listenACK(l3)
-	go listenSettings(l4)
-	go common.ListenMulticast(schedule.MulticastReceiveMTUCh)
-	//go common.HandlingACK(schedule.MulticastReceiveAckCh)
-	go MsgSorter(schedule.MulticastReceiveMTUCh, schedule.MulticastReceiveAckCh)
-	listenTD(l1)
+	for i := 0; i < workers; i++ {
+		go listenCMD(l2)
+		go listenACK(l3)
+		go listenSettings(l4)
+		go listenTD(l1)
+		go common.ListenMulticast(schedule.MulticastReceiveMTUCh)
+		//go common.HandlingACK(schedule.MulticastReceiveAckCh)
+		go msgSorter(schedule.ReceivedAckCh, schedule.ReceivedTDCh, schedule.ReceivedCMDCh, schedule.MulticastReceiveMTUCh)
+	}
 
 }
 func listenACK(listen net.Listener) {
@@ -100,7 +109,9 @@ func listenACK(listen net.Listener) {
 			log.Printf("accept err: %v", e)
 			return
 		}
-		go handleACK(conn)
+		ack := common.GetACK(conn)
+		schedule.ReceivedAckCh <- ack
+
 		connections = append(connections, conn)
 		if len(connections)%100 == 0 {
 			log.Printf("total number of connections: %v", len(connections))
@@ -121,7 +132,11 @@ func listenCMD(listen net.Listener) {
 			log.Printf("accept err: %v", e)
 			return
 		}
-		go handleCMD(conn)
+		cmd := common.GetCMD(conn)
+		schedule.GetCurPolicy().RecordSIDAndReceiverIP(cmd.SID, common.GetConnIP(conn))
+		schedule.ReceivedCMDCh <- cmd
+		log.Printf("收到来自 %s 的命令: 将 sid: %d, block: %d 的更新数据发送给 %v.\n", common.GetConnIP(conn), cmd.SID, cmd.BlockID, cmd.ToIPs)
+
 		connections = append(connections, conn)
 		if len(connections)%100 == 0 {
 			log.Printf("total number of connections: %v", len(connections))
@@ -142,7 +157,11 @@ func listenTD(listen net.Listener) {
 			log.Printf("accept err: %v", e)
 			return
 		}
-		go handleTD(conn)
+		td := common.GetTD(conn)
+		schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
+		schedule.ReceivedTDCh <- td
+		log.Printf("收到来自 %s 的TD，sid: %d, blockID: %d.\n", common.GetConnIP(conn), td.SID, td.BlockID)
+
 		connections = append(connections, conn)
 		if len(connections)%100 == 0 {
 			log.Printf("total number of connections: %v", len(connections))
@@ -163,30 +182,42 @@ func listenSettings(listen net.Listener) {
 			log.Printf("accept err: %v", e)
 			return
 		}
-		go setPolicy(conn)
+		setPolicy(conn)
 		connections = append(connections, conn)
 	}
 }
-func MsgSorter(receive <-chan config.MTU, ackCh chan<- config.ACK) {
+func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, receivedCMDCh <-chan config.CMD, receivedMultiMTUCh <-chan config.MTU)  {
 	for  {
 		select {
-		case message := <-receive:
-			schedule.GetCurPolicy().RecordSIDAndReceiverIP(message.SID, message.FromIP)
-			//log.Printf("记录ACKIP：sid: %v, fromIP: %v\n", message.SID, message.FromIP)
-			//构造td
-			td := &config.TD{
-				SID:            message.SID,
-				Buff:           message.Data,
-				BlockID:        message.BlockID,
-				MultiTargetIPs: message.MultiTargetIPs,
-				FromIP:         message.FromIP,
-				SendSize:       message.SendSize,
-			}
-			go schedule.GetCurPolicy().HandleTD(td)
-			//log.Printf("MsgSorter：接收数据完成，执行HandleTD, td: sid: %v, sendSize: %v.\n",
-			//																td.SID, td.SendSize)
+		case ack := <-receivedAckCh:
+			schedule.GetCurPolicy().HandleACK(&ack)
+
+		case td := <-receivedTDCh:
+			schedule.GetCurPolicy().HandleTD(&td)
+
+		case cmd := <-receivedCMDCh:
+			schedule.GetCurPolicy().HandleCMD(&cmd)
+
+		case mtu := <-receivedMultiMTUCh:
+			td := GetTDFromMulticast(mtu)
+			schedule.GetCurPolicy().HandleTD(td)
+
 		}
 	}
+}
+func GetTDFromMulticast(message config.MTU) *config.TD  {
+	//构造td
+	td := &config.TD{
+		SID:            message.SID,
+		Buff:           message.Data,
+		BlockID:        message.BlockID,
+		MultiTargetIPs: message.MultiTargetIPs,
+		FromIP:         message.FromIP,
+		SendSize:       message.SendSize,
+	}
+	go schedule.GetCurPolicy().HandleTD(td)
+	log.Printf("MsgSorter：接收数据完成，执行HandleTD, td: sid: %v, sendSize: %v.\n", td.SID, td.SendSize)
+	return td
 }
 //func MsgSorter(receive <-chan config.MTU, ackCh chan<- config.ACK)  {
 //	countMap := map[int]int{}

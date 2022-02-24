@@ -270,9 +270,6 @@ func ACKIsEmpty() bool {
 
 func (p Base) IsFinished() bool {
 	isFinished := len(totalReqs) == 0 && ackMaps.isEmpty()
-	if isFinished {
-		CloseAllChannels()
-	}
 	return isFinished
 }
 
