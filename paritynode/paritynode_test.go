@@ -27,7 +27,7 @@ func TestMulticast(t *testing.T) {
 	schedule.SetPolicy(config.BASEMulticast)
 	go common.ListenMulticast(schedule.MulticastReceiveMTUCh)
 	go common.HandlingACK(schedule.MulticastReceiveAckCh)
-	go MsgSorter(schedule.MulticastReceiveMTUCh, schedule.MulticastReceiveAckCh)
+	//go MsgSorter(schedule.MulticastReceiveMTUCh, schedule.MulticastReceiveAckCh)
 	for  {
 		
 	}

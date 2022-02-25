@@ -138,7 +138,7 @@ func listenCMD(listen net.Listener) {
 		cmd := common.GetCMD(conn)
 		schedule.GetCurPolicy().RecordSIDAndReceiverIP(cmd.SID, common.GetConnIP(conn))
 		schedule.ReceivedCMDCh <- cmd
-		config.CMDBufferPool.Put(cmd)
+		//config.CMDBufferPool.Put(cmd)
 
 		log.Printf("收到来自 %s 的命令: 将 sid: %d, block: %d 的更新数据发送给 %v.\n", common.GetConnIP(conn), cmd.SID, cmd.BlockID, cmd.ToIPs)
 
@@ -164,7 +164,7 @@ func listenACK(listen net.Listener) {
 		}
 		ack := common.GetACK(conn)
 		schedule.ReceivedAckCh <- ack
-		config.AckBufferPool.Put(ack)
+		//config.AckBufferPool.Put(ack)
 
 		connections = append(connections, conn)
 		if len(connections)%100 == 0 {
@@ -189,7 +189,7 @@ func listenTD(listen net.Listener) {
 		td := common.GetTD(conn)
 		schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
 		schedule.ReceivedTDCh <- td
-		config.TDBufferPool.Put(td)
+		//config.TDBufferPool.Put(td)
 
 		log.Printf("收到来自 %s 的TD，sid: %d, blockID: %d.\n", common.GetConnIP(conn), td.SID, td.BlockID)
 

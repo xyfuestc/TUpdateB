@@ -203,8 +203,9 @@ func WriteDeltaBlock(blockID int, deltaBuff []byte)   {
 
 func GetCMD(conn net.Conn) config.CMD  {
 	dec := gob.NewDecoder(conn)
-	cmd := config.CMDBufferPool.Get().(*config.CMD)
-	err := dec.Decode(cmd)
+	var cmd config.CMD
+	//cmd := config.CMDBufferPool.Get().(*config.CMD)
+	err := dec.Decode(&cmd)
 	if err != nil {
 		if conn != nil {
 			conn.Close()
@@ -213,7 +214,7 @@ func GetCMD(conn net.Conn) config.CMD  {
 
 	}
 	conn.Close()
-	return *cmd
+	return cmd
 }
 func SendCMD(fromIP string, toIPs []string, sid, blockID int)  {
 	//cmd := &config.CMD{
@@ -258,9 +259,9 @@ func SendCMDWithHelpers(fromIP string, toIPs []string, sid, blockID int, helpers
 func GetACK(conn net.Conn) config.ACK {
 	dec := gob.NewDecoder(conn)
 
-	//var ack config.ACK
-	ack := config.AckBufferPool.Get().(*config.ACK)
-	err := dec.Decode(ack)
+	var ack config.ACK
+	//ack := config.AckBufferPool.Get().(*config.ACK)
+	err := dec.Decode(&ack)
 	if err != nil {
 		if conn != nil {
 			conn.Close()
@@ -270,13 +271,13 @@ func GetACK(conn net.Conn) config.ACK {
 	}
 	log.Printf("received block %d's ack from %s, sid: %d\n", ack.BlockID, GetConnIP(conn), ack.SID)
 	conn.Close()
-	return *ack
+	return ack
 }
 func GetTD(conn net.Conn) config.TD {
 	//defer conn.Close()
 	dec := gob.NewDecoder(conn)
-	//var td config.TD
-	td := config.TDBufferPool.Get().(*config.TD)
+	var td config.TD
+	//td := config.TDBufferPool.Get().(*config.TD)
 	err := dec.Decode(&td)
 	if err != nil {
 		if conn != nil {
@@ -285,7 +286,7 @@ func GetTD(conn net.Conn) config.TD {
 		log.Fatalln("GetTD from ", GetConnIP(conn), "result in decoding error: ", err, "blockID: ", td.BlockID, "sid: ", td.SID)
 	}
 	conn.Close()
-	return *td
+	return td
 }
 func GetPolicy(conn net.Conn) config.Policy  {
 	//defer conn.Close()
