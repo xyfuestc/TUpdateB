@@ -62,7 +62,6 @@ func main() {
 
 func listenAndReceive(workers int) {
 
-	config.Init()
 	log.Printf("listening td in %s:%s\n", common.GetLocalIP(), config.NodeTDListenPort)
 	l1, err := net.Listen("tcp", common.GetLocalIP() + ":" + config.NodeTDListenPort)
 	if err != nil {

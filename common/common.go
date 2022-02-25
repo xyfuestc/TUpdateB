@@ -56,7 +56,7 @@ func SendData(data interface{}, targetIP string, port string, retType string) in
 	//1.与目标建立连接
 	addr := fmt.Sprintf("%s:%s", targetIP, port)
 	conn, err := net.Dial("tcp", addr)
-	defer conn.Close()
+	//defer conn.Close()
 
 	if err != nil {
 		if conn != nil {
