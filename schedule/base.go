@@ -129,6 +129,7 @@ func handleOneCMD(cmd *config.CMD)  {
 	for _, _ = range cmd.ToIPs {
 		ackMaps.pushACK(cmd.SID)
 	}
+	var td *config.TD
 	for _, parityIP := range cmd.ToIPs {
 		//td := &config.TD{
 		//	BlockID: cmd.BlockID,
@@ -137,19 +138,21 @@ func handleOneCMD(cmd *config.CMD)  {
 		//	ToIP: parityIP,
 		//	SID: cmd.SID,
 		//}
-		td := config.TDBufferPool.Get().(*config.TD)
+		//td := config.TDBufferPool.Get().(*config.TD)
 		td.BlockID = cmd.BlockID
 		td.Buff = buff[:config.BlockSize]
 		td.FromIP = cmd.FromIP
 		td.ToIP = parityIP
 		td.SID = cmd.SID
+		td.SendSize = config.BlockSize
 		//common.SendData(td, parityIP, config.NodeTDListenPort, "")
 
 		begin := time.Now().UnixNano() / 1e6
 		go common.SendData(td, parityIP, config.NodeTDListenPort, "")
 		end := time.Now().UnixNano() / 1e6
 
-		log.Printf("发送td(sid:%d, blockID:%d),从%s到%s, 用时：%vms \n", cmd.SID, cmd.BlockID, common.GetLocalIP(), parityIP, end-begin)
+		log.Printf("发送 td(sid: %d, blockID: %d), 从 %s 到 %s, 数据量：%.2v MB，  用时：%v ms \n",
+			cmd.SID, cmd.BlockID, common.GetLocalIP(), parityIP, 1.0 * td.SendSize/config.Megabyte, end-begin)
 
 		config.TDBufferPool.Put(td)
 	}
