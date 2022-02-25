@@ -129,22 +129,23 @@ func handleOneCMD(cmd *config.CMD)  {
 	for _, _ = range cmd.ToIPs {
 		ackMaps.pushACK(cmd.SID)
 	}
-	var td *config.TD
+	//var td config.TD
 	for _, parityIP := range cmd.ToIPs {
-		//td := &config.TD{
-		//	BlockID: cmd.BlockID,
-		//	Buff: buff[:config.BlockSize],
-		//	FromIP: cmd.FromIP,
-		//	ToIP: parityIP,
-		//	SID: cmd.SID,
-		//}
+		td := &config.TD{
+			BlockID: cmd.BlockID,
+			Buff: buff[:config.BlockSize],
+			FromIP: cmd.FromIP,
+			ToIP: parityIP,
+			SID: cmd.SID,
+			SendSize: cmd.SendSize,
+		}
 		//td := config.TDBufferPool.Get().(*config.TD)
-		td.BlockID = cmd.BlockID
-		td.Buff = buff[:config.BlockSize]
-		td.FromIP = cmd.FromIP
-		td.ToIP = parityIP
-		td.SID = cmd.SID
-		td.SendSize = config.BlockSize
+		//td.BlockID = cmd.BlockID
+		//td.Buff = buff[:config.BlockSize]
+		//td.FromIP = cmd.FromIP
+		//td.ToIP = parityIP
+		//td.SID = cmd.SID
+		//td.SendSize = config.BlockSize
 		//common.SendData(td, parityIP, config.NodeTDListenPort, "")
 
 		begin := time.Now().UnixNano() / 1e6
