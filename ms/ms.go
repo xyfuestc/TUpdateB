@@ -154,7 +154,9 @@ func getReqsFromTrace()  {
 }
 
 func settingCurrentPolicy(policyType int)  {
-	UsingMulticast := strings.Contains(config.CurPolicyStr[curPolicy], "Multicast")
+
+
+	UsingMulticast := checkMulti(policyType)
 	p := &config.Policy{
 		Type:      policyType,
 		NumOfMB:   NumOfMB,
@@ -239,4 +241,12 @@ func registerSafeExit()  {
 			os.Exit(0)
 		}
 	}()
+}
+func checkMulti(policy int) bool  {
+	UsingMulticast := false
+	if policy < config.NumOfAlgorithm {
+		UsingMulticast = strings.Contains(config.CurPolicyStr[curPolicy], "Multicast")
+	}
+	return UsingMulticast
+
 }
