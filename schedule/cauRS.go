@@ -130,7 +130,7 @@ func findRSDistinctBlocks() {
 				curDistinctBlocks = append(curDistinctBlocks, req.BlockID)
 			}
 		}
-		totalReqs = make([]*config.ReqData, config.MaxBlockSize)
+		totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 	}
 }
 
