@@ -5,6 +5,7 @@ import (
 	"EC/config"
 	"EC/schedule"
 	"fmt"
+	"github.com/dchest/uniuri"
 	"runtime"
 	"testing"
 	"time"
@@ -14,6 +15,11 @@ func TestMulticast(t *testing.T)  {
 
 	//msgLog := map[string]config.MTU{} // key: "sid:fid"
 	config.Init()
+	randStr := uniuri.NewLen(100)
+	buff := make([]byte, 100000)
+	copy(buff, randStr)
+	buff50 := buff[:10]
+	fmt.Printf("%+v\n", buff50)
 
 
 

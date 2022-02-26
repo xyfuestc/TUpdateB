@@ -188,6 +188,8 @@ func WriteDeltaBlock(blockID int, deltaBuff []byte)   {
 	oldBuff := ReadBlockWithSize(blockID, size)
 	/*****compute new delta data*******/
 	newBuff := config.BlockBufferPool.Get().([]byte)
+	log.Printf("deltaBuff Size: %v, oldBuff size: %v, newBuff Size: %v\n",
+		len(deltaBuff), len(oldBuff), len(newBuff))
 	for i := 0; i < size; i++ {
 		newBuff[i] = deltaBuff[i] ^ oldBuff[i]
 	}
