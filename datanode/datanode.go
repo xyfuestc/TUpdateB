@@ -12,6 +12,7 @@ import (
 )
 var connections []net.Conn
 
+var done = make(chan bool)
 //func handleCMD(conn net.Conn)  {
 //	defer conn.Close()
 //	cmd := common.GetCMD(conn)
@@ -37,6 +38,13 @@ var connections []net.Conn
 func setPolicy(conn net.Conn)  {
 	defer conn.Close()
 	p := common.GetPolicy(conn)
+
+	//检测结束
+	if p.Type == -1 {
+		finish()
+		return
+	}
+
 	schedule.SetPolicy(config.PolicyType(p.Type))
 	config.BlockSize = p.NumOfMB * config.Megabyte
 	config.RSBlockSize = p.NumOfMB * config.Megabyte * config.W
@@ -46,6 +54,14 @@ func setPolicy(conn net.Conn)  {
 
 	log.Printf("收到来自 %s 的命令，设置当前算法设置为%s, 当前blockSize=%vMB.\n",
 		common.GetConnIP(conn), config.CurPolicyStr[p.Type], config.BlockSize/config.Megabyte)
+}
+
+func finish() {
+
+	clearAll()
+
+	done <- true
+
 }
 func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, receivedCMDCh <-chan config.CMD)  {
 	for  {
@@ -82,7 +98,10 @@ func main() {
 	}()
 
 	for  {
-		
+		select {
+		case <- done:
+			break
+		}
 	}
 
 	//go listenTD(l3)
@@ -237,6 +256,7 @@ func clearAll() {
 	}
 	schedule.GetCurPolicy().Clear()
 	schedule.CloseAllChannels()
+
 }
 
 

@@ -45,6 +45,8 @@ const (
 	CAU1
 	BASEMulticast
 	CAURS
+
+	NONE
 )
 const (
 	Timestamp int  = iota    // default 0

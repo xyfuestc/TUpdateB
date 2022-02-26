@@ -24,6 +24,13 @@ var connections []net.Conn
 func setPolicy(conn net.Conn)  {
 	defer conn.Close()
 	p := common.GetPolicy(conn)
+
+	//检测结束
+	if p.Type == -1 {
+		finish()
+		return
+	}
+
 	schedule.SetPolicy(config.PolicyType(p.Type))
 	config.BlockSize = p.NumOfMB * config.Megabyte
 	config.RSBlockSize = p.NumOfMB * config.Megabyte * config.W
@@ -34,6 +41,9 @@ func setPolicy(conn net.Conn)  {
 	log.Printf("收到来自 %s 的命令，设置当前算法设置为%s, 当前XOR的blockSize=%vMB，RS的blockSize=%vMB, UsingMulticast=%v.\n",
 		common.GetConnIP(conn), config.CurPolicyStr[p.Type], config.BlockSize/config.Megabyte, config.RSBlockSize/config.Megabyte, p.Multicast)
 }
+
+var done = make(chan bool)
+
 //func handleACK(conn net.Conn) {
 //	defer conn.Close()
 //	ack := common.GetACK(conn)
@@ -58,7 +68,10 @@ func main() {
 	}()
 
 	for  {
-
+		select {
+		case <- done:
+			break
+		}
 	}
 }
 
@@ -321,4 +334,12 @@ func clearAll() {
 	}
 	schedule.GetCurPolicy().Clear()
 	schedule.CloseAllChannels()
+}
+
+func finish() {
+
+	clearAll()
+
+	done <- true
+
 }

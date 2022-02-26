@@ -34,7 +34,6 @@ func checkFinish() {
 	//ack := common.GetACK(conn)
 	//schedule.GetCurPolicy().HandleACK(&ack)
 	if schedule.GetCurPolicy().IsFinished() {
-		log.Printf("=====================================\n")
 		endTime = time.Now()
 		sumTime := endTime.Unix() - beginTime.Unix()
 		throughput :=  float32(numOfReq) * ( float32(config.BlockSize) / config.Megabyte) / float32(sumTime)
@@ -50,6 +49,8 @@ func checkFinish() {
 }
 /*所有算法跑完，清空操作*/
 func clearAll() {
+
+
 	schedule.CloseAllChannels()
 	actualUpdatedBlocks = 0
 	numOfReq = 0
@@ -88,6 +89,8 @@ func main() {
 		}
 		curPolicy++
 	}
+	//通知各个节点退出
+	settingCurrentPolicy(-1)
 	//清空
 	clearAll()
 }
