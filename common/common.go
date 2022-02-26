@@ -170,7 +170,8 @@ func RandWriteBlockAndRetDelta(blockID, size int) []byte  {
 	/*****compute new delta data*******/
 	deltaBuff := config.BlockBufferPool.Get().([]byte)
 	for i := 0; i < size; i++ {
-		deltaBuff[i] = newBuff[i] ^ oldBuff[i]
+		//deltaBuff[i] = newBuff[i] ^ oldBuff[i]
+		newBuff = append(newBuff, deltaBuff[i] ^ oldBuff[i])
 	}
 
 	/*****write new data*******/
@@ -191,7 +192,8 @@ func WriteDeltaBlock(blockID int, deltaBuff []byte)   {
 	log.Printf("deltaBuff Size: %v, oldBuff size: %v, newBuff Size: %v\n",
 		len(deltaBuff), len(oldBuff), len(newBuff))
 	for i := 0; i < size; i++ {
-		newBuff[i] = deltaBuff[i] ^ oldBuff[i]
+		//newBuff[i] =
+		newBuff = append(newBuff, deltaBuff[i] ^ oldBuff[i])
 	}
 	/*****write new data*******/
 	WriteBlockWithSize(blockID, newBuff, size)
