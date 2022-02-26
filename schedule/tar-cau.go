@@ -126,7 +126,7 @@ func (p TAR_CAU) HandleReq(reqs []*config.ReqData)  {
 		findDistinctReqs()
 		//执行cau
 		actualBlocks += len(curDistinctReq)
-		log.Printf("第%d轮 TAR-CAU：处理%d个block\n", round, len(curDistinctReq))
+		log.Printf("第%d轮 TAR-CAU：处理%d个block，剩余%v个block待处理。\n", round, len(curDistinctReq), len(totalReqs))
 
 		tar_cau()
 
@@ -163,9 +163,10 @@ func findDistinctReqs() {
 		turnMatchReqsToDistinctReqs(curMatchReqs)
 		totalReqs = totalReqs[config.MaxBatchSize:]
 	}else { //处理最后不到100个请求
+
 		curMatchReqs = totalReqs
 		turnMatchReqsToDistinctReqs(curMatchReqs)
-		_ = totalReqs
+		totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 	}
 }
 

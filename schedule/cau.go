@@ -13,7 +13,7 @@ type CAU struct {
 const ParityRackIndex = config.RackSize - 1
 var round = 0
 var IsRunning = true   //标志是否进入下一轮迭代
-var totalReqs = make([]*config.ReqData, config.MaxBatchSize, config.MaxBatchSize)
+var totalReqs = make([]*config.ReqData, config.MaxBatchSize)
 var curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
 var actualBlocks = 0
 func (p CAU) Init()  {
