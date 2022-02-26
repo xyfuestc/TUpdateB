@@ -102,11 +102,12 @@ func handleWaitingCMDs(td *config.TD) {
 			//}
 			sendTD := config.TDBufferPool.Get().(*config.TD)
 			sendTD.BlockID = cmd.BlockID
-			sendTD.Buff = td.Buff[:cmd.SendSize]
+			sendTD.Buff = td.Buff
 			sendTD.FromIP = cmd.FromIP
 			sendTD.ToIP = toIP
 			sendTD.SID = cmd.SID
 			sendTD.SendSize = cmd.SendSize
+			log.Printf("tar-cau handleWaitingCMDs: sendTD.SendSize: %+v,len(td.Buff): %+v \n", sendTD.SendSize, len(td.Buff))
 			sendSizeRate := float32(sendTD.SendSize * 1.0) / float32(config.BlockSize) * 100.0
 			log.Printf("发送 block:%d sendSize: %.2f%% -> %s.\n", td.BlockID, sendSizeRate, toIP)
 			common.SendData(sendTD, toIP, config.NodeTDListenPort, "")

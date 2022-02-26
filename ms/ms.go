@@ -58,7 +58,7 @@ func clearAll() {
 }
 /*每种算法结束后，清空操作*/
 func clearRound()  {
-	totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
+	//totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 	finished = true
 	actualUpdatedBlocks = 0
 }
