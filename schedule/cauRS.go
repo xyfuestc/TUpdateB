@@ -107,7 +107,7 @@ func getXORBuffFromMapBlockTDs(mapBlockTDs map[int]*config.TD, toIP string) []by
 }
 func getXORBuffFromCMD(cmd *config.CMD) []byte {
 	mapBlockTDs := getMapBlockTDsFromHelpers(cmd.Helpers)
-	log.Printf("mapBlockTDs:= %v\n", mapBlockTDs)
+	//log.Printf("mapBlockTDs:= %v\n", mapBlockTDs)
 	buff := getXORBuffFromMapBlockTDs(mapBlockTDs, cmd.ToIPs[0])
 
 	return buff
@@ -130,7 +130,7 @@ func findRSDistinctBlocks() {
 				curDistinctBlocks = append(curDistinctBlocks, req.BlockID)
 			}
 		}
-		_ = totalReqs
+		totalReqs = make([]*config.ReqData, config.MaxBlockSize)
 	}
 }
 
