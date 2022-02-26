@@ -11,7 +11,7 @@ const K int = 8
 const M int = 4
 const W int = 4
 const N int = K + M
-var NumOfMB = 64
+var NumOfMB = 16
 var BlockSize = Megabyte * NumOfMB //1MB
 var RSBlockSize = Megabyte * NumOfMB * W
 const Megabyte = 1024 * 1024      //1MB
@@ -200,8 +200,7 @@ func Init(){
 	//init num of go workers
 	NumOfWorkers = runtime.NumCPU()
 
-	log.Printf("初始化共享池...\n")
-	InitBufferPool()
+
 }
 func InitBufferPool()  {
 	ReqBufferPool = sync.Pool{

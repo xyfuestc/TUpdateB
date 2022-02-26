@@ -3,9 +3,7 @@ package main
 import (
 	"EC/common"
 	"EC/config"
-	"EC/schedule"
 	"encoding/json"
-	"fmt"
 	"github.com/wxnacy/wgo/arrays"
 	"log"
 	"net"
@@ -20,17 +18,20 @@ type Message struct {
 }
 
 func TestMulticast(t *testing.T) {
-	nodeID := common.GetNodeID(2021)
-	fromIP := common.GetNodeIP(nodeID)
-	fmt.Println(fromIP)
-
-	schedule.SetPolicy(config.BASEMulticast)
-	go common.ListenMulticast(schedule.MulticastReceiveMTUCh)
-	go common.HandlingACK(schedule.MulticastReceiveAckCh)
-	//go MsgSorter(schedule.MulticastReceiveMTUCh, schedule.MulticastReceiveAckCh)
-	for  {
-		
+	for i := 0; i < 1000; i++ {
+		common.ReadBlockWithSize(0, config.RSBlockSize)
 	}
+	//对比2种方式：1）sync.pool  2）make slice 的内存占用情况
+
+
+
+	//schedule.SetPolicy(config.BASEMulticast)
+	//go common.ListenMulticast(schedule.MulticastReceiveMTUCh)
+	//go common.HandlingACK(schedule.MulticastReceiveAckCh)
+	////go MsgSorter(schedule.MulticastReceiveMTUCh, schedule.MulticastReceiveAckCh)
+	//for  {
+	//
+	//}
 }
 func ListenMulticast(receive chan Message) {
 	addr, err := net.ResolveUDPAddr("udp", config.MulticastAddrWithPort)

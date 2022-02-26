@@ -28,6 +28,8 @@ func setPolicy(conn net.Conn)  {
 	config.BlockSize = p.NumOfMB * config.Megabyte
 	config.RSBlockSize = p.NumOfMB * config.Megabyte * config.W
 
+	log.Printf("初始化共享池...\n")
+	config.InitBufferPool()
 
 	log.Printf("收到来自 %s 的命令，设置当前算法设置为%s, 当前XOR的blockSize=%vMB，RS的blockSize=%vMB, UsingMulticast=%v.\n",
 		common.GetConnIP(conn), config.CurPolicyStr[p.Type], config.BlockSize/config.Megabyte, config.RSBlockSize/config.Megabyte, p.Multicast)

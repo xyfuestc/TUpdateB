@@ -6,7 +6,11 @@ import (
 	"EC/schedule"
 	"fmt"
 	"github.com/dchest/uniuri"
+	"log"
+	"os"
 	"runtime"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
@@ -59,15 +63,16 @@ func TestMulticast(t *testing.T)  {
 	//schedule.GetCurPolicy().HandleCMD(cmd)
 }
 
-func testSliceMem(t *testing.T, f func([]int) []int) {
+func testSliceMem(t *testing.T, f func(b, size int) ) {
 	t.Helper()
-	ans := make([][]int, 0)
+	//ans := make([][]byte, 0)
+	config.InitBufferPool()
 	for k := 0; k < 100; k++ {
-		origin := make ([]int, 128 * 1024)
-		ans = append(ans, f(origin))
+		go f(k, config.RSBlockSize)
 	}
+	time.Sleep(2 * time.Second)
 	printMem(t)
-	_ = ans
+	//_ = ans
 }
 func printMem(t *testing.T)  {
 	t.Helper()
@@ -76,19 +81,84 @@ func printMem(t *testing.T)  {
 	t.Logf("%.2f MB", float64(rtm.Alloc)/1024./1024.)
 }
 
-func Slice1(origin []int) []int {
-	slice := make([]int, 0, cap(origin))
-	copy(slice, origin)
+func readBySyncPool(b, size int)  {
+	index := common.GetIndex(b)
+	//read data from disk
+	//buff := make([]byte, size)
 
-	_ = origin
-	return slice
+	buff := config.BlockBufferPool.Get().([]byte)
+
+	file, err := os.OpenFile(config.DataFilePath, os.O_RDONLY, 0)
+
+	if err != nil {
+		log.Fatalln("打开文件出错: ", err)
+	}
+
+	defer file.Close()
+	//fmt.Println(len(buff))
+	readSize, err := file.ReadAt(buff[:size], int64(index * size))
+	//fmt.Println(len(buff))
+	if err != nil {
+		log.Fatal("读取文件失败：", err)
+	}
+	if readSize != size {
+		log.Printf("读取大小为不一致 in ReadBlockWithSize：%+v, %+v", readSize, size)
+	}
+
 }
-func Slice2(origin []int) []int {
-	slice := make([]int, 0, cap(origin))
-	copy(slice, origin)
 
-	return slice
+func readBySlice(b, size int) {
+	index := common.GetIndex(b)
+	//read data from disk
+	buff := make([]byte, size)
+	//buff := config.BlockBufferPool.Get().([]byte)
+
+	file, err := os.OpenFile(config.DataFilePath, os.O_RDONLY, 0)
+
+	if err != nil {
+		log.Fatalln("打开文件出错: ", err)
+	}
+
+	defer file.Close()
+
+	readSize, err := file.ReadAt(buff[:size], int64(index * size))
+
+	if err != nil {
+		log.Fatal("读取文件失败：", err)
+	}
+	if readSize != size {
+		log.Printf("读取大小为不一致 in ReadBlockWithSize：%+v, %+v", readSize, size)
+	}
+
+	//return buff[:size]
 }
 
-func TestLastCharsBySlice1(t *testing.T)  { testSliceMem(t, Slice1)}
-func TestLastCharsBySlice2(t *testing.T)  { testSliceMem(t, Slice2)}
+func TestMemBySyncPool(t *testing.T)  { testSliceMem(t, readBySyncPool)}
+func TestMemBySlice(t *testing.T)  { testSliceMem(t, readBySlice)}
+
+
+
+/*对比字符串拼接性能*/
+func builderConcat(n int, str string) string {
+	var builder strings.Builder
+	for i := 0; i < n; i++ {
+		builder.WriteString(str)
+	}
+	return builder.String()
+}
+func plusConcat(n int, str string) string {
+	for i := 0; i < n; i++ {
+		str = str + strconv.Itoa(i)
+	}
+	return str
+}
+
+func benchmark(b *testing.B, f func(int, string) string) {
+	var str = uniuri.NewLen(10)
+	for i := 0; i < b.N; i++ {
+		f(10000, str)
+	}
+}
+
+func BenchmarkPlusConcat(b *testing.B)    { benchmark(b, plusConcat) }
+func BenchmarkBuilderConcat(b *testing.B)    { benchmark(b, builderConcat) }
