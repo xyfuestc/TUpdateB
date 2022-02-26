@@ -266,7 +266,7 @@ func dataUpdateRS(rackID int, stripe []int)  {
 			cmd.Matched = 0
 			cmd.SendSize = config.RSBlockSize
 
-			common.SendData(cmd, common.GetNodeIP(rootP), config.NodeCMDListenPort, "")
+			common.SendData(cmd, common.GetNodeIP(nodeID), config.NodeCMDListenPort, "")
 
 			config.CMDBufferPool.Put(cmd)
 
