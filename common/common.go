@@ -124,6 +124,7 @@ func ReadBlockWithSize(blockID, size int) []byte  {
 	//read data from disk
 	//buff := make([]byte, size)
 	buff := config.BlockBufferPool.Get().([]byte)
+
 	file, err := os.OpenFile(config.DataFilePath, os.O_RDONLY, 0)
 
 	if err != nil {
@@ -164,6 +165,10 @@ func RandWriteBlockAndRetDelta(blockID, size int) []byte  {
 	//newDataStr := RandStringBytesMaskImpr(config.NumOfMB)
 	newDataStr := uniuri.NewLen(size)
 	newBuff := config.BlockBufferPool.Get().([]byte)
+	//newBuff := make([]byte, size)
+	for i := 0; i < size; i++ {
+		newBuff = append(newBuff, newDataStr[i])
+	}
 	copy(newBuff, newDataStr)
 	/*****read old data*******/
 	oldBuff := ReadBlockWithSize(blockID, size)
@@ -171,7 +176,7 @@ func RandWriteBlockAndRetDelta(blockID, size int) []byte  {
 	deltaBuff := config.BlockBufferPool.Get().([]byte)
 	for i := 0; i < size; i++ {
 		//deltaBuff[i] = newBuff[i] ^ oldBuff[i]
-		newBuff = append(newBuff, deltaBuff[i] ^ oldBuff[i])
+		deltaBuff = append(deltaBuff, newBuff[i] ^ oldBuff[i])
 	}
 
 	/*****write new data*******/
