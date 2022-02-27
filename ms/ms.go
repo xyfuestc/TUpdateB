@@ -33,7 +33,7 @@ func checkFinish() {
 	//defer conn.Close()
 	//ack := common.GetACK(conn)
 	//schedule.GetCurPolicy().HandleACK(&ack)
-	if schedule.GetCurPolicy().IsFinished() {
+	if schedule.GetCurPolicy().IsFinished() && curPolicy < config.NumOfAlgorithm {
 		endTime = time.Now()
 		sumTime := endTime.Unix() - beginTime.Unix()
 		throughput :=  float32(numOfReq) * ( float32(config.BlockSize) / config.Megabyte) / float32(sumTime)
