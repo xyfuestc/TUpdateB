@@ -191,10 +191,14 @@ func TestListenTD(t *testing.T) {
 		//config.TDBufferPool.Put(td)
 
 		log.Printf("收到来自 %s 的TD，sid: %d, blockID: %d.\n", common.GetConnIP(conn), td.SID, td.BlockID)
-
-		connections = append(connections, conn)
-		if len(connections)%100 == 0 {
-			log.Printf("total number of connections: %v", len(connections))
+		err := conn.Close()
+		if err != nil {
+			log.Fatalln("error : ", err)
 		}
+
+		//connections = append(connections, conn)
+		//if len(connections)%100 == 0 {
+		//	log.Printf("total number of connections: %v", len(connections))
+		//}
 	}
 }

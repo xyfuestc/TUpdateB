@@ -78,6 +78,22 @@ func TestReceive(t *testing.T) {
 		}
 	}
 }
+func TestSend(t *testing.T) {
+	config.Init()
+	config.InitBufferPool()
+
+	for i := 0; i < 1; i++ {
+		buff := common.ReadBlockWithSize(i+1, config.BlockSize)
+		td := &config.TD{
+			SID: i,
+			BlockID: i+1,
+			FromIP: common.GetLocalIP(),
+			ToIP: "192.168.1.120",
+			Buff: buff,
+		}
+		common.SendData(td, common.GetLocalIP(), config.NodeTDListenPort, "")
+	}
+}
 func RunPrintMsg(receiveCh <-chan config.MTU) {
 	for{
 		common.PrintMessage(<- receiveCh)
