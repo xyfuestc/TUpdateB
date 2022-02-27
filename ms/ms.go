@@ -245,7 +245,7 @@ func registerSafeExit()  {
 func checkMulti(policy int) bool  {
 	UsingMulticast := false
 	if policy < config.NumOfAlgorithm {
-		UsingMulticast = strings.Contains(config.CurPolicyStr[curPolicy], "Multicast")
+		UsingMulticast = strings.Contains(config.CurPolicyStr[policy], "Multicast")
 	}
 	return UsingMulticast
 
