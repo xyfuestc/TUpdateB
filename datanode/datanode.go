@@ -185,6 +185,7 @@ func listenACK(listen net.Listener) {
 			return
 		}
 		ack := common.GetACK(conn)
+		log.Printf("收到来自 %v 的 ack： %+v\n", common.GetConnIP(conn), ack)
 		schedule.ReceivedAckCh <- ack
 		//config.AckBufferPool.Put(ack)
 

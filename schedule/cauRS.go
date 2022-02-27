@@ -311,7 +311,7 @@ func (p CAURS) HandleCMD(cmd *config.CMD)  {
 
 func (p CAURS) HandleACK(ack *config.ACK)  {
 	ackMaps.popACK(ack.SID)
-	log.Printf("接收到ack：%+v\n", ack)
+	//log.Printf("接收到ack：%+v\n", ack)
 	//log.Printf("当前剩余ack：%d\n", ackMaps)
 	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
 		//ms不需要反馈ack
