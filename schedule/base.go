@@ -189,9 +189,10 @@ func ReturnACK(ack *config.ACK) {
 	if ackReceiverIP, ok := ackIPMaps.getIP(ack.SID); ok{
 		common.SendData(ack, ackReceiverIP, config.NodeACKListenPort, "ack")
 		log.Printf("任务已完成，给上级：%s返回ack: sid: %d, blockID: %d\n", ackReceiverIP, ack.SID, ack.BlockID)
-	}else{
-		log.Fatal("returnACK error! ack: ", ack, " ackReceiverIPs: ", ackIPMaps)
 	}
+	//else{
+	//	log.Fatal("returnACK error! ack: ", ack, " ackReceiverIPs: ", ackIPMaps)
+	//}
 
 	//config.AckBufferPool.Put(ack)
 }
