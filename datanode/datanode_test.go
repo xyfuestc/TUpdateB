@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/dchest/uniuri"
 	"log"
+	"net"
 	"os"
 	"runtime"
 	"strconv"
@@ -162,3 +163,38 @@ func benchmark(b *testing.B, f func(int, string) string) {
 
 func BenchmarkPlusConcat(b *testing.B)    { benchmark(b, plusConcat) }
 func BenchmarkBuilderConcat(b *testing.B)    { benchmark(b, builderConcat) }
+
+
+func TestListenTD(t *testing.T) {
+	log.Printf("listening td in %s:%s\n", common.GetLocalIP(), config.NodeTDListenPort)
+	listen, err := net.Listen("tcp", common.GetLocalIP() +  ":" + config.NodeTDListenPort)
+	if err != nil {
+		log.Printf("listening ack failed, err:%v\n", err)
+		return
+	}
+	defer listen.Close()
+	for {
+		//等待客户端连接
+		conn, e := listen.Accept()
+		if e != nil {
+			if ne, ok := e.(net.Error); ok && ne.Temporary() {
+				log.Printf("accept temp err: %v", ne)
+				continue
+			}
+
+			log.Printf("accept err: %v", e)
+			return
+		}
+		td := common.GetTD(conn)
+		//schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
+		//schedule.ReceivedTDCh <- td
+		//config.TDBufferPool.Put(td)
+
+		log.Printf("收到来自 %s 的TD，sid: %d, blockID: %d.\n", common.GetConnIP(conn), td.SID, td.BlockID)
+
+		connections = append(connections, conn)
+		if len(connections)%100 == 0 {
+			log.Printf("total number of connections: %v", len(connections))
+		}
+	}
+}
