@@ -13,13 +13,13 @@ type Packet struct {
 	SourceIP, DestinationIP, ID, Response string
 	Content                               []byte
 }
-func Run(sendCh chan config.MTU) <-chan config.MTU  {
-	receive := make(chan config.MTU)
-	go ListenMulticast(receive)
-	go Multicast(sendCh)
-	//go msgSorter(receive)
-	return receive
-}
+//func Run(sendCh chan config.MTU) <-chan config.MTU  {
+//	receive := make(chan config.MTU)
+//	go ListenMulticast(receive)
+//	go Multicast(sendCh)
+//	//go msgSorter(receive)
+//	return receive
+//}
 /*发送数据到多播地址*/
 func Multicast(send chan config.MTU) {
 	addr, err := net.ResolveUDPAddr("udp", config.MulticastAddrWithPort)

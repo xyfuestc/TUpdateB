@@ -145,7 +145,7 @@ func listenAndReceive(maxWorkers int) {
 		go listenACK(l2)
 		go listenTD(l3)
 		go listenSettings(l4)
-		go common.Multicast(schedule.MulticastSendMTUCh)
+		//go common.Multicast(schedule.MulticastSendMTUCh)
 	}
 }
 func listenCMD(listen net.Listener) {

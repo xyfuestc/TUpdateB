@@ -104,7 +104,7 @@ func listenAndReceive(workers int) {
 		go listenACK(l3)
 		go listenSettings(l4)
 		go listenTD(l1)
-		go common.ListenMulticast(schedule.MulticastReceiveMTUCh)
+		//go common.ListenMulticast(schedule.MulticastReceiveMTUCh)
 		//go common.HandlingACK(schedule.MulticastReceiveAckCh)
 		go msgSorter(schedule.ReceivedAckCh, schedule.ReceivedTDCh, schedule.ReceivedCMDCh, schedule.MulticastReceiveMTUCh)
 	}
