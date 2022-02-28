@@ -42,6 +42,7 @@ func setPolicy(conn net.Conn)  {
 	log.Printf("policy = %+v\n", p)
 	//检测结束
 	if p.Type == -1 {
+		log.Printf("正在退出..,\n")
 		finish()
 		return
 	}
