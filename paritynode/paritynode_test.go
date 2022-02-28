@@ -94,6 +94,53 @@ func TestSend(t *testing.T) {
 		common.SendData(td, common.GetLocalIP(), config.NodeTDListenPort, "")
 	}
 }
+func TestListeningQuit(t *testing.T) {
+
+	done := make(chan bool)
+
+	l, err := net.Listen("tcp", common.GetLocalIP() + ":" + config.NodeSettingsListenPort)
+	if err != nil {
+		log.Fatalln("listening ack err in listenAndReceive: ", err)
+	}
+	go listenQuit(l, done)
+
+	for  {
+		log.Printf("等待done信号...\n")
+		select {
+		case <- done:
+			log.Printf("结束!")
+			return
+		}
+	}
+
+}
+func listenQuit(listen net.Listener, done chan<- bool) {
+	//defer listen.Close()
+	for {
+		conn, e := listen.Accept()
+		if e != nil {
+			if ne, ok := e.(net.Error); ok && ne.Temporary() {
+				log.Printf("accept temp err: %v", ne)
+				continue
+			}
+
+			log.Printf("accept err: %v", e)
+			return
+		}
+		p := common.GetPolicy(conn)
+		log.Printf("Policy: %+v\n", p)
+		if p.Type == -1 {
+			done <- true
+		}
+
+		//config.AckBufferPool.Put(ack)
+
+		connections = append(connections, conn)
+		if len(connections)%100 == 0 {
+			log.Printf("total number of connections: %v", len(connections))
+		}
+	}
+}
 func RunPrintMsg(receiveCh <-chan config.MTU) {
 	for{
 		common.PrintMessage(<- receiveCh)

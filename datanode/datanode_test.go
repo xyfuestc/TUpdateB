@@ -164,6 +164,12 @@ func benchmark(b *testing.B, f func(int, string) string) {
 func BenchmarkPlusConcat(b *testing.B)    { benchmark(b, plusConcat) }
 func BenchmarkBuilderConcat(b *testing.B)    { benchmark(b, builderConcat) }
 
+func TestSendingQuitSignal(t *testing.T) {
+	p := &config.Policy{
+		Type: -1,
+	}
+	common.SendData(p, common.GetLocalIP(), config.NodeSettingsListenPort, "")
+}
 
 func TestListenTD(t *testing.T) {
 	log.Printf("listening td in %s:%s\n", common.GetLocalIP(), config.NodeTDListenPort)

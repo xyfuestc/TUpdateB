@@ -60,10 +60,9 @@ func setPolicy(conn net.Conn)  {
 }
 
 func finish() {
-
-	clearAll()
-
+	log.Printf("done <- true...\n")
 	done <- true
+	clearAll()
 
 }
 func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, receivedCMDCh <-chan config.CMD)  {
@@ -105,7 +104,7 @@ func main() {
 		select {
 		case <- done:
 			fmt.Printf("收到结束信号...退出\n")
-			break
+			return
 		}
 	}
 
@@ -152,6 +151,7 @@ func listenAndReceive(maxWorkers int) {
 		go listenTD(l3)
 		go listenSettings(l4)
 		go common.Multicast(schedule.MulticastSendMTUCh)
+		log.Printf("。。。。。。。。\n")
 	}
 }
 func listenCMD(listen net.Listener) {

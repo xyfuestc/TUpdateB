@@ -27,6 +27,7 @@ func setPolicy(conn net.Conn)  {
 
 	//检测结束
 	if p.Type == -1 {
+		log.Printf("正在退出...\n")
 		finish()
 		return
 	}
@@ -70,7 +71,7 @@ func main() {
 	for  {
 		select {
 		case <- done:
-			break
+			return
 		}
 	}
 }
@@ -340,9 +341,6 @@ func clearAll() {
 }
 
 func finish() {
-
-	clearAll()
-
 	done <- true
-
+	clearAll()
 }
