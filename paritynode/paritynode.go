@@ -4,7 +4,6 @@ import (
 	"EC/common"
 	"EC/config"
 	"EC/schedule"
-	"github.com/pkg/profile"
 	"log"
 	"net"
 	"os"
@@ -52,7 +51,7 @@ var done = make(chan bool)
 //	schedule.GetCurPolicy().HandleACK(&ack)
 //}
 func main() {
-	defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
+	//defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
 
 	config.Init()
 

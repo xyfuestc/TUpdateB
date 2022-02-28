@@ -5,7 +5,6 @@ import (
 	"EC/config"
 	"EC/schedule"
 	"bufio"
-	"github.com/pkg/profile"
 	"io"
 	"log"
 	"net"
@@ -62,7 +61,7 @@ func clearRound()  {
 	actualUpdatedBlocks = 0
 }
 func main() {
-	defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
+	//defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
 	//初始化
 	config.Init()
 
