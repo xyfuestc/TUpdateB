@@ -101,10 +101,11 @@ func main() {
 	}()
 
 	for  {
+		fmt.Printf("........\n")
 		select {
 		case <- done:
 			fmt.Printf("收到结束信号...退出\n")
-			return
+			break
 		}
 	}
 
