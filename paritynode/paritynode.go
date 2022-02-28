@@ -219,9 +219,9 @@ func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, r
 		case mtu := <-receivedMultiMTUCh:
 			td := GetTDFromMulticast(mtu)
 			//模拟接收剩下的切片
-			d := time.Duration( (mtu.FragmentCount - 1) * config.MTUSize * 1000 * 1000 / config.OuterBandWidth) * time.Millisecond
-			time.Sleep(d)
-			log.Printf("模拟接收sid %v剩余mtu，耗时：%v.", mtu.SID, d)
+			d := time.Duration( (mtu.FragmentCount - 1) * config.MTUSize * 1000 * 1000  / config.OuterBandWidth )
+			time.Sleep(d * time.Millisecond)
+			log.Printf("，模拟接收sid %v剩余mtu%d片，耗时：%v.", mtu.SID, mtu.FragmentCount - 1, d)
 			td.Buff = make([]byte, mtu.SendSize)
 			schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, td.FromIP)
 			schedule.GetCurPolicy().HandleTD(td)
