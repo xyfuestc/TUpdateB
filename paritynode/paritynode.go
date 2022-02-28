@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"time"
 )
 var connections []net.Conn
 //func handleCMD(conn net.Conn)  {
@@ -218,6 +219,12 @@ func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, r
 
 		case mtu := <-receivedMultiMTUCh:
 			td := GetTDFromMulticast(mtu)
+			//模拟接收剩下的切片
+			d := time.Duration( (mtu.FragmentCount - 1) * 500) * time.Millisecond
+			time.Sleep(d)
+			log.Printf("模拟接收sid %v剩余mtu，耗时：%v.", mtu.SID, d)
+			td.Buff = make([]byte, mtu.SendSize)
+			schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, td.FromIP)
 			schedule.GetCurPolicy().HandleTD(td)
 			config.TDBufferPool.Put(td)
 
@@ -242,7 +249,7 @@ func GetTDFromMulticast(message config.MTU) *config.TD  {
 	td.SID = message.SID
 	td.SendSize = message.SendSize
 
-	log.Printf("GetTDFromMulticast：接收数据完成...td: sid: %v, sendSize: %v.\n", td.SID, td.SendSize)
+	//log.Printf("GetTDFromMulticast：接收数据完成...td: sid: %v, sendSize: %v.\n", td.SID, td.SendSize)
 	return td
 }
 //func MsgSorter(receive <-chan config.MTU, ackCh chan<- config.ACK)  {
