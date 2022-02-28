@@ -90,7 +90,8 @@ func main() {
 		curPolicy++
 	}
 	//通知各个节点退出
-	settingCurrentPolicy(-1)
+	//settingCurrentPolicy(-1)
+	notifyNodesQuit()
 	//清空
 	clearAll()
 }
@@ -152,9 +153,18 @@ func getReqsFromTrace()  {
 	}
 	numOfReq = len(totalReqs)
 }
-
+func notifyNodesQuit()  {
+	log.Printf("通知各个节点正常退出...\n")
+	p := &config.Policy{
+		Type:      -1,
+	}
+	for _, ip := range config.NodeIPs{
+		common.SendData(p, ip, config.NodeSettingsListenPort, "")
+	}
+	log.Printf("等待各个节点退出...\n")
+	time.Sleep(3 * time.Second)
+}
 func settingCurrentPolicy(policyType int)  {
-
 
 	UsingMulticast := checkMulti(policyType)
 	p := &config.Policy{

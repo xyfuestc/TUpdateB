@@ -3,6 +3,7 @@ package schedule
 import (
 	"EC/common"
 	"EC/config"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -114,7 +115,7 @@ func SetPolicy(policyType config.PolicyType)  {
 }
 func GetCurPolicy() Policy {
 	if CurPolicy == nil {
-		log.Fatalln("CurPolicy is nil！")
+		fmt.Println("CurPolicy is nil！")
 	}
 	return CurPolicy
 }

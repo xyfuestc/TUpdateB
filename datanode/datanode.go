@@ -39,6 +39,7 @@ func setPolicy(conn net.Conn)  {
 	defer conn.Close()
 	p := common.GetPolicy(conn)
 
+	log.Printf("policy = %+v\n", p)
 	//检测结束
 	if p.Type == -1 {
 		finish()
