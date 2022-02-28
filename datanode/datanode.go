@@ -4,6 +4,7 @@ import (
 	"EC/common"
 	"EC/config"
 	"EC/schedule"
+	"fmt"
 	"github.com/pkg/profile"
 	"log"
 	"net"
@@ -42,7 +43,7 @@ func setPolicy(conn net.Conn)  {
 	log.Printf("policy = %+v\n", p)
 	//检测结束
 	if p.Type == -1 {
-		log.Printf("正在退出..,\n")
+		log.Printf("正在退出...\n")
 		finish()
 		return
 	}
@@ -102,9 +103,11 @@ func main() {
 	for  {
 		select {
 		case <- done:
-			break
+			fmt.Printf("收到结束信号...退出\n")
+			return
 		}
 	}
+
 
 	//go listenTD(l3)
 	//go listenACK(l2)
