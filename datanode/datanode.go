@@ -40,10 +40,8 @@ func setPolicy(conn net.Conn)  {
 	defer conn.Close()
 	p := common.GetPolicy(conn)
 
-	log.Printf("policy = %+v\n", p)
 	//检测结束
 	if p.Type == -1 {
-		log.Printf("正在退出...\n")
 		finish()
 		return
 	}
@@ -60,7 +58,6 @@ func setPolicy(conn net.Conn)  {
 }
 
 func finish() {
-	log.Printf("done <- true...\n")
 	done <- true
 	clearAll()
 
@@ -100,7 +97,6 @@ func main() {
 	}()
 
 	for  {
-		fmt.Printf("........\n")
 		select {
 		case <- done:
 			fmt.Printf("收到结束信号...退出\n")
@@ -151,7 +147,6 @@ func listenAndReceive(maxWorkers int) {
 		go listenTD(l3)
 		go listenSettings(l4)
 		go common.Multicast(schedule.MulticastSendMTUCh)
-		log.Printf("。。。。。。。。\n")
 	}
 }
 func listenCMD(listen net.Listener) {

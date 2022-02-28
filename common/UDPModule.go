@@ -109,7 +109,7 @@ func ListenMulticast(receive chan config.MTU) {
 			}
 		}
 		if i := arrays.ContainsString(message.MultiTargetIPs, GetLocalIP()); i >= 0 {
-			PrintMessage(message)
+			//PrintMessage(message)
 			receive <- message
 		}
 	}

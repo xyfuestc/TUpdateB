@@ -33,7 +33,7 @@ const MulticastAddr = "224.0.0.250"
 //const MulticastAddrWithPort = "224.0.0.250:9981"
 const MulticastAddrWithPort = "224.0.0.250:9981"
 const MulticastAddrListenACK  = ":9981"
-const MTUSize = 4 * 1024 // 4K
+const MTUSize =  1464 // 4K
 const MaxDatagramSize = 8 * 1024 // 8 * 1024 = 8KB
 
 const (

@@ -31,7 +31,7 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 	//}
 	message := &config.MTU{
 		BlockID:        cmd.BlockID,
-		Data:           buff[:cmd.SendSize],
+		Data:           buff[:config.MTUSize],
 		FromIP:         cmd.FromIP,
 		MultiTargetIPs: cmd.ToIPs,
 		SID:            cmd.SID,

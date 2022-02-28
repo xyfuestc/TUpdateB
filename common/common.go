@@ -153,7 +153,7 @@ func WriteBlockWithSize(blockID int, buff []byte, size int)  {
 	}
 	defer file.Close()
 	_, err = file.WriteAt(buff[:size], int64(index * size))
-	log.Printf("write block %d with size: %dB done .\n", blockID, size)
+	//log.Printf("write block %d with size: %dB done .\n", blockID, size)
 }
 func GetNodeID(blockID int) int {
 	return blockID % (config.K * config.W) / config.W

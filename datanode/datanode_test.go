@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/dchest/uniuri"
 	"log"
+	"math/rand"
 	"net"
 	"os"
 	"runtime"
@@ -20,36 +21,39 @@ func TestMulticast(t *testing.T)  {
 
 	//msgLog := map[string]config.MTU{} // key: "sid:fid"
 	config.Init()
+	config.InitBufferPool()
 	randStr := uniuri.NewLen(100)
 	buff := make([]byte, 100000)
 	copy(buff, randStr)
 	buff50 := buff[:10]
 	fmt.Printf("%+v\n", buff50)
 
-
-
 	schedule.SetPolicy(config.BASEMulticast)
-	go common.ListenACK(schedule.MulticastReceiveAckCh)
+	//go common.ListenACK(schedule.MulticastReceiveAckCh)
 	go common.Multicast(schedule.MulticastSendMTUCh)
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 10; i++ {
 		cmd := &config.CMD{
 			SID:      i,
 			BlockID:  i,
 			FromIP:   common.GetLocalIP(),
 			ToIPs:    []string{common.GetLocalIP()},
-			SendSize: 1024,
+			SendSize: rand.Intn(10000),
 		}
-		fragments := schedule.GetFragments(cmd)
-		for _, f := range fragments {
-			schedule.MulticastSendMTUCh <- *f
-			select {
-			case ack := <- schedule.MulticastReceiveAckCh:
-				fmt.Printf("确认收到ack: %+v\n", ack)
-			case <-time.After(2 * time.Millisecond):
-				fmt.Printf("%v ack返回超时！\n", f.SID)
-				schedule.MulticastSendMTUCh <- *f
-			}
-			//msgLog[common.StringConcat(strconv.Itoa(f.SID), ":", strconv.Itoa(f.FragmentID))] = *f
+		mtus := schedule.GetFragments(cmd)
+		for i := 0; i < len(mtus); i++ {
+			mtu := mtus[i]
+			mtu.FragmentCount = len(mtus)
+			log.Printf("发送sid:%v,framentCount=%v,fragmentIndex:%v.\n", mtu.SID, mtu.FragmentCount, i)
+			schedule.MulticastSendMTUCh <- *mtu
+			break
+			//select {
+			//case ack := <- schedule.MulticastReceiveAckCh:
+			//	fmt.Printf("确认收到ack: %+v\n", ack)
+			//case <-time.After(2 * time.Millisecond):
+			//	fmt.Printf("%v ack返回超时！\n", mtu.SID)
+			//	schedule.MulticastSendMTUCh <- *mtu
+			//}
+			//msgLog[common.StringConcat(strconv.Itoa(mtu.SID), ":", strconv.Itoa(mtu.FragmentID))] = *mtu
 		}
 	}
 	for  {
