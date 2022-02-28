@@ -256,7 +256,9 @@ func clearAll() {
 	for _, conn := range connections {
 		conn.Close()
 	}
-	schedule.GetCurPolicy().Clear()
+	if curPolicy := schedule.GetCurPolicy(); curPolicy != nil {
+		curPolicy.Clear()
+	}
 	schedule.CloseAllChannels()
 
 }

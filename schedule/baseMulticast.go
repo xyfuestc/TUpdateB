@@ -161,14 +161,52 @@ func (p BaseMulticast) IsFinished() bool {
 
 func CloseAllChannels()  {
 	//base
-	close(ReceivedAckCh)
-	close(ReceivedTDCh)
-	close(ReceivedCMDCh)
-	//multicast
-	close(MulticastReceiveAckCh)
-	close(MulticastSendMTUCh)
-	close(MulticastReceiveMTUCh)
+	_, beforeClosed := <-ReceivedAckCh
+	if !beforeClosed {
+		fmt.Println("ReceivedAckCh has been closed")
+	}else{
+		close(ReceivedAckCh)
+	}
+
+	_, beforeClosed = <-ReceivedTDCh
+	if !beforeClosed {
+		fmt.Println("ReceivedTDCh has been closed")
+	}else{
+		close(ReceivedTDCh)
+	}
+
+	_, beforeClosed = <-ReceivedCMDCh
+	if !beforeClosed {
+		fmt.Println("ReceivedCMDCh has been closed")
+	}else {
+		close(ReceivedCMDCh)
+	}
+
+	_, beforeClosed = <-MulticastReceiveAckCh
+	if !beforeClosed {
+		fmt.Println("MulticastReceiveAckCh has been closed")
+	}else {
+		close(MulticastReceiveAckCh)
+	}
+
+	_, beforeClosed = <-MulticastSendMTUCh
+	if !beforeClosed {
+		fmt.Println("MulticastSendMTUCh has been closed")
+	}else{
+		close(MulticastSendMTUCh)
+	}
+
+	_, beforeClosed = <-MulticastReceiveMTUCh
+	if !beforeClosed {
+		fmt.Println("MulticastReceiveMTUCh has been closed")
+	}else{
+		close(MulticastReceiveMTUCh)
+	}
+
+
 }
+
+
 
 func (p BaseMulticast) GetActualBlocks() int {
 	return actualBlocks

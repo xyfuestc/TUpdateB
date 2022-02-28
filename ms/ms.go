@@ -50,12 +50,10 @@ func checkFinish() {
 /*所有算法跑完，清空操作*/
 func clearAll() {
 
-
 	schedule.CloseAllChannels()
 	actualUpdatedBlocks = 0
 	numOfReq = 0
 	finished = true
-	_ = totalReqs
 }
 /*每种算法结束后，清空操作*/
 func clearRound()  {
