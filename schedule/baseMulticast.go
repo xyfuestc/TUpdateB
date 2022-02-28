@@ -29,7 +29,7 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 	//for _, f := range fragments {
 	//	MulticastSendMTUCh <- *f
 	//}
-	count := cmd.SendSize / config.MTUSize
+	count := 1 + cmd.SendSize / config.MTUSize
 
 	message := &config.MTU{
 		BlockID:        cmd.BlockID,
@@ -43,6 +43,7 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 		SendSize:       cmd.SendSize,
 	}
 	MulticastSendMTUCh <- *message
+	time.Sleep(config.UDPDuration)
 
 	config.BlockBufferPool.Put(buff)
 	//SendMessageAndWaitingForACK(message)
