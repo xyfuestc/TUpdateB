@@ -29,13 +29,16 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 	//for _, f := range fragments {
 	//	MulticastSendMTUCh <- *f
 	//}
+	count := cmd.SendSize / config.MTUSize
+
 	message := &config.MTU{
 		BlockID:        cmd.BlockID,
 		Data:           buff[:config.MTUSize],
 		FromIP:         cmd.FromIP,
 		MultiTargetIPs: cmd.ToIPs,
 		SID:            cmd.SID,
-		//FragmentID:     0,
+		FragmentID:     0,
+		FragmentCount: 	count,
 		IsFragment:     false,
 		SendSize:       cmd.SendSize,
 	}

@@ -82,7 +82,7 @@ func TestReceive(t *testing.T) {
 			td.Buff = make([]byte, msg.SendSize)
 			//模拟接收剩下的切片
 			d := time.Duration( (msg.FragmentCount - 1) * 500) * time.Microsecond
-			log.Printf("模拟接收sid %v剩余mtu，耗时：%v ms.", msg.SID, d)
+			log.Printf(" %v剩余mtu，耗时：%v ms.", msg.SID, d)
 			time.Sleep(d)
 			log.Printf("sid %v相关数据接收完成！可以执行HandleTD了.", msg.SID)
 
