@@ -219,14 +219,14 @@ func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, r
 
 		case mtu := <-receivedMultiMTUCh:
 			common.PrintMessage(mtu)
-			//td := GetTDFromMulticast(mtu)
+			td := GetTDFromMulticast(mtu)
 			//模拟接收剩下的切片
 			//d := randomDelay(mtu)  //模拟延时（有10%的概率延时）
 			//td.Buff = make([]byte, mtu.SendSize)
 			//log.Printf("收到sid: %v, blockID: %v, size: %v，模拟延时：%v.", td.SID, td.BlockID, td.SendSize, d)
 			//schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, td.FromIP)
 			//log.Printf("记录 ackReceiverIP[%v]=%v.", td.SID, td.FromIP)
-			//schedule.GetCurPolicy().HandleTD(td)
+			go schedule.GetCurPolicy().HandleTD(td)
 			//config.TDBufferPool.Put(td)
 
 		}

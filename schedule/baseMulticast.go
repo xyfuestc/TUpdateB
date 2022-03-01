@@ -13,7 +13,7 @@ type BaseMulticast struct {
 
 }
 var MulticastSendMTUCh = make(chan config.MTU)
-var MulticastReceiveMTUCh = make(chan config.MTU, 10)
+var MulticastReceiveMTUCh = make(chan config.MTU, 100)
 var MulticastReceiveAckCh = make(chan config.ACK)
 //var SentMsgLog = map[string]config.MTU{}
 func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
