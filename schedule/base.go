@@ -112,7 +112,7 @@ func SetPolicy(policyType config.PolicyType)  {
 	}
 	CurPolicy.Init()
 }
-func /GetCurPolicy() Policy {
+func GetCurPolicy() Policy {
 	//if CurPolicy == nil {
 	//	//fmt.Println("CurPolicy is nil！")
 	//}
