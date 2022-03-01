@@ -39,7 +39,7 @@ func TestMulticast(t *testing.T)  {
 			BlockID:  i,
 			FromIP:   common.GetLocalIP(),
 			ToIPs:    []string{common.GetLocalIP()},
-			SendSize: rand.Intn(10000),
+			SendSize: rand.Intn(config.MTUSize),
 		}
 		mtus := schedule.GetFragments(cmd)
 		for i := 0; i < len(mtus); i++ {
