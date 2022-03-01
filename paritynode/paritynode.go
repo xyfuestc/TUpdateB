@@ -221,9 +221,10 @@ func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, r
 			td := GetTDFromMulticast(mtu)
 			//模拟接收剩下的切片
 			d := randomDelay(mtu)  //模拟延时（有10%的概率延时）
-			log.Printf("，模拟接收sid %v剩余mtu%d片，耗时：%v.", mtu.SID, mtu.FragmentCount - 1, d)
+			log.Printf("，模拟接收sid: %v, blockID: %v, 剩余mtu%d片，耗时：%v.", mtu.SID, mtu.BlockID, mtu.FragmentCount - 1, d)
 			td.Buff = make([]byte, mtu.SendSize)
 			schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, td.FromIP)
+			log.Printf("记录 ackReceiverIP[%v]=%v.", td.SID, td.FromIP)
 			schedule.GetCurPolicy().HandleTD(td)
 			config.TDBufferPool.Put(td)
 
