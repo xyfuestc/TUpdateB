@@ -56,7 +56,6 @@ func SendData(data interface{}, targetIP string, port string, retType string) in
 	//1.与目标建立连接
 	addr := fmt.Sprintf("%s:%s", targetIP, port)
 	conn, err := net.Dial("tcp", addr)
-	//defer conn.Close()
 
 	if err != nil {
 		if conn != nil {
@@ -73,6 +72,8 @@ func SendData(data interface{}, targetIP string, port string, retType string) in
 		}
 		log.Fatal("common: SendData gob encode error:  ", err, " target: ", addr)
 	}
+	//发送完成之后立刻关闭连接，表示不再发送数据.
+	conn.Close()
 
 	return nil
 }
@@ -294,6 +295,7 @@ func GetTD(conn net.Conn) config.TD {
 		}
 		log.Fatalln("GetTD from ", GetConnIP(conn), "result in decoding error: ", err, "blockID: ", td.BlockID, "sid: ", td.SID)
 	}
+	//接收数据之后立刻关闭连接，发端在发送完成之后立刻关闭，接收端在接收之后也应该立刻关闭，4次挥手结束
 	conn.Close()
 	return td
 }

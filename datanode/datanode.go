@@ -237,6 +237,7 @@ func listenSettings(listen net.Listener) {
 			return
 		}
 		setPolicy(conn)
+
 		connections = append(connections, conn)
 	}
 }

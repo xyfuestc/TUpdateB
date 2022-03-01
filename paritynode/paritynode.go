@@ -5,6 +5,7 @@ import (
 	"EC/config"
 	"EC/schedule"
 	"log"
+	"math/rand"
 	"net"
 	"os"
 	"os/signal"
@@ -219,8 +220,7 @@ func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, r
 		case mtu := <-receivedMultiMTUCh:
 			td := GetTDFromMulticast(mtu)
 			//模拟接收剩下的切片
-			d := time.Duration( (mtu.FragmentCount - 1) * config.MTUSize * 1000 * 1000  / config.OuterBandWidth )
-			time.Sleep(d * time.Millisecond)
+			d := randomDelay(mtu)  //模拟延时（有10%的概率延时）
 			log.Printf("，模拟接收sid %v剩余mtu%d片，耗时：%v.", mtu.SID, mtu.FragmentCount - 1, d)
 			td.Buff = make([]byte, mtu.SendSize)
 			schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, td.FromIP)
@@ -229,6 +229,15 @@ func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, r
 
 		}
 	}
+}
+func randomDelay(mtu config.MTU) time.Duration {
+	var d time.Duration = 0
+	r := rand.Int31n(100)
+	if r <= 10  {
+		d = time.Duration(mtu.FragmentCount - 1) * config.UDPDuration
+		time.Sleep(d)
+	}
+	return d
 }
 func GetTDFromMulticast(message config.MTU) *config.TD  {
 	//构造td
