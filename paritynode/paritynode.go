@@ -218,7 +218,7 @@ func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, r
 			schedule.GetCurPolicy().HandleCMD(&cmd)
 
 		case mtu := <-receivedMultiMTUCh:
-			common.PrintMessage(mtu)
+			//common.PrintMessage(mtu)
 			td := GetTDFromMulticast(mtu)
 			//模拟接收剩下的切片
 			//d := randomDelay(mtu)  //模拟延时（有10%的概率延时）
