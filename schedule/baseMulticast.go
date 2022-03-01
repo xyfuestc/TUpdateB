@@ -43,7 +43,7 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 		SendSize:       cmd.SendSize,
 	}
 	MulticastSendMTUCh <- *message
-	time.Sleep(config.UDPDuration)
+	//time.Sleep(config.UDPDuration)
 
 	config.BlockBufferPool.Put(buff)
 	//SendMessageAndWaitingForACK(message)

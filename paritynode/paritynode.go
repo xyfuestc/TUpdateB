@@ -226,7 +226,7 @@ func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, r
 			//log.Printf("收到sid: %v, blockID: %v, size: %v，模拟延时：%v.", td.SID, td.BlockID, td.SendSize, d)
 			schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, td.FromIP)
 			//log.Printf("记录 ackReceiverIP[%v]=%v.", td.SID, td.FromIP)
-			go schedule.GetCurPolicy().HandleTD(td)
+			schedule.GetCurPolicy().HandleTD(td)
 			config.TDBufferPool.Put(td)
 
 		}
