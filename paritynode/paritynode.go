@@ -339,7 +339,6 @@ func registerSafeExit()  {
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		for range c {
-			log.Printf("中断！\n")
 			clearAll()
 			os.Exit(0)
 		}

@@ -356,7 +356,7 @@ func PrintError(errMsg string, err error) {
 }
 func PrintMessage(data config.MTU) {
 	fmt.Println("=== Data received ===")
-	fmt.Println("ID: ", data.SID)
+	fmt.Println("SID: ", data.SID)
 	fmt.Println("BlockID: ", data.BlockID)
 	fmt.Println("FromIP:", data.FromIP)
 	fmt.Println("MultiTargetIPs:", data.MultiTargetIPs)
