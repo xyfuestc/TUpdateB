@@ -227,7 +227,7 @@ func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, r
 			//schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, td.FromIP)
 			//log.Printf("记录 ackReceiverIP[%v]=%v.", td.SID, td.FromIP)
 			schedule.GetCurPolicy().HandleTD(td)
-			config.TDBufferPool.Put(td)
+			//config.TDBufferPool.Put(td)
 
 		}
 	}
@@ -243,21 +243,21 @@ func randomDelay(mtu config.MTU) time.Duration {
 }
 func GetTDFromMulticast(message config.MTU) *config.TD  {
 	//构造td
-	//td := &config.TD{
-	//	SID:            message.SID,
-	//	Buff:           message.Data,
-	//	BlockID:        message.BlockID,
-	//	MultiTargetIPs: message.MultiTargetIPs,
-	//	FromIP:         message.FromIP,
-	//	SendSize:       message.SendSize,
-	//}
-	td := config.TDBufferPool.Get().(*config.TD)
-	td.BlockID = message.BlockID
-	td.Buff = message.Data
-	td.FromIP = message.FromIP
-	td.MultiTargetIPs = message.MultiTargetIPs
-	td.SID = message.SID
-	td.SendSize = message.SendSize
+	td := &config.TD{
+		SID:            message.SID,
+		Buff:           message.Data,
+		BlockID:        message.BlockID,
+		MultiTargetIPs: message.MultiTargetIPs,
+		FromIP:         message.FromIP,
+		SendSize:       message.SendSize,
+	}
+	//td := config.TDBufferPool.Get().(*config.TD)
+	//td.BlockID = message.BlockID
+	//td.Buff = message.Data
+	//td.FromIP = message.FromIP
+	//td.MultiTargetIPs = message.MultiTargetIPs
+	//td.SID = message.SID
+	//td.SendSize = message.SendSize
 
 	//log.Printf("GetTDFromMulticast：接收数据完成...td: sid: %v, sendSize: %v.\n", td.SID, td.SendSize)
 	return td
