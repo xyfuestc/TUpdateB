@@ -302,3 +302,4 @@ func (p Base) GetActualBlocks() int {
 func GetCrossRackTraffic() float32 {
 	return  float32(totalCrossRackTraffic) / config.Megabyte
 }
+

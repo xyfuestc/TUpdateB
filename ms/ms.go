@@ -49,7 +49,7 @@ func checkFinish() {
 /*所有算法跑完，清空操作*/
 func clearAll() {
 	log.Printf("清空所有数据和资源...\n")
-	schedule.CloseAllChannels()
+	//schedule.CloseAllChannels()
 	actualUpdatedBlocks = 0
 	numOfReq = 0
 	finished = true
@@ -244,7 +244,7 @@ func registerSafeExit()  {
 		for range c {
 			clearAll()
 			schedule.GetCurPolicy().Clear()
-			schedule.CloseAllChannels()
+			//schedule.CloseAllChannels()
 			os.Exit(0)
 		}
 	}()

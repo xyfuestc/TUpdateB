@@ -158,9 +158,18 @@ func (p BaseMulticast) Clear()  {
 func (p BaseMulticast) IsFinished() bool {
 	isFinished :=  len(totalReqs) == 0 && ackMaps.isEmpty()
 	if isFinished {
-		CloseAllChannels()
+		//CloseAllChannels()
 	}
 	return isFinished
+}
+func IsClosed(ch <-chan interface{}) bool {
+	select {
+	case <-ch:
+		return true
+	default:
+	}
+
+	return false
 }
 
 func CloseAllChannels()  {

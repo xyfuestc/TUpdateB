@@ -84,7 +84,6 @@ func main() {
 	//监听并接收ack，检测程序结束
 	listenAndReceive(config.NumOfWorkers)
 
-
 	//当发生意外退出时，安全释放所有资源
 	registerSafeExit()
 
@@ -259,7 +258,7 @@ func clearAll() {
 	if curPolicy := schedule.GetCurPolicy(); curPolicy != nil {
 		curPolicy.Clear()
 	}
-	schedule.CloseAllChannels()
+	//schedule.CloseAllChannels()
 
 }
 
