@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"time"
 )
 var connections []net.Conn
 
@@ -63,6 +64,7 @@ func finish() {
 }
 func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, receivedCMDCh <-chan config.CMD)  {
 	for  {
+
 		select {
 		case ack := <-receivedAckCh:
 			schedule.GetCurPolicy().HandleACK(&ack)
@@ -72,6 +74,9 @@ func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, r
 
 		case cmd := <-receivedCMDCh:
 			schedule.GetCurPolicy().HandleCMD(&cmd)
+
+		case <-time.After(time.Second * 1):
+			schedule.HandleTimeout()
 
 		}
 	}

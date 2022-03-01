@@ -154,6 +154,7 @@ type MTU struct {
 	FragmentID     int      `json:"fragment_id,omitempty"`
 	FragmentCount  int      `json:"fragment_count,omitempty"`
 	SendSize       int      `json:"send_size,omitempty"`
+	SendTime       time.Time`json:"send_time"`
 }
 
 

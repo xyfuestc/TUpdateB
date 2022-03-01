@@ -12,10 +12,12 @@ import (
 type BaseMulticast struct {
 
 }
+
 var MulticastSendMTUCh = make(chan config.MTU)
 var MulticastReceiveMTUCh = make(chan config.MTU, 100)
 var MulticastReceiveAckCh = make(chan config.ACK)
-//var SentMsgLog = map[string]config.MTU{}
+var SentMsgLog = make(chan config.MTU, 100)
+
 func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 	//利用多播将数据发出
 	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID, cmd.SendSize)
@@ -43,12 +45,22 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 		SendSize:       cmd.SendSize,
 	}
 	MulticastSendMTUCh <- *message
+	SentMsgLog <- *message          //记录block
 	//time.Sleep(config.UDPDuration)
 
 	config.BlockBufferPool.Put(buff)
 	//SendMessageAndWaitingForACK(message)
 	log.Printf("HandleCMD: 发送td(sid:%d, blockID:%d)，从%s到%v \n", cmd.SID, cmd.BlockID, common.GetLocalIP(), cmd.ToIPs)
 
+}
+//处理UDP超时
+func HandleTimeout()  {
+	for msg := range SentMsgLog{
+		if v, _ := ackMaps.getACK(msg.SID) ; v > 0 {
+			log.Printf("sid: %v的ack: %v.重发之", msg.SID, v)
+			MulticastSendMTUCh <- msg
+		}
+	}
 }
 func (p BaseMulticast) HandleTD(td *config.TD)  {
 	handleOneTD(td)
@@ -152,8 +164,14 @@ func (p BaseMulticast) Clear()  {
 	ackIPMaps = &ACKIPMap{
 		ACKReceiverIPs: map[int]string{},
 	}
-	IsRunning = true
 
+	IsRunning = true
+	//清空SentMsgLog
+	select {
+	case <-SentMsgLog:
+	default:
+		return
+	}
 }
 func (p BaseMulticast) IsFinished() bool {
 	isFinished :=  len(totalReqs) == 0 && ackMaps.isEmpty()
