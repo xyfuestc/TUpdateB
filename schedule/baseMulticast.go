@@ -55,12 +55,24 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 }
 //处理UDP超时
 func HandleTimeout()  {
-	for msg := range SentMsgLog{
+	select {
+	case msg := <-SentMsgLog:
 		if v, _ := ackMaps.getACK(msg.SID) ; v > 0 {
 			log.Printf("sid: %v的ack: %v.重发之", msg.SID, v)
 			MulticastSendMTUCh <- msg
 		}
+		//for msg := range SentMsgLog {
+		//	if v, _ := ackMaps.getACK(msg.SID) ; v > 0 {
+		//		log.Printf("sid: %v的ack: %v.重发之", msg.SID, v)
+		//		MulticastSendMTUCh <- msg
+		//	}
+		//}
+	default:
+		return
 	}
+	//for msg := range {
+	//
+	//}
 }
 func (p BaseMulticast) HandleTD(td *config.TD)  {
 	handleOneTD(td)
