@@ -96,10 +96,11 @@ func ListenMulticast(receive chan config.MTU) {
 	err = conn.SetReadBuffer(config.MaxDatagramSize)
 	PrintError("set read buffer error in ListenMulticast: ", err)
 	defer conn.Close()
-	var message config.MTU
+
 	for  {
 		inputBytes := make([]byte, config.MaxDatagramSize)
 		length, _, err := conn.ReadFromUDP(inputBytes)
+		var message config.MTU
 		PrintError("read UDP error in ListenMulticast: ", err)
 		err = easyjson.Unmarshal(inputBytes[:length], &message)
 		if err != nil {
