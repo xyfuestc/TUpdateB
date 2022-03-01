@@ -362,8 +362,8 @@ func PrintMessage(data config.MTU) {
 	fmt.Println("MultiTargetIPs:", data.MultiTargetIPs)
 	fmt.Println("FragmentCount:", data.FragmentCount)
 	fmt.Println("IsFragment:", data.IsFragment)
-	fmt.Println("= Data =")
-	fmt.Println("Content:", data.Data)
+	//fmt.Println("= Data =")
+	//fmt.Println("Content:", data.Data)
 }
 
 func StringConcat(A, split, B string) string  {
