@@ -69,6 +69,8 @@ func ListenMulticast(receive chan Message) {
 func TestReceive(t *testing.T) {
 	config.InitBufferPool()
 	receiveCh := make(chan config.MTU, 100)
+
+
 	go common.ListenMulticast(receiveCh)
 
 	for {

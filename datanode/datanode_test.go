@@ -42,11 +42,13 @@ func TestMulticast(t *testing.T)  {
 			SendSize: rand.Intn(1000000),
 		}
 		mtus := schedule.GetFragments(cmd)
+
 		for i := 0; i < len(mtus); i++ {
 			mtu := mtus[i]
 			mtu.FragmentCount = len(mtus)
 			log.Printf("发送sid:%v,framentCount=%v,fragmentIndex:%v.\n", mtu.SID, mtu.FragmentCount, i)
 			schedule.MulticastSendMTUCh <- *mtu
+
 			break
 			//select {
 			//case ack := <- schedule.MulticastReceiveAckCh:

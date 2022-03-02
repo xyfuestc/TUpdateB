@@ -30,8 +30,9 @@ func (M *MsgLogMap) getAllMsg() map[int]config.MTU  {
 	M.RUnlock()
 	return msg
 }
-func (M *MsgLogMap) pushMsg(sid int, msg config.MTU)  {
+func (M *MsgLogMap) PushMsg(sid int, msg config.MTU)  {
 	M.Lock()
+	M.MsgLog[sid] = config.MTU{}
 	M.MsgLog[sid] = msg
 	M.Unlock()
 }
@@ -80,7 +81,7 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 	}
 	MulticastSendMTUCh <- *message
 	//time.Sleep(config.UDPDuration)
-	SentMsgLog.pushMsg(message.SID, *message)          //记录block
+	SentMsgLog.PushMsg(message.SID, *message) //记录block
 
 	config.BlockBufferPool.Put(buff)
 	//SendMessageAndWaitingForACK(message)
