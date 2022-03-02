@@ -23,6 +23,11 @@ func (M *MsgLogMap) getMsg(sid int) (config.MTU, bool)  {
 	M.RUnlock()
 	return msg, ok
 }
+func (M *MsgLogMap) Init()  {
+	M.Lock()
+	M.MsgLog = make(map[int]config.MTU)
+	M.Unlock()
+}
 func (M *MsgLogMap) getAllMsg() map[int]config.MTU  {
 	msg := map[int]config.MTU{}
 	M.RLock()
@@ -51,8 +56,7 @@ func (M *MsgLogMap) isEmpty() bool {
 var MulticastSendMTUCh = make(chan config.MTU)
 var MulticastReceiveMTUCh = make(chan config.MTU, 100)
 var MulticastReceiveAckCh = make(chan config.ACK)
-var SentMsgLog = &MsgLogMap{}
-
+var SentMsgLog MsgLogMap
 func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 	//利用多播将数据发出
 	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID, cmd.SendSize)
@@ -122,6 +126,7 @@ func (p BaseMulticast) Init()  {
 	actualBlocks = 0
 	round = 0
 	totalCrossRackTraffic = 0
+	SentMsgLog.Init()
 }
 
 
@@ -202,6 +207,7 @@ func (p BaseMulticast) Clear()  {
 
 	IsRunning = true
 	//清空SentMsgLog
+	SentMsgLog.Init()
 
 }
 func (p BaseMulticast) IsFinished() bool {
