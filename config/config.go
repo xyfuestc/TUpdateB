@@ -36,9 +36,9 @@ const MulticastAddr = "224.0.0.250"
 //const MulticastAddrWithPort = "224.0.0.250:9981"
 const MulticastAddrWithPort = "224.0.0.250:9981"
 const MulticastAddrListenACK  = ":9981"
-const MTUSize =  60 * 1024 // 60K
+const MTUSize =  6 * 1024 // 60K
 const UDPDuration  = time.Duration(MTUSize * 1000000 / OuterBandWidth) * time.Millisecond //  发送一个UDP包时间（us）
-const MaxDatagramSize = 64 * 1024 // 8 * 1024 = 64KB
+const MaxDatagramSize = 8 * 1024 // 8 * 1024 = 64KB
 
 const (
 	BASE PolicyType = iota

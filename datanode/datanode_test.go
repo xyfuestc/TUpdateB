@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/dchest/uniuri"
 	"log"
-	"math/rand"
 	"net"
 	"os"
 	"runtime"
@@ -39,7 +38,7 @@ func TestMulticast(t *testing.T)  {
 			BlockID:  i,
 			FromIP:   common.GetLocalIP(),
 			ToIPs:    []string{common.GetLocalIP()},
-			SendSize: rand.Intn(config.MTUSize),
+			SendSize: config.MTUSize,
 		}
 		mtus := schedule.GetFragments(cmd)
 		for i := 0; i < len(mtus); i++ {
