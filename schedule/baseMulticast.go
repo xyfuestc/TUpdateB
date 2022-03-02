@@ -5,7 +5,7 @@ import (
 	"EC/config"
 	"fmt"
 	"log"
-	"sync/atomic"
+	"sync"
 	"time"
 )
 
@@ -13,11 +13,44 @@ import (
 type BaseMulticast struct {
 
 }
+type MsgLogMap struct {
+	sync.RWMutex
+	MsgLog map[int]config.MTU
+}
+func (M *MsgLogMap) getMsg(sid int) (config.MTU, bool)  {
+	M.RLock()
+	msg, ok := M.MsgLog[sid]
+	M.RUnlock()
+	return msg, ok
+}
+func (M *MsgLogMap) getAllMsg() map[int]config.MTU  {
+	msg := map[int]config.MTU{}
+	M.RLock()
+	msg = M.MsgLog
+	M.RUnlock()
+	return msg
+}
+func (M *MsgLogMap) pushMsg(sid int, msg config.MTU)  {
+	M.Lock()
+	M.MsgLog[sid] = msg
+	M.Unlock()
+}
+func (M *MsgLogMap) popMsg(sid int)  {
+	M.Lock()
+	delete(M.MsgLog, sid)
+	M.Unlock()
+}
 
+func (M *MsgLogMap) isEmpty() bool {
+	M.RLock()
+	l := len(M.MsgLog) == 0
+	M.RUnlock()
+	return l
+}
 var MulticastSendMTUCh = make(chan config.MTU)
 var MulticastReceiveMTUCh = make(chan config.MTU, 100)
 var MulticastReceiveAckCh = make(chan config.ACK)
-var SentMsgLog = make(chan config.MTU, 100)
+var SentMsgLog *MsgLogMap
 
 func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 	//利用多播将数据发出
@@ -46,8 +79,8 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 		SendSize:       cmd.SendSize,
 	}
 	MulticastSendMTUCh <- *message
-	SentMsgLog <- *message          //记录block
 	//time.Sleep(config.UDPDuration)
+	SentMsgLog.pushMsg(message.SID, *message)          //记录block
 
 	config.BlockBufferPool.Put(buff)
 	//SendMessageAndWaitingForACK(message)
@@ -56,36 +89,11 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 }
 //处理UDP超时
 func HandleTimeout()  {
-	var count uint64 = 0
-	for {
-		select {
-		case msg := <-SentMsgLog:
-			v, _ := ackMaps.getACK(msg.SID)
-			if v > 0 {
-				log.Printf("sid: %v的ack: %v.重发之", msg.SID, v)
-				MulticastSendMTUCh <- msg
-				atomic.AddUint64(&count, uint64(1))
-				SentMsgLog <- msg
-			}else{
-				log.Printf("不需要处理sid: %v，因为它的RequiredAckNum为 %v.", msg.SID, v)
-			}
-			//for msg := range SentMsgLog {
-			//	if v, _ := ackMaps.getACK(msg.SID) ; v > 0 {
-			//		log.Printf("sid: %v的ack: %v.重发之", msg.SID, v)
-			//		MulticastSendMTUCh <- msg
-			//	}
-			//}
-		default:
-			total := atomic.LoadUint64(&count)
-			if total > 0 {
-				log.Printf("总共处理 %v 个超时任务。", total)
-			}
-			return
-		}
+	msgLog := SentMsgLog.getAllMsg()
+	for sid, msg := range msgLog{
+		MulticastSendMTUCh <- msg
+		log.Printf("重发: sid:%v, blockID:%v", sid, msg.BlockID)
 	}
-	//for msg := range {
-	//
-	//}
 }
 func (p BaseMulticast) HandleTD(td *config.TD)  {
 	handleOneTD(td)
@@ -93,6 +101,7 @@ func (p BaseMulticast) HandleTD(td *config.TD)  {
 func (p BaseMulticast) HandleACK(ack *config.ACK)  {
 	ackMaps.popACK(ack.SID)
 	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
+		SentMsgLog.popMsg(ack.SID)      //该SID不需要重发
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)
@@ -192,11 +201,7 @@ func (p BaseMulticast) Clear()  {
 
 	IsRunning = true
 	//清空SentMsgLog
-	select {
-	case <-SentMsgLog:
-	default:
-		return
-	}
+
 }
 func (p BaseMulticast) IsFinished() bool {
 	isFinished :=  len(totalReqs) == 0 && ackMaps.isEmpty()
