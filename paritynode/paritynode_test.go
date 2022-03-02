@@ -7,8 +7,6 @@ import (
 	"github.com/wxnacy/wgo/arrays"
 	"log"
 	"net"
-	"time"
-
 	//"strconv"
 	"testing"
 )
@@ -70,21 +68,21 @@ func ListenMulticast(receive chan Message) {
 
 func TestReceive(t *testing.T) {
 	config.InitBufferPool()
-	receiveCh := make(chan config.MTU, 10)
+	receiveCh := make(chan config.MTU, 100)
 	go common.ListenMulticast(receiveCh)
 
 	for {
 		select {
 		case msg := <-receiveCh:
-			log.Printf("收到 sid %v: framentIndex:%v.\n", msg.SID, msg.FragmentID)
-			log.Printf("第一次接收sid: %v，总共需要%v个数据.", msg.SID, msg.FragmentCount)
-			td := GetTDFromMulticast(msg)
-			td.Buff = make([]byte, msg.SendSize)
+			//log.Printf("收到 sid %v: framentIndex:%v.\n", msg.SID, msg.FragmentID)
+			//log.Printf("第一次接收sid: %v，总共需要%v个数据.", msg.SID, msg.FragmentCount)
+			//td := GetTDFromMulticast(msg)
+			//td.Buff = make([]byte, msg.SendSize)
 			//模拟接收剩下的切片
-			d := time.Duration( (msg.FragmentCount - 1) * 500) * time.Microsecond
-			log.Printf(" %v剩余mtu，耗时：%v ms.", msg.SID, d)
-			time.Sleep(d)
-			log.Printf("sid %v相关数据接收完成！可以执行HandleTD了.", msg.SID)
+			randomDelay(msg)
+			//log.Printf(" %v剩余mtu，耗时：%v ms.", msg.SID, d)
+			//time.Sleep(d)
+			//log.Printf("sid %v相关数据接收完成！可以执行HandleTD了.", msg.SID)
 
 		}
 

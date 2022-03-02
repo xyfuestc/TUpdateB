@@ -220,7 +220,7 @@ func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, r
 			//common.PrintMessage(mtu)
 			td := GetTDFromMulticast(mtu)
 			//模拟接收剩下的切片
-			d := randomDelay(mtu)  //模拟延时
+			d := randomDelay(mtu)  //模拟延时（有10%的概率延时）
 			//time.Sleep(d)
 			//td.Buff = make([]byte, mtu.SendSize)
 			log.Printf("收到sid: %v, blockID: %v, size: %v，模拟延时：%v.", td.SID, td.BlockID, td.SendSize, d)
@@ -237,7 +237,8 @@ func randomDelay(mtu config.MTU) time.Duration {
 	//r := rand.Int31n(100)
 	//if r <= 100  {
 	d = time.Duration(mtu.FragmentCount - 1) * config.UDPDuration
-	time.Sleep(d)
+	log.Printf("收到sid: %v, blockID: %v, size: %v，模拟延时：%v.", mtu.SID, mtu.BlockID, mtu.SendSize, d)
+	time.Sleep(1000 * time.Millisecond)
 	//}
 	return d
 }

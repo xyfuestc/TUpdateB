@@ -13,8 +13,8 @@ const M int = 4
 const W int = 4
 const N int = K + M
 var NumOfMB = 16
-const InnerBandWidth int = 10 * Megabyte / 8    //10Mbps
-const OuterBandWidth int = InnerBandWidth / 5   //2Mbps
+const InnerBandWidth int = 200 * Megabyte / 8    //200Mbps
+const OuterBandWidth int = InnerBandWidth / 5   //40Mbps
 var BlockSize = Megabyte * NumOfMB //1MB
 var RSBlockSize = Megabyte * NumOfMB * W
 const Megabyte = 1024 * 1024      //1MB
@@ -37,8 +37,8 @@ const MulticastAddr = "224.0.0.250"
 const MulticastAddrWithPort = "224.0.0.250:9981"
 const MulticastAddrListenACK  = ":9981"
 const MTUSize =  6 * 1024 // 60K
-const UDPDuration  = time.Duration(MTUSize * 1000000 / OuterBandWidth) * time.Millisecond //  发送一个UDP包时间（us）
-const MaxDatagramSize = 8 * 1024 // 8 * 1024 = 64KB
+const UDPDuration  = time.Duration(MTUSize * 1000000 / OuterBandWidth) * time.Microsecond //  发送一个UDP包时间（us）
+const MaxDatagramSize = 20 * 1024 // 8 * 1024 = 64KB
 
 const (
 	BASE PolicyType = iota
