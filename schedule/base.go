@@ -151,7 +151,7 @@ func handleOneCMD(cmd *config.CMD)  {
 		//common.SendData(td, parityIP, config.NodeTDListenPort, "")
 
 		begin := time.Now().UnixNano() / 1e6
-		go common.SendData(td, parityIP, config.NodeTDListenPort, "")
+		common.SendData(td, parityIP, config.NodeTDListenPort, "")
 		end := time.Now().UnixNano() / 1e6
 
 		log.Printf("发送 td(sid: %d, blockID: %d), 从 %s 到 %s, 数据量：%d MB，  用时：%v ms \n",

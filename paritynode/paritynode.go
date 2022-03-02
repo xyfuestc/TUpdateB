@@ -220,7 +220,7 @@ func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, r
 			//common.PrintMessage(mtu)
 			td := GetTDFromMulticast(mtu)
 			//模拟接收剩下的切片
-			d := randomDelay(mtu)  //模拟延时（有10%的概率延时）
+			d := randomDelay(mtu)  //模拟延时
 			//time.Sleep(d)
 			//td.Buff = make([]byte, mtu.SendSize)
 			log.Printf("收到sid: %v, blockID: %v, size: %v，模拟延时：%v.", td.SID, td.BlockID, td.SendSize, d)
