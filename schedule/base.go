@@ -45,7 +45,9 @@ func (M *ACKMap) pushACK(sid int)  {
 }
 func (M *ACKMap) popACK(sid int)  {
 	M.Lock()
-	M.RequireACKs[sid]--
+	if M.RequireACKs[sid] > 0 {
+		M.RequireACKs[sid]--
+	}
 	M.Unlock()
 }
 
