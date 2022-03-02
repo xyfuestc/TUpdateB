@@ -14,6 +14,9 @@ import (
 var connections []net.Conn
 
 var done = make(chan bool)
+var tickerDuration = time.Second * 2
+var ticker = time.NewTicker(tickerDuration)
+
 //func handleCMD(conn net.Conn)  {
 //	defer conn.Close()
 //	cmd := common.GetCMD(conn)
@@ -55,6 +58,9 @@ func setPolicy(conn net.Conn)  {
 
 	log.Printf("收到来自 %s 的命令，设置当前算法设置为%s, 当前blockSize=%vMB.\n",
 		common.GetConnIP(conn), config.CurPolicyStr[p.Type], config.BlockSize/config.Megabyte)
+
+	//启动超时处理
+	ticker.Reset(tickerDuration)
 }
 
 func finish() {
@@ -75,15 +81,17 @@ func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, r
 		case cmd := <-receivedCMDCh:
 			schedule.GetCurPolicy().HandleCMD(&cmd)
 
-		case <-time.After(time.Second * 2):
+		case <- ticker.C:
 			log.Printf("处理超时！")
 			schedule.HandleTimeout()
-
 		}
 	}
 }
 func main() {
 	//defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
+
+	//先暂停处理超时
+	ticker.Stop()
 
 	config.Init()
 

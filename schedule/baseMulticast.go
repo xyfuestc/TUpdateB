@@ -60,10 +60,13 @@ func HandleTimeout()  {
 	for {
 		select {
 		case msg := <-SentMsgLog:
-			if v, _ := ackMaps.getACK(msg.SID); v > 0 {
+			v, _ := ackMaps.getACK(msg.SID)
+			if v > 0 {
 				log.Printf("sid: %v的ack: %v.重发之", msg.SID, v)
 				MulticastSendMTUCh <- msg
 				atomic.AddUint64(&count, uint64(1))
+			}else{
+				log.Printf("不需要处理sid: %v，因为它的RequiredAckNum为 %v.", msg.SID, v)
 			}
 			//for msg := range SentMsgLog {
 			//	if v, _ := ackMaps.getACK(msg.SID) ; v > 0 {
