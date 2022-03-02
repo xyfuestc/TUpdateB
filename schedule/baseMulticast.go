@@ -51,7 +51,7 @@ func (M *MsgLogMap) isEmpty() bool {
 var MulticastSendMTUCh = make(chan config.MTU)
 var MulticastReceiveMTUCh = make(chan config.MTU, 100)
 var MulticastReceiveAckCh = make(chan config.ACK)
-var SentMsgLog *MsgLogMap
+var SentMsgLog = &MsgLogMap{}
 
 func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 	//利用多播将数据发出
