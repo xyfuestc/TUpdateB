@@ -150,12 +150,12 @@ func handleOneCMD(cmd *config.CMD)  {
 		//td.SendSize = config.BlockSize
 		//common.SendData(td, parityIP, config.NodeTDListenPort, "")
 
-		begin := time.Now().UnixNano() / 1e6
+		begin := time.Now()
 		common.SendData(td, parityIP, config.NodeTDListenPort, "")
-		end := time.Now().UnixNano() / 1e6
+		elapsed := time.Since(begin)
 
-		log.Printf("发送 td(sid: %d, blockID: %d), 从 %s 到 %s, 数据量：%d MB，  用时：%v ms \n",
-			cmd.SID, cmd.BlockID, common.GetLocalIP(), parityIP, 1.0 * td.SendSize/config.Megabyte, end-begin)
+		log.Printf("发送 td(sid: %d, blockID: %d), 从 %s 到 %s, 数据量：%d MB，  用时：%v \n",
+			cmd.SID, cmd.BlockID, common.GetLocalIP(), parityIP, 1.0 * td.SendSize/config.Megabyte, elapsed)
 
 		//config.TDBufferPool.Put(td)
 	}

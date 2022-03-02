@@ -168,7 +168,8 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 			}
 		}
 		for _, cmd := range cmds {
-			begin := time.Now().UnixNano() / 1e6
+			begin := time.Now()
+
 			for _, toIP := range cmd.ToIPs {
 				//td := &config.TD{
 				//	BlockID: cmd.BlockID,
@@ -194,9 +195,9 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 
 				config.TDBufferPool.Put(SendTD)
 			}
-			end := time.Now().UnixNano() / 1e6
-			log.Printf("发送 block %d 给 %v， 发送大小为：%vMB， 用时：%vms.\n", cmd.BlockID, cmd.ToIPs, len(td.Buff),
-			end-begin)
+			elapsed := time.Since(begin)
+			log.Printf("发送 block %d 给 %v， 发送大小为：%vMB， 用时：%v.\n", cmd.BlockID, cmd.ToIPs, len(td.Buff),
+			elapsed)
 
 		}
 	}else{
@@ -387,7 +388,7 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 			ackMaps.pushACK(cmd.SID)
 		}
 		//log.Printf("block %d is local\n", cmd.BlockID)
-		begin := time.Now().UnixNano() / 1e6
+		begin := time.Now()
 		buff := common.ReadBlockWithSize(cmd.BlockID, config.BlockSize)
 
 		for _, toIP := range cmd.ToIPs {
@@ -408,8 +409,8 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 
 			config.TDBufferPool.Put(td)
 		}
-		end := time.Now().UnixNano() / 1e6
-		log.Printf("发送 block %d 给 %v 用时：%vms.\n", cmd.BlockID, cmd.ToIPs, end-begin)
+		elapsed := time.Since(begin)
+		log.Printf("发送 block %d 给 %v 用时：%v.\n", cmd.BlockID, cmd.ToIPs, elapsed)
 
 		config.BlockBufferPool.Put(buff)
 	}else{
