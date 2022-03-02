@@ -75,7 +75,8 @@ func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, r
 		case cmd := <-receivedCMDCh:
 			schedule.GetCurPolicy().HandleCMD(&cmd)
 
-		case <-time.After(time.Second * 1):
+		case <-time.After(time.Second * 2):
+			log.Printf("处理超时！")
 			schedule.HandleTimeout()
 
 		}

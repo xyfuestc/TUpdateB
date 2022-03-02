@@ -109,7 +109,7 @@ func TestSend(t *testing.T) {
 }
 func TestListeningQuit(t *testing.T) {
 
-	done := make(chan bool)
+	done := make(chan bool, 10)
 
 	l, err := net.Listen("tcp", common.GetLocalIP() + ":" + config.NodeSettingsListenPort)
 	if err != nil {
@@ -117,13 +117,24 @@ func TestListeningQuit(t *testing.T) {
 	}
 	go listenQuit(l, done)
 
+	//done <- true
+	//done <- true
+	//done <- true
+	//done <- true
+	//done <- true
 	for  {
-		log.Printf("等待done信号...\n")
+		//log.Printf("等待done信号...\n")
 		select {
-		case <- done:
-			log.Printf("结束!")
+		case b := <- done:
+			if b {
+				log.Printf("真")
+			}
+			//log.Printf("结束!")
+		default:
+			log.Printf("超时！")
 			return
 		}
+
 	}
 
 }

@@ -5,6 +5,7 @@ import (
 	"EC/config"
 	"fmt"
 	"log"
+	"sync/atomic"
 	"time"
 )
 
@@ -55,20 +56,28 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 }
 //处理UDP超时
 func HandleTimeout()  {
-	select {
-	case msg := <-SentMsgLog:
-		if v, _ := ackMaps.getACK(msg.SID) ; v > 0 {
-			log.Printf("sid: %v的ack: %v.重发之", msg.SID, v)
-			MulticastSendMTUCh <- msg
+	var count uint64 = 0
+	for {
+		select {
+		case msg := <-SentMsgLog:
+			if v, _ := ackMaps.getACK(msg.SID); v > 0 {
+				log.Printf("sid: %v的ack: %v.重发之", msg.SID, v)
+				MulticastSendMTUCh <- msg
+				atomic.AddUint64(&count, uint64(1))
+			}
+			//for msg := range SentMsgLog {
+			//	if v, _ := ackMaps.getACK(msg.SID) ; v > 0 {
+			//		log.Printf("sid: %v的ack: %v.重发之", msg.SID, v)
+			//		MulticastSendMTUCh <- msg
+			//	}
+			//}
+		default:
+			total := atomic.LoadUint64(&count)
+			if total > 0 {
+				log.Printf("总共处理 %v 个超时任务。", total)
+			}
+			return
 		}
-		//for msg := range SentMsgLog {
-		//	if v, _ := ackMaps.getACK(msg.SID) ; v > 0 {
-		//		log.Printf("sid: %v的ack: %v.重发之", msg.SID, v)
-		//		MulticastSendMTUCh <- msg
-		//	}
-		//}
-	default:
-		return
 	}
 	//for msg := range {
 	//
