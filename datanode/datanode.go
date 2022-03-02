@@ -47,6 +47,11 @@ func setPolicy(conn net.Conn)  {
 	if p.Type == -1 {
 		finish()
 		return
+	}else if config.CurPolicyStr[p.Type] == "BaseMulticast" {
+		//启动超时处理
+		ticker.Reset(tickerDuration)
+	}else{
+		ticker.Stop()
 	}
 
 	schedule.SetPolicy(config.PolicyType(p.Type))
@@ -59,12 +64,11 @@ func setPolicy(conn net.Conn)  {
 	log.Printf("收到来自 %s 的命令，设置当前算法设置为%s, 当前blockSize=%vMB.\n",
 		common.GetConnIP(conn), config.CurPolicyStr[p.Type], config.BlockSize/config.Megabyte)
 
-	//启动超时处理
-	ticker.Reset(tickerDuration)
 }
 
 func finish() {
 	done <- true
+	ticker.Stop()
 	clearAll()
 
 }
