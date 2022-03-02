@@ -196,7 +196,7 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 				config.TDBufferPool.Put(SendTD)
 			}
 			elapsed := time.Since(begin)
-			log.Printf("发送 block %d 给 %v， 发送大小为：%vMB， 用时：%.2v.\n", cmd.BlockID, cmd.ToIPs, len(td.Buff),
+			log.Printf("发送 block %d 给 %v， 发送大小为：%vMB， 用时：%s.\n", cmd.BlockID, cmd.ToIPs, len(td.Buff),
 			elapsed)
 
 		}
@@ -410,7 +410,7 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 			config.TDBufferPool.Put(td)
 		}
 		elapsed := time.Since(begin)
-		log.Printf("发送 block %d 给 %v 用时：%.2v.\n", cmd.BlockID, cmd.ToIPs, elapsed)
+		log.Printf("发送 block %d 给 %v 用时：%s.\n", cmd.BlockID, cmd.ToIPs, elapsed)
 
 		config.BlockBufferPool.Put(buff)
 	}else{
