@@ -5,7 +5,6 @@ import (
 	"EC/config"
 	"EC/schedule"
 	"log"
-	"math/rand"
 	"net"
 	"os"
 	"os/signal"
@@ -28,7 +27,7 @@ func setPolicy(conn net.Conn)  {
 
 	//检测结束
 	if p.Type == -1 {
-		log.Printf("正在退出...\n")
+		log.Printf("收到结束信号...退出\n")
 		finish()
 		return
 	}
@@ -221,9 +220,10 @@ func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, r
 			//common.PrintMessage(mtu)
 			td := GetTDFromMulticast(mtu)
 			//模拟接收剩下的切片
-			//d := randomDelay(mtu)  //模拟延时（有10%的概率延时）
+			d := randomDelay(mtu)  //模拟延时（有10%的概率延时）
+			//time.Sleep(d)
 			//td.Buff = make([]byte, mtu.SendSize)
-			//log.Printf("收到sid: %v, blockID: %v, size: %v，模拟延时：%v.", td.SID, td.BlockID, td.SendSize, d)
+			log.Printf("收到sid: %v, blockID: %v, size: %v，模拟延时：%v.", td.SID, td.BlockID, td.SendSize, d)
 			schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, td.FromIP)
 			//log.Printf("记录 ackReceiverIP[%v]=%v.", td.SID, td.FromIP)
 			schedule.GetCurPolicy().HandleTD(td)
@@ -234,11 +234,11 @@ func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, r
 }
 func randomDelay(mtu config.MTU) time.Duration {
 	var d time.Duration = 0
-	r := rand.Int31n(100)
-	if r <= 10  {
-		d = time.Duration(mtu.FragmentCount - 1) * config.UDPDuration
-		time.Sleep(d)
-	}
+	//r := rand.Int31n(100)
+	//if r <= 100  {
+	d = time.Duration(mtu.FragmentCount - 1) * config.UDPDuration
+	time.Sleep(d)
+	//}
 	return d
 }
 func GetTDFromMulticast(message config.MTU) *config.TD  {

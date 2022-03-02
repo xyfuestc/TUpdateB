@@ -36,9 +36,9 @@ const MulticastAddr = "224.0.0.250"
 //const MulticastAddrWithPort = "224.0.0.250:9981"
 const MulticastAddrWithPort = "224.0.0.250:9981"
 const MulticastAddrListenACK  = ":9981"
-const MTUSize =  4 * 1024 // 4K
-const UDPDuration  =  1000 * time.Microsecond //  发送间隔 100 ms
-const MaxDatagramSize = 8 * 1024 // 8 * 1024 = 8KB
+const MTUSize =  60 * 1024 // 60K
+const UDPDuration  = time.Duration(MTUSize * 1000000 / OuterBandWidth) * time.Millisecond //  发送一个UDP包时间（us）
+const MaxDatagramSize = 64 * 1024 // 8 * 1024 = 64KB
 
 const (
 	BASE PolicyType = iota
@@ -115,8 +115,9 @@ type TD struct {
 	SendSize           int
 	ToIP               string
 	FromIP             string
-	Buff               []byte
 	MultiTargetIPs     []string
+	Buff               []byte
+
 }
 
 //传输命令格式
@@ -147,14 +148,13 @@ type MTU struct {
 	SID            int      `json:"sid,omitempty"`
 	BlockID        int      `json:"block_id,omitempty"`
 	Index          int      `json:"index,omitempty"`
-	Data           []byte   `json:"data,omitempty"`
 	FromIP         string   `json:"from_ip,omitempty"`
-	MultiTargetIPs []string `json:"multi_target_ips,omitempty"`
 	IsFragment     bool     `json:"is_fragment,omitempty"`
 	FragmentID     int      `json:"fragment_id,omitempty"`
 	FragmentCount  int      `json:"fragment_count,omitempty"`
 	SendSize       int      `json:"send_size,omitempty"`
-	SendTime       time.Time`json:"send_time"`
+	MultiTargetIPs []string `json:"multi_target_ips,omitempty"`
+	Data           []byte   `json:"data,omitempty"`
 }
 
 
