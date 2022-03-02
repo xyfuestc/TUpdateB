@@ -65,6 +65,7 @@ func HandleTimeout()  {
 				log.Printf("sid: %v的ack: %v.重发之", msg.SID, v)
 				MulticastSendMTUCh <- msg
 				atomic.AddUint64(&count, uint64(1))
+				SentMsgLog <- msg
 			}else{
 				log.Printf("不需要处理sid: %v，因为它的RequiredAckNum为 %v.", msg.SID, v)
 			}

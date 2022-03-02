@@ -238,7 +238,7 @@ func randomDelay(mtu config.MTU) time.Duration {
 	//if r <= 100  {
 	d = time.Duration(mtu.FragmentCount - 1) * config.UDPDuration
 	log.Printf("收到sid: %v, blockID: %v, size: %v，模拟延时：%v.", mtu.SID, mtu.BlockID, mtu.SendSize, d)
-	time.Sleep(1000 * time.Millisecond)
+	time.Sleep(d)
 	//}
 	return d
 }
