@@ -39,7 +39,7 @@ func checkFinish() {
 		actualUpdatedBlocks = schedule.GetCurPolicy().GetActualBlocks()
 		averageOneUpdateSpeed := float32(sumTime) / float32(actualUpdatedBlocks)
 		crossTraffic := schedule.GetCrossRackTraffic()
-		log.Printf("%s 总耗时: %v, 完成更新任务: %d, 实际处理任务数: %d, 单块更新时间: %0.4fs, 吞吐量: %0.2fMB/s，跨域流量为：%0.2fMB\n",
+		log.Printf("%s 总耗时: %s, 完成更新任务: %d, 实际处理任务数: %d, 单块更新时间: %0.4fs, 吞吐量: %0.2fMB/s，跨域流量为：%0.2fMB\n",
 			config.CurPolicyStr[curPolicy], sumTime, numOfReq, actualUpdatedBlocks, averageOneUpdateSpeed, throughput, crossTraffic)
 
 		schedule.GetCurPolicy().Clear()
