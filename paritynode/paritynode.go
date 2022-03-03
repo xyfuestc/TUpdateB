@@ -27,7 +27,7 @@ func setPolicy(conn net.Conn)  {
 
 	//检测结束
 	if p.Type == -1 {
-		log.Printf("收到结束信号...退出\n")
+		log.Printf("收到结束信号...\n清空所有资源，继续等待命令...\n")
 		finish()
 		return
 	}
@@ -359,6 +359,6 @@ func clearAll() {
 }
 
 func finish() {
-	done <- true
+	//done <- true
 	clearAll()
 }

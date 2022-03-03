@@ -154,7 +154,7 @@ func handleOneCMD(cmd *config.CMD)  {
 		common.SendData(td, parityIP, config.NodeTDListenPort, "")
 		elapsed := time.Since(begin)
 
-		log.Printf("发送 td(sid: %d, blockID: %d), 从 %s 到 %s, 数据量：%d MB，  用时：%s \n",
+		log.Printf("发送 td(sid: %d, blockID: %d), 从 %s 到 %s, 数据量：%d MB，  用时：%s.",
 			cmd.SID, cmd.BlockID, common.GetLocalIP(), parityIP, 1.0 * td.SendSize/config.Megabyte, elapsed)
 
 		//config.TDBufferPool.Put(td)
