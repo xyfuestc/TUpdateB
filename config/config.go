@@ -24,10 +24,13 @@ const MaxBaseBatchSize int = 100
 const MaxBlockSize int = 1000
 const TestFileSize = 10 * 1024 * Megabyte
 var MaxBlockIndex = TestFileSize / BlockSize - 1
-const NumOfAlgorithm int = 8 //采用3种算法执行相同任务
+const NumOfAlgorithm int = 10 //采用3种算法执行相同任务
+//var Policies = []string{"Base", "BaseMulticast", "BaseMulticastBatch", "TUpdate",
+//						"TUpdateBatch", "TUpdateDeltaBatch", "TUpdateDeltaBatchMulti",
+//						"DXR_DU", "DXR_DU_Multi", "CAU", "CAU1", "CAURS" }
 var Policies = []string{"Base", "BaseMulticast", "BaseMulticastBatch", "TUpdate",
-						"TUpdateBatch", "TUpdateDeltaBatch", "TUpdateDeltaBatchMulti",
-						"DXR_DU", "DXR_DU_Multi", "CAU", "CAU1", "CAURS" }
+						"TUpdateBatch", "TUpdateDeltaBatch",
+						"DXR_DU", "CAU", "CAU1", "CAURS" }
 var BitMatrix = make([]byte, K*M*W*W)
 const RackSize = M
 const NumOfRacks = N / RackSize
