@@ -29,8 +29,8 @@ func TestMulticast(t *testing.T)  {
 	copy(buff, randStr)
 	buff50 := buff[:10]
 	fmt.Printf("%+v\n", buff50)
-
-	schedule.SetPolicy(config.BASEMulticast)
+	//config.BASEMulticast
+	schedule.SetPolicy("BASEMulticast")
 	//go common.ListenACK(schedule.MulticastReceiveAckCh)
 	go common.Multicast(schedule.MulticastSendMTUCh)
 	for i := 0; i < 10; i++ {
@@ -177,7 +177,7 @@ func TestSendingQuitSignal(t *testing.T) {
 	p := &config.Policy{
 		Type: -1,
 	}
-	common.SendData(p, common.GetLocalIP(), config.NodeSettingsListenPort, "")
+	common.SendData(p, common.GetLocalIP(), config.NodeSettingsListenPort)
 }
 
 func TestListenTD(t *testing.T) {

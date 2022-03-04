@@ -104,7 +104,7 @@ func TestSend(t *testing.T) {
 			ToIP: "192.168.1.120",
 			Buff: buff,
 		}
-		common.SendData(td, common.GetLocalIP(), config.NodeTDListenPort, "")
+		common.SendData(td, common.GetLocalIP(), config.NodeTDListenPort)
 	}
 }
 func TestListeningQuit(t *testing.T) {

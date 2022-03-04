@@ -11,10 +11,10 @@ import (
 const K int = 8
 const M int = 4
 const W int = 4
-const N int = K + M
+const N  = K + M
 var NumOfMB = 16
 const InnerBandWidth int = 200 * Megabyte / 8    //200Mbps
-const OuterBandWidth int = InnerBandWidth / 5   //40Mbps
+const OuterBandWidth = InnerBandWidth / 5   //40Mbps
 var BlockSize = Megabyte * NumOfMB //1MB
 var RSBlockSize = Megabyte * NumOfMB * W
 const Megabyte = 1024 * 1024      //1MB
@@ -25,15 +25,15 @@ const MaxBlockSize int = 1000
 const TestFileSize = 10 * 1024 * Megabyte
 var MaxBlockIndex = TestFileSize / BlockSize - 1
 const NumOfAlgorithm int = 8 //采用3种算法执行相同任务
-var CurPolicyStr = []string{"Base", "CAU", "TUpdate", "TUpdate1", "TAR_CAU", "CAU1", "BaseMulticast", "CAURS" }
+var Policies = []string{"Base", "BaseMulticast", "BaseMulticastBatch", "TUpdate",
+						"TUpdateBatch", "TUpdateDeltaBatch", "TUpdateDeltaBatchMulti",
+						"DXR_DU", "DXR_DU_Multi", "CAU", "CAU1", "CAURS" }
 var BitMatrix = make([]byte, K*M*W*W)
 const RackSize = M
 const NumOfRacks = N / RackSize
 type OPType int
 var RS *reedsolomon.RS
 type Matrix []byte
-const MulticastAddr = "224.0.0.250"
-//const MulticastAddrWithPort = "224.0.0.250:9981"
 const MulticastAddrWithPort = "224.0.0.250:9981"
 const MulticastAddrListenACK  = ":9981"
 const MTUSize =  6 * 1024 // 60K
@@ -41,17 +41,17 @@ const MTUSize =  6 * 1024 // 60K
 const UDPDuration  = time.Duration(2 * MTUSize * 1000000 / OuterBandWidth) * time.Microsecond
 const MaxDatagramSize = 20 * 1024 // 8 * 1024 = 64KB
 
-const (
-	BASE PolicyType = iota
-	CAU
-	T_Update
-	T_Update1
-	TAR_CAU
-	CAU1
-	BASEMulticast
-	CAURS
-
-)
+//const (
+//	BASE PolicyType = iota
+//	CAU
+//	T_Update
+//	T_Update1
+//	TAR_CAU
+//	CAU1
+//	BASEMulticast
+//	CAURS
+//
+//)
 const (
 	Timestamp int  = iota    // default 0
 	WorkloadName    //1
@@ -85,9 +85,6 @@ const (
 	NodeSettingsListenPort  string = "8303"   // metainfo server ack listening port
 	NodeTDListenPort        string = "8304"   // metainfo server ack listening port
 )
-
-type PolicyType int
-
 
 const BaseIP string = "192.168.1."
 var MSIP = BaseIP + "108"

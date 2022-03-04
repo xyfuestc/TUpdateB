@@ -91,26 +91,32 @@ var totalCrossRackTraffic = 0
 var ReceivedAckCh = make(chan config.ACK, 10)
 var ReceivedTDCh = make(chan config.TD, 10)
 var ReceivedCMDCh = make(chan config.CMD, 10)
-func SetPolicy(policyType config.PolicyType)  {
+func SetPolicy(policyType string)  {
 	switch policyType {
-	case config.BASE:
+	case "Base":
 		CurPolicy = Base{}
-	case config.BASEMulticast:
+	case "BaseMulticast":
 		CurPolicy = BaseMulticast{}
-	case config.T_Update:
+	case "BaseMulticastBatch":
+		CurPolicy = BaseMulticastBatch{}
+	case "TUpdate":
 		CurPolicy = TUpdate{}
-	case config.T_Update1:
-		CurPolicy = TUpdate1{}
-	case config.CAU:
+	case "TUpdateBatch":
+		CurPolicy = TUpdateBatch{}
+	case "TUpdateDeltaBatch":
+		CurPolicy = TUpdateDeltaBatch{}
+	case "TUpdateDeltaBatchMulti":
+		CurPolicy = TUpdateDeltaBatchMulti{}
+	case "DXR_DU":
+		CurPolicy = DXR_DU{}
+	case "DXR_DU_Multi":
+		CurPolicy = DXR_DU_Multi{}
+	case "CAU":
 		CurPolicy = CAU{}
-	case config.CAU1:
+	case "CAU1":
 		CurPolicy = CAU1{}
-	case config.CAURS:
+	case "CAURS":
 		CurPolicy = CAURS{}
-	//case config.Forest:
-	//	CurPolicy = Forest{}
-	case config.TAR_CAU:
-		CurPolicy = TAR_CAU{}
 	}
 	CurPolicy.Init()
 }
@@ -151,7 +157,7 @@ func handleOneCMD(cmd *config.CMD)  {
 		//common.SendData(td, parityIP, config.NodeTDListenPort, "")
 
 		begin := time.Now()
-		common.SendData(td, parityIP, config.NodeTDListenPort, "")
+		common.SendData(td, parityIP, config.NodeTDListenPort)
 		elapsed := time.Since(begin)
 
 		log.Printf("发送 td(sid: %d, blockID: %d), 从 %s 到 %s, 数据量：%d MB，  用时：%s.",
@@ -165,7 +171,7 @@ func (p Base) HandleTD(td *config.TD)  {
 	handleOneTD(td)
 }
 func handleOneTD(td *config.TD)  {
-	go common.WriteDeltaBlock(td.BlockID, td.Buff)
+	common.WriteDeltaBlock(td.BlockID, td.Buff)
 	//返回ack
 	ack := config.AckBufferPool.Get().(*config.ACK)
 	ack.SID = td.SID
@@ -189,7 +195,7 @@ func (p Base) HandleACK(ack *config.ACK)  {
 }
 func ReturnACK(ack *config.ACK) {
 	if ackReceiverIP, ok := ackIPMaps.getIP(ack.SID); ok{
-		common.SendData(ack, ackReceiverIP, config.NodeACKListenPort, "ack")
+		common.SendData(ack, ackReceiverIP, config.NodeACKListenPort)
 		log.Printf("任务已完成，给上级：%s返回ack: sid: %d, blockID: %d\n", ackReceiverIP, ack.SID, ack.BlockID)
 	}
 	//else{

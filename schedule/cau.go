@@ -36,7 +36,7 @@ func (p CAU) HandleTD(td *config.TD) {
 	localID := arrays.ContainsString(config.NodeIPs, common.GetLocalIP())
 	log.Printf("cau localID:%d\n", localID)
 	if localID >= config.K {
-		go common.WriteDeltaBlock(td.BlockID, td.Buff)
+		common.WriteDeltaBlock(td.BlockID, td.Buff)
 	}
 	//返回ack
 	ack := &config.ACK{
@@ -404,7 +404,7 @@ func (p CAU) HandleCMD(cmd *config.CMD)  {
 			td.FromIP = cmd.FromIP
 			td.ToIP = toIP
 			td.SID = cmd.SID
-			common.SendData(td, toIP, config.NodeTDListenPort, "")
+			common.SendData(td, toIP, config.NodeTDListenPort)
 			config.TDBufferPool.Put(td)
 			//common.SendData(td, toIP, config.NodeTDListenPort, "")
 		}

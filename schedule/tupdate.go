@@ -156,7 +156,7 @@ func (p TUpdate) handleOneBlock(reqData * config.ReqData)  {
 
 func (p TUpdate) HandleTD(td *config.TD)  {
 	//本地数据更新
-	go common.WriteDeltaBlock(td.BlockID, td.Buff)
+	common.WriteDeltaBlock(td.BlockID, td.Buff)
 	//有等待任务
 	cmds := CMDList.popRunnableCMDsWithSID(td.SID)
 
@@ -191,7 +191,7 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 				SendTD.SendSize = cmd.SendSize
 				sendSizeRate := float32(SendTD.SendSize * 1.0) / float32(config.BlockSize) * 100.0
 				log.Printf("发送 block:%d sendSize: %.2f%% -> %s.\n", SendTD.BlockID, sendSizeRate, toIP)
-				common.SendData(SendTD, toIP, config.NodeTDListenPort, "")
+				common.SendData(SendTD, toIP, config.NodeTDListenPort)
 
 				config.TDBufferPool.Put(SendTD)
 			}
@@ -405,7 +405,7 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 			td.FromIP = cmd.FromIP
 			td.ToIP = toIP
 			td.SID = cmd.SID
-			common.SendData(td, toIP, config.NodeTDListenPort, "")
+			common.SendData(td, toIP, config.NodeTDListenPort)
 
 			config.TDBufferPool.Put(td)
 		}

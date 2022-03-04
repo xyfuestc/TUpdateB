@@ -6,42 +6,13 @@ import (
 	"github.com/wxnacy/wgo/arrays"
 	"log"
 	"sort"
-	"sync"
+
 )
-type TAR_CAU struct {
-	Base
+type DXR_DU_Multi struct {
+
 }
 
-type ReceivedTDs struct {
-	sync.RWMutex
-	TDs []*config.TD
-}
-func (M *ReceivedTDs) pushTD(td *config.TD)  {
-	M.Lock()
-	M.TDs = append(M.TDs, td)
-	M.Unlock()
-}
-func (M *ReceivedTDs) isEmpty() bool  {
-	M.RLock()
-	num := len(M.TDs)
-	M.RUnlock()
-	if num > 0 {
-		return false
-	}
-	return true
-}
-func (M *ReceivedTDs) getTDs() []*config.TD  {
-	M.RLock()
-	num := len(M.TDs)
-	M.RUnlock()
-	if num > 0 {
-		return M.TDs
-	}
-	return nil
-}
-var curDistinctReq = make([]*config.ReqData, 0, config.MaxBatchSize)
-var curReceivedTDs *ReceivedTDs
-func (p TAR_CAU) Init()  {
+func (p DXR_DU_Multi) Init()  {
 	totalCrossRackTraffic = 0
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
@@ -60,13 +31,13 @@ func (p TAR_CAU) Init()  {
 		TDs: make([]*config.TD, 0, config.MaxBatchSize),
 	}
 }
-func (p TAR_CAU) HandleTD(td *config.TD) {
+func (p DXR_DU_Multi) HandleTD(td *config.TD) {
 	//记录当前轮次接收到的blockID
 	curReceivedTDs.pushTD(td)
 	//校验节点本地数据更新
 	localID := arrays.ContainsString(config.NodeIPs, common.GetLocalIP())
 	if localID >= config.K {
-		go common.WriteDeltaBlock(td.BlockID, td.Buff)
+		common.WriteDeltaBlock(td.BlockID, td.Buff)
 	}
 	//返回ack
 	ack := &config.ACK{
@@ -78,46 +49,9 @@ func (p TAR_CAU) HandleTD(td *config.TD) {
 	handleWaitingCMDs(td)
 }
 
-func handleWaitingCMDs(td *config.TD) {
-	//有等待任务
-	indexes := meetCMDNeed(td.BlockID)
-	if len(indexes) > 0 {
-		for _, i := range indexes {
-			cmd := i
-			log.Printf("执行TD任务：sid:%d blockID:%d\n", cmd.SID, cmd.BlockID)
-			for _, _ = range cmd.ToIPs {
-				ackMaps.pushACK(cmd.SID)
-			}
-		}
-		for _, i := range indexes {
-			cmd := i
-			toIP := cmd.ToIPs[0]
-			//td := &config.TD{
-			//	BlockID: cmd.BlockID,
-			//	Buff:    td.Buff,
-			//	FromIP:  cmd.FromIP,
-			//	ToIP:    toIP,
-			//	SID:     cmd.SID,
-			//	SendSize: cmd.SendSize,
-			//}
-			sendTD := config.TDBufferPool.Get().(*config.TD)
-			sendTD.BlockID = cmd.BlockID
-			sendTD.Buff = td.Buff
-			sendTD.FromIP = cmd.FromIP
-			sendTD.ToIP = toIP
-			sendTD.SID = cmd.SID
-			sendTD.SendSize = cmd.SendSize
-			log.Printf("tar-cau handleWaitingCMDs: sendTD.SendSize: %+v,len(td.Buff): %+v \n", sendTD.SendSize, len(td.Buff))
-			sendSizeRate := float32(sendTD.SendSize * 1.0) / float32(config.BlockSize) * 100.0
-			log.Printf("发送 block:%d sendSize: %.2f%% -> %s.\n", td.BlockID, sendSizeRate, toIP)
-			common.SendData(sendTD, toIP, config.NodeTDListenPort, "")
 
-			config.TDBufferPool.Put(sendTD)
-		}
-	}
-}
 
-func (p TAR_CAU) HandleReq(reqs []*config.ReqData)  {
+func (p DXR_DU_Multi) HandleReq(reqs []*config.ReqData)  {
 	totalReqs = reqs
 	log.Printf("一共接收到%d个请求...\n", len(totalReqs))
 
@@ -128,7 +62,7 @@ func (p TAR_CAU) HandleReq(reqs []*config.ReqData)  {
 		actualBlocks += len(curDistinctReq)
 		log.Printf("第%d轮 TAR-CAU：处理%d个block，剩余%v个block待处理。\n", round, len(curDistinctReq), len(totalReqs))
 
-		tar_cau()
+		dxr_du_multi()
 
 		for IsRunning {
 			
@@ -142,52 +76,8 @@ func (p TAR_CAU) HandleReq(reqs []*config.ReqData)  {
 
 }
 
-func turnMatchReqsToDistinctReqs(curMatchReqs []*config.ReqData)  {
-	for _, req := range curMatchReqs {
-		if i := findBlockIndexInReqs(curDistinctReq, req.BlockID); i < 0 {
-			curDistinctReq = append(curDistinctReq, req)
-		}else{
-			if req.RangeLeft < curDistinctReq[i].RangeLeft {
-				curDistinctReq[i].RangeLeft = req.RangeLeft
-			}else if req.RangeRight > curDistinctReq[i].RangeRight {
-				curDistinctReq[i].RangeRight = req.RangeRight
-			}
-		}
-	}
-}
-func findDistinctReqs() {
-	//获取curDistinctBlocks
-	curMatchReqs := make([]*config.ReqData, 0, config.MaxBatchSize)
-	if len(totalReqs) > config.MaxBatchSize {
-		curMatchReqs = totalReqs[:config.MaxBatchSize]
-		turnMatchReqsToDistinctReqs(curMatchReqs)
-		totalReqs = totalReqs[config.MaxBatchSize:]
-	}else { //处理最后不到100个请求
 
-		curMatchReqs = totalReqs
-		turnMatchReqsToDistinctReqs(curMatchReqs)
-		totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
-	}
-}
-
-func findBlockIndexInReqs(reqs []*config.ReqData, blockID int) int {
-	for i, req := range reqs {
-		if req.BlockID == blockID {
-			return i
-		}
-	}
-	return -1
-}
-func turnReqsToStripes() map[int][]int {
-	stripes := map[int][]int{}
-	for _, req := range curDistinctReq {
-		stripeID := common.GetStripeIDFromBlockID(req.BlockID)
-		stripes[stripeID] = append(stripes[stripeID], req.BlockID)
-	}
-	return  stripes
-}
-
-func tar_cau() {
+func dxr_du_multi() {
 	stripes := turnReqsToStripes()
 	for _, stripe := range stripes{
 
@@ -198,46 +88,17 @@ func tar_cau() {
 				alignRangeOfStripe(stripe)
 
 				if compareRacks(i, ParityRackIndex, stripe) {
-					tar_parityUpdate(i, stripe)
+					dxr_du_multi_parityUpdate(i, stripe)
 				}else{
-					tar_dataUpdate(i, stripe)
+					dxr_du_multi_dataUpdate(i, stripe)
 				}
 			}
 		}
 	}
 }
 
-func alignRangeOfStripe(stripe []int) {
-	//1、寻找同一个stripe下最大范围的rangeL，rangeR
-	minRangeL, maxRangeR := config.BlockSize, 0
-	reqIndexList := make([]int, 0, len(stripe))
-	//log.Printf("len(stripe) = %d", len(stripe))
-	for _, b := range stripe{
-		j, rangeL, rangeR := getBlockRangeFromDistinctReqs(b)
-		//归一化
-		rangeL = rangeL % config.BlockSize
-		rangeR = rangeR % config.BlockSize
-		//log.Printf("%d=(%d,%d)",j,rangeL,rangeR)
-		if j == -1 {
-			continue
-		}
-		if rangeL < minRangeL {
-			minRangeL = rangeL
-		}
-		if rangeR > maxRangeR {
-			maxRangeR = rangeR
-		}
-		//记录哪些block需要统一range
-		reqIndexList = append(reqIndexList, j)
-	}
-	//log.Printf("len(reqIndexList) = %d", len(reqIndexList))
-	for i := range reqIndexList{
-		//log.Printf("需要设置curDistinctReq[%d].RangeLeft=%d,RangeRight=%d", i, minRangeL, maxRangeR)
-		curDistinctReq[i].RangeLeft = minRangeL
-		curDistinctReq[i].RangeRight = maxRangeR
-	}
-}
-func tar_dataUpdate(rackID int, stripe []int)  {
+
+func dxr_du_multi_dataUpdate(rackID int, stripe []int)  {
 	curRackNodes := make([][]int, config.RackSize)
 	parities := make([][]int, config.M * config.W)
 	for _, blockID := range stripe{
@@ -311,7 +172,7 @@ func tar_dataUpdate(rackID int, stripe []int)  {
 				cmd.Matched = 0
 				cmd.SendSize = rangeRight - rangeLeft
 
-				common.SendData(cmd, common.GetNodeIP(rootP), config.NodeCMDListenPort, "")
+				common.SendData(cmd, common.GetNodeIP(rootP), config.NodeCMDListenPort)
 
 				config.CMDBufferPool.Put(cmd)
 
@@ -357,7 +218,7 @@ func tar_dataUpdate(rackID int, stripe []int)  {
 			cmd.Matched = 0
 			cmd.SendSize = rangeRight - rangeLeft
 
-			common.SendData(cmd, common.GetNodeIP(nodeID), config.NodeCMDListenPort, "")
+			common.SendData(cmd, common.GetNodeIP(nodeID), config.NodeCMDListenPort)
 
 			config.CMDBufferPool.Put(cmd)
 
@@ -372,12 +233,8 @@ func tar_dataUpdate(rackID int, stripe []int)  {
 		stripe, parities, unionParities, curRackNodes)
 }
 
-func getBlockRangeFromDistinctReqs(blockID int) (i, rangeLeft, rangeRight int) {
-	j := findBlockIndexInReqs(curDistinctReq, blockID)
-	return j, curDistinctReq[j].RangeLeft, curDistinctReq[j].RangeRight
-}
 
-func tar_parityUpdate(rackID int, stripe []int) {
+func dxr_du_multi_parityUpdate(rackID int, stripe []int) {
 
 	curRackNodes := make([][]int, config.RackSize)
 	parities := make([][]int, config.M * config.W)
@@ -452,7 +309,7 @@ func tar_parityUpdate(rackID int, stripe []int) {
 		cmd.Matched = 0
 		cmd.SendSize = rangeRight - rangeLeft
 
-		common.SendData(cmd, common.GetNodeIP(rootD), config.NodeCMDListenPort, "")
+		common.SendData(cmd, common.GetNodeIP(rootD), config.NodeCMDListenPort)
 
 		config.CMDBufferPool.Put(cmd)
 
@@ -499,7 +356,7 @@ func tar_parityUpdate(rackID int, stripe []int) {
 				cmd.Matched = 0
 				cmd.SendSize = rangeRight - rangeLeft
 
-				common.SendData(cmd, common.GetNodeIP(curID), config.NodeCMDListenPort, "")
+				common.SendData(cmd, common.GetNodeIP(curID), config.NodeCMDListenPort)
 
 				config.CMDBufferPool.Put(cmd)
 
@@ -512,7 +369,7 @@ func tar_parityUpdate(rackID int, stripe []int) {
 	log.Printf("ParityUpdate: stripe: %v, parities: %v, unionParities: %v, curRackNodes: %v\n",
 											stripe, parities, unionParities, curRackNodes)
 }
-func (p TAR_CAU) HandleCMD(cmd *config.CMD)  {
+func (p DXR_DU_Multi) HandleCMD(cmd *config.CMD)  {
 	//handleOneCMD(cmd)
 	if len(cmd.Helpers) == 0 {	//本地数据，直接发送
 		//添加ack监听
@@ -542,7 +399,7 @@ func (p TAR_CAU) HandleCMD(cmd *config.CMD)  {
 			td.SendSize = cmd.SendSize
 			sendSizeRate := float32(td.SendSize*1.0) / float32(config.BlockSize) * 100.0
 			log.Printf("发送 block:%d sendSize:%.2f%% 的数据到%s.\n", td.BlockID, sendSizeRate, toIP)
-			common.SendData(td, toIP, config.NodeTDListenPort, "")
+			common.SendData(td, toIP, config.NodeTDListenPort)
 
 			config.TDBufferPool.Put(td)
 		}
@@ -559,7 +416,7 @@ func (p TAR_CAU) HandleCMD(cmd *config.CMD)  {
 	}
 }
 
-func (p TAR_CAU) HandleACK(ack *config.ACK)  {
+func (p DXR_DU_Multi) HandleACK(ack *config.ACK)  {
 	ackMaps.popACK(ack.SID)
 	//log.Printf("当前剩余ack：%d\n", ackMaps)
 	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
@@ -572,7 +429,7 @@ func (p TAR_CAU) HandleACK(ack *config.ACK)  {
 		}
 	}
 }
-func (p TAR_CAU) Clear()  {
+func (p DXR_DU_Multi) Clear()  {
 	IsRunning = true
 	curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
 	curDistinctReq = make([]*config.ReqData, 0, config.MaxBatchSize)
@@ -592,16 +449,16 @@ func (p TAR_CAU) Clear()  {
 	}
 }
 
-func (p TAR_CAU) RecordSIDAndReceiverIP(sid int, ip string)()  {
+func (p DXR_DU_Multi) RecordSIDAndReceiverIP(sid int, ip string)()  {
 	ackIPMaps.recordIP(sid, ip)
 }
 
-func (p TAR_CAU) IsFinished() bool {
+func (p DXR_DU_Multi) IsFinished() bool {
 	return len(totalReqs) == 0 && ackMaps.isEmpty()
 }
 
 
-func (p TAR_CAU) GetActualBlocks() int {
+func (p DXR_DU_Multi) GetActualBlocks() int {
 	return actualBlocks
 }
 

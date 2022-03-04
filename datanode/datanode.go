@@ -11,7 +11,7 @@ import (
 	"os/signal"
 	"time"
 )
-var connections []net.Conn
+//var connections []net.Conn
 
 var done = make(chan bool)
 var tickerDuration = time.Second * 4
@@ -47,14 +47,14 @@ func setPolicy(conn net.Conn)  {
 	if p.Type == -1 {
 		finish()
 		return
-	}else if config.CurPolicyStr[p.Type] == "BaseMulticast" {
+	}else if config.Policies[p.Type] == "BaseMulticast" {
 		//启动超时处理
 		ticker.Reset(tickerDuration)
 	}else{
 		ticker.Stop()
 	}
 
-	schedule.SetPolicy(config.PolicyType(p.Type))
+	schedule.SetPolicy(config.Policies[p.Type])
 	config.BlockSize = p.NumOfMB * config.Megabyte
 	config.RSBlockSize = p.NumOfMB * config.Megabyte * config.W
 
@@ -62,7 +62,7 @@ func setPolicy(conn net.Conn)  {
 	config.InitBufferPool()
 
 	log.Printf("收到来自 %s 的命令，设置当前算法设置为%s, 当前blockSize=%vMB.\n",
-		common.GetConnIP(conn), config.CurPolicyStr[p.Type], config.BlockSize/config.Megabyte)
+		common.GetConnIP(conn), config.Policies[p.Type], config.BlockSize/config.Megabyte)
 
 }
 
@@ -105,12 +105,12 @@ func main() {
 	//当发生意外退出时，安全释放所有资源
 	registerSafeExit()
 
-	//清除连接
-	defer func() {
-		for _, conn := range connections {
-			conn.Close()
-		}
-	}()
+	////清除连接
+	//defer func() {
+	//	for _, conn := range connections {
+	//		conn.Close()
+	//	}
+	//}()
 
 	for  {
 		select {
@@ -181,10 +181,10 @@ func listenCMD(listen net.Listener) {
 
 		log.Printf("收到来自 %s 的命令: 将 sid: %d, block: %d 的更新数据发送给 %v.\n", common.GetConnIP(conn), cmd.SID, cmd.BlockID, cmd.ToIPs)
 
-		connections = append(connections, conn)
-		if len(connections)%100 == 0 {
-			log.Printf("total number of connections: %v", len(connections))
-		}
+		//connections = append(connections, conn)
+		//if len(connections)%100 == 0 {
+		//	log.Printf("total number of connections: %v", len(connections))
+		//}
 	}
 }
 func listenACK(listen net.Listener) {
@@ -206,10 +206,10 @@ func listenACK(listen net.Listener) {
 		schedule.ReceivedAckCh <- ack
 		//config.AckBufferPool.Put(ack)
 
-		connections = append(connections, conn)
-		if len(connections)%100 == 0 {
-			log.Printf("total number of connections: %v", len(connections))
-		}
+		//connections = append(connections, conn)
+		//if len(connections)%100 == 0 {
+		//	log.Printf("total number of connections: %v", len(connections))
+		//}
 	}
 }
 func listenTD(listen net.Listener) {
@@ -233,10 +233,10 @@ func listenTD(listen net.Listener) {
 
 		log.Printf("收到来自 %s 的TD，sid: %d, blockID: %d.\n", common.GetConnIP(conn), td.SID, td.BlockID)
 
-		connections = append(connections, conn)
-		if len(connections)%100 == 0 {
-			log.Printf("total number of connections: %v", len(connections))
-		}
+		//connections = append(connections, conn)
+		//if len(connections)%100 == 0 {
+		//	log.Printf("total number of connections: %v", len(connections))
+		//}
 	}
 }
 func listenSettings(listen net.Listener) {
@@ -255,7 +255,7 @@ func listenSettings(listen net.Listener) {
 		}
 		setPolicy(conn)
 
-		connections = append(connections, conn)
+		//connections = append(connections, conn)
 	}
 }
 func registerSafeExit()  {
@@ -270,9 +270,9 @@ func registerSafeExit()  {
 }
 
 func clearAll() {
-	for _, conn := range connections {
-		conn.Close()
-	}
+	//for _, conn := range connections {
+	//	conn.Close()
+	//}
 	if curPolicy := schedule.GetCurPolicy(); curPolicy != nil {
 		curPolicy.Clear()
 	}

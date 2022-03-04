@@ -130,7 +130,7 @@ func requestBlockToMS(blockID int)  {
 		BlockID:  blockID,
 		StripeID: common.GetStripeIDFromBlockID(blockID),
 	}
-	common.SendData(request, config.MSIP, config.NodeReqListenPort, "metaInfo")
+	common.SendData(request, config.MSIP, config.NodeReqListenPort)
 
 	//sidCounter++
 }

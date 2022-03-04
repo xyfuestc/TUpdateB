@@ -23,10 +23,9 @@ var RSOutFilePath = "../request/"+traceName+"_"+strconv.Itoa(NumOfMB*config.W)+"
 var OutFilePath = XOROutFilePath
 var actualUpdatedBlocks = 0
 var beginTime time.Time
-var endTime time.Time
 var totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 var finished = false
-var connections []net.Conn
+//var connections []net.Conn
 //var receivedAckCh = make(chan config.ACK, 10)
 func checkFinish() {
 	//defer conn.Close()
@@ -40,7 +39,7 @@ func checkFinish() {
 		averageOneUpdateSpeed := float32(sumTime) / float32(actualUpdatedBlocks)
 		crossTraffic := schedule.GetCrossRackTraffic()
 		log.Printf("%s 总耗时: %s, 完成更新任务: %d, 实际处理任务数: %d, 单块更新时间: %0.4fs, 吞吐量: %0.2fMB/s，跨域流量为：%0.2fMB\n",
-			config.CurPolicyStr[curPolicy], sumTime, numOfReq, actualUpdatedBlocks, averageOneUpdateSpeed, throughput, crossTraffic)
+			config.Policies[curPolicy], sumTime, numOfReq, actualUpdatedBlocks, averageOneUpdateSpeed, throughput, crossTraffic)
 
 		schedule.GetCurPolicy().Clear()
 		clearRound()
@@ -105,7 +104,7 @@ func listenAndReceive(maxWorkers int)  {
 }
 func setCurrentTrace() {
 	//CAURS算法（必须保证CAURS在最后）
-	if config.CurPolicyStr[curPolicy] == "CAURS" {
+	if config.Policies[curPolicy] == "CAURS" {
 		OutFilePath = RSOutFilePath
 		getReqsFromTrace()
 	}
@@ -156,7 +155,7 @@ func notifyNodesQuit()  {
 		Type:      -1,
 	}
 	for _, ip := range config.NodeIPs{
-		common.SendData(p, ip, config.NodeSettingsListenPort, "")
+		common.SendData(p, ip, config.NodeSettingsListenPort)
 	}
 	log.Printf("等待各个节点清理完成...\n")
 	time.Sleep(3 * time.Second)
@@ -181,7 +180,7 @@ func settingCurrentPolicy(policyType int)  {
 	config.InitBufferPool()
 
 	for _, ip := range config.NodeIPs{
-		common.SendData(p, ip, config.NodeSettingsListenPort, "")
+		common.SendData(p, ip, config.NodeSettingsListenPort)
 	}
 	log.Printf("等待设置完成...\n")
 	time.Sleep(3 * time.Second)
@@ -191,11 +190,11 @@ func start()  {
 	setCurrentTrace() //专门针对CAURS改变数据源
 
 	beginTime = time.Now()
-	log.Printf(" 设置当前算法：[%s], 当前数据集为：%s, blockSize=%vMB.\n", config.CurPolicyStr[curPolicy], OutFilePath, NumOfMB)
+	log.Printf(" 设置当前算法：[%s], 当前数据集为：%s, blockSize=%vMB.\n", config.Policies[curPolicy], OutFilePath, NumOfMB)
 	settingCurrentPolicy(curPolicy)
 
-	log.Printf(" [%s]算法开始运行，总共block请求数量为：%d\n", config.CurPolicyStr[curPolicy], numOfReq)
-	schedule.SetPolicy(config.PolicyType(curPolicy))
+	log.Printf(" [%s]算法开始运行，总共block请求数量为：%d\n", config.Policies[curPolicy], numOfReq)
+	schedule.SetPolicy(config.Policies[curPolicy])
 	schedule.GetCurPolicy().HandleReq(totalReqs)
 }
 func msgSorter(receivedAckCh <-chan config.ACK)  {
@@ -212,11 +211,11 @@ func msgSorter(receivedAckCh <-chan config.ACK)  {
 func listenACK(listen net.Listener) {
 
 	//清除连接
-	defer func() {
-		for _, conn := range connections {
-			conn.Close()
-		}
-	}()
+	//defer func() {
+	//	for _, conn := range connections {
+	//		conn.Close()
+	//	}
+	//}()
 
 	for {
 		conn, e := listen.Accept()
@@ -233,10 +232,10 @@ func listenACK(listen net.Listener) {
 		ack := common.GetACK(conn)
 		schedule.ReceivedAckCh <- ack
 
-		connections = append(connections, conn)
-		if len(connections)%100 == 0 {
-			log.Printf("total number of connections: %v", len(connections))
-		}
+		//connections = append(connections, conn)
+		//if len(connections)%100 == 0 {
+		//	log.Printf("total number of connections: %v", len(connections))
+		//}
 	}
 }
 func registerSafeExit()  {
@@ -254,7 +253,7 @@ func registerSafeExit()  {
 func checkMulti(policy int) bool  {
 	UsingMulticast := false
 	if policy >= 0 && policy < config.NumOfAlgorithm {
-		UsingMulticast = strings.Contains(config.CurPolicyStr[policy], "Multicast")
+		UsingMulticast = strings.Contains(config.Policies[policy], "Multicast")
 	}
 	return UsingMulticast
 

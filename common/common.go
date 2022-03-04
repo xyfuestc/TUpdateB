@@ -33,17 +33,6 @@ func GetLocalIP() string {
 	}
 	return "IP获取失败"
 }
-func GetIDFromIP(nodeIP string) int {
-	for i,ip := range config.NodeIPs {
-		if ip == nodeIP {
-			return i
-		}
-	}
-	return -1
-	//return arrays.Contains(config.NodeIPs, nodeIP)
-}
-
-const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 const (
 	letterIdxBits = 6                    // 6 bits to represent a letter index
 	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
@@ -51,11 +40,13 @@ const (
 )
 
 /*******发送数据*********/
-func SendData(data interface{}, targetIP string, port string, retType string) interface{} {
+func SendData(data interface{}, targetIP string, port string) {
 
 	//1.与目标建立连接
 	addr := fmt.Sprintf("%s:%s", targetIP, port)
 	conn, err := net.Dial("tcp", addr)
+
+	defer conn.Close()
 
 	if err != nil {
 		if conn != nil {
@@ -72,10 +63,6 @@ func SendData(data interface{}, targetIP string, port string, retType string) in
 		}
 		log.Fatal("common: SendData gob encode error:  ", err, " target: ", addr)
 	}
-	//发送完成之后立刻关闭连接，表示不再发送数据.
-	conn.Close()
-
-	return nil
 }
 func GetStripeIDFromBlockID(blockID int) int {
 	return blockID/(config.K * config.W)
@@ -122,8 +109,6 @@ func GetRelatedParityIPs(blockID int) []string {
 
 func ReadBlockWithSize(blockID, size int) []byte  {
 	index := GetIndex(blockID)
-	//read data from disk
-	//buff := make([]byte, size)
 	buff := config.BlockBufferPool.Get().([]byte)
 
 	file, err := os.OpenFile(config.DataFilePath, os.O_RDONLY, 0)
@@ -149,12 +134,13 @@ func WriteBlockWithSize(blockID int, buff []byte, size int)  {
 	index := GetIndex(blockID)
 	file, err := os.OpenFile(config.DataFilePath, os.O_WRONLY, 0)
 
+	defer file.Close()
+
 	if err != nil {
 		log.Fatalln("打开文件出错: ", err)
 	}
-	defer file.Close()
+
 	_, err = file.WriteAt(buff[:size], int64(index * size))
-	//log.Printf("write block %d with size: %dB done .\n", blockID, size)
 }
 func GetNodeID(blockID int) int {
 	return blockID % (config.K * config.W) / config.W
@@ -163,10 +149,9 @@ func GetNodeIP(nodeID int) string {
 	return config.NodeIPs[nodeID]
 }
 func RandWriteBlockAndRetDelta(blockID, size int) []byte  {
-	//newDataStr := RandStringBytesMaskImpr(config.NumOfMB)
 	newDataStr := uniuri.NewLen(size)
 	newBuff := config.BlockBufferPool.Get().([]byte)
-	//newBuff := make([]byte, size)
+
 	for i := 0; i < size; i++ {
 		newBuff = append(newBuff, newDataStr[i])
 	}
@@ -195,15 +180,13 @@ func WriteDeltaBlock(blockID int, deltaBuff []byte)   {
 	oldBuff := ReadBlockWithSize(blockID, size)
 	/*****compute new delta data*******/
 	newBuff := config.BlockBufferPool.Get().([]byte)
-	//log.Printf("deltaBuff Size: %v, oldBuff size: %v, newBuff Size: %v\n",
-	//	len(deltaBuff), len(oldBuff), len(newBuff))
+
 	for i := 0; i < size; i++ {
 		//newBuff[i] =
 		newBuff = append(newBuff, deltaBuff[i] ^ oldBuff[i])
 	}
 	/*****write new data*******/
 	WriteBlockWithSize(blockID, newBuff, size)
-	//log.Printf("成功写入blockID: %d, size: %d!\n", blockID, size)
 
 	//释放空间
 	config.BlockBufferPool.Put(oldBuff)
@@ -212,6 +195,8 @@ func WriteDeltaBlock(blockID int, deltaBuff []byte)   {
 
 
 func GetCMD(conn net.Conn) config.CMD  {
+	defer conn.Close()
+
 	dec := gob.NewDecoder(conn)
 	var cmd config.CMD
 	//cmd := config.CMDBufferPool.Get().(*config.CMD)
@@ -223,19 +208,10 @@ func GetCMD(conn net.Conn) config.CMD  {
 		log.Fatal("GetCMD : Decode error: ", err)
 
 	}
-	conn.Close()
 	return cmd
 }
 func SendCMD(fromIP string, toIPs []string, sid, blockID int)  {
-	//cmd := &config.CMD{
-	//	SID: sid,
-	//	BlockID: blockID,
-	//	ToIPs: toIPs,
-	//	FromIP: fromIP,
-	//	SendSize: config.BlockSize,
-	//	Helpers: make([]int, 0, 1),
-	//	Matched: 0,
-	//}
+
 	cmd := config.CMDBufferPool.Get().(*config.CMD)
 	cmd.SID = sid
 	cmd.BlockID = blockID
@@ -245,7 +221,7 @@ func SendCMD(fromIP string, toIPs []string, sid, blockID int)  {
 	cmd.ToIPs = toIPs
 	cmd.FromIP = fromIP
 
-	SendData(cmd, fromIP, config.NodeCMDListenPort, "")
+	SendData(cmd, fromIP, config.NodeCMDListenPort)
 
 	config.CMDBufferPool.Put(cmd)
 }
@@ -261,16 +237,16 @@ func SendCMDWithHelpers(fromIP string, toIPs []string, sid, blockID int, helpers
 	cmd.ToIPs = toIPs
 	cmd.FromIP = fromIP
 
-	SendData(cmd, fromIP, config.NodeCMDListenPort, "")
+	SendData(cmd, fromIP, config.NodeCMDListenPort)
 
 	config.CMDBufferPool.Put(cmd)
 }
 
 func GetACK(conn net.Conn) config.ACK {
+	defer 	conn.Close()
 	dec := gob.NewDecoder(conn)
 
 	var ack config.ACK
-	//ack := config.AckBufferPool.Get().(*config.ACK)
 	err := dec.Decode(&ack)
 	if err != nil {
 		if conn != nil {
@@ -280,11 +256,10 @@ func GetACK(conn net.Conn) config.ACK {
 
 	}
 	log.Printf("received block %d's ack from %s, sid: %d\n", ack.BlockID, GetConnIP(conn), ack.SID)
-	conn.Close()
 	return ack
 }
 func GetTD(conn net.Conn) config.TD {
-	//defer conn.Close()
+	defer conn.Close()
 	dec := gob.NewDecoder(conn)
 	var td config.TD
 	//td := config.TDBufferPool.Get().(*config.TD)
@@ -295,12 +270,10 @@ func GetTD(conn net.Conn) config.TD {
 		}
 		log.Fatalln("GetTD from ", GetConnIP(conn), "result in decoding error: ", err, "blockID: ", td.BlockID, "sid: ", td.SID)
 	}
-	//接收数据之后立刻关闭连接，发端在发送完成之后立刻关闭，接收端在接收之后也应该立刻关闭，4次挥手结束
-	conn.Close()
 	return td
 }
 func GetPolicy(conn net.Conn) config.Policy  {
-	//defer conn.Close()
+	defer conn.Close()
 	dec := gob.NewDecoder(conn)
 	var p config.Policy
 	err := dec.Decode(&p)
@@ -310,7 +283,6 @@ func GetPolicy(conn net.Conn) config.Policy  {
 		}
 		log.Fatalln("GetPolicy from ", GetConnIP(conn), "result in decoding error: ", err)
 	}
-	conn.Close()
 	return p
 }
 func GetBlocksFromOneRequest(userRequest config.UserRequest) (int,int)  {

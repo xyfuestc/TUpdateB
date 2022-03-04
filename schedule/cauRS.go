@@ -38,7 +38,7 @@ func (p CAURS) HandleTD(td *config.TD) {
 	//校验节点本地数据更新
 	localID := arrays.ContainsString(config.NodeIPs, common.GetLocalIP())
 	if localID >= config.K {
-		go common.WriteDeltaBlock(td.BlockID, td.Buff)
+		common.WriteDeltaBlock(td.BlockID, td.Buff)
 	}
 
 	//返回ack
@@ -69,7 +69,7 @@ func (p CAURS) HandleTD(td *config.TD) {
 				ToIP:    toIP,
 				SID:     cmd.SID,
 			}
-			common.SendData(td, toIP, config.NodeTDListenPort, "")
+			common.SendData(td, toIP, config.NodeTDListenPort)
 		}
 	}
 }
@@ -222,7 +222,7 @@ func dataUpdateRS(rackID int, stripe []int)  {
 			cmd.Matched = 0
 			cmd.SendSize = config.RSBlockSize
 
-			common.SendData(cmd, common.GetNodeIP(rootP), config.NodeCMDListenPort, "")
+			common.SendData(cmd, common.GetNodeIP(rootP), config.NodeCMDListenPort)
 			config.CMDBufferPool.Put(cmd)
 
 			sid++
@@ -266,7 +266,7 @@ func dataUpdateRS(rackID int, stripe []int)  {
 			cmd.Matched = 0
 			cmd.SendSize = config.RSBlockSize
 
-			common.SendData(cmd, common.GetNodeIP(nodeID), config.NodeCMDListenPort, "")
+			common.SendData(cmd, common.GetNodeIP(nodeID), config.NodeCMDListenPort)
 
 			config.CMDBufferPool.Put(cmd)
 
@@ -296,7 +296,7 @@ func (p CAURS) HandleCMD(cmd *config.CMD)  {
 			td.FromIP = cmd.FromIP
 			td.ToIP = toIP
 			td.SID = cmd.SID
-			common.SendData(td, toIP, config.NodeTDListenPort, "")
+			common.SendData(td, toIP, config.NodeTDListenPort)
 			config.TDBufferPool.Put(td)
 		}
 

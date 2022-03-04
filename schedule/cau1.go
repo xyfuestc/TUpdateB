@@ -32,7 +32,7 @@ func (p CAU1) HandleTD(td *config.TD) {
 	//localID := common.GetIDFromIP(common.GetLocalIP())
 	if localID >= config.K {
 		log.Printf("cau1 localID:%d\n", localID)
-		go common.WriteDeltaBlock(td.BlockID, td.Buff)
+		common.WriteDeltaBlock(td.BlockID, td.Buff)
 	}
 	//返回ack
 	ack := &config.ACK{
@@ -286,7 +286,7 @@ func (p CAU1) HandleCMD(cmd *config.CMD)  {
 			td.SendSize = cmd.SendSize
 			//sendSizeRate := float32(td.SendSize*1.0) / float32(config.BlockSize) * 100.0
 			//log.Printf("发送 block:%d sendSize:%.2f%% 的数据到%s.\n", td.BlockID, sendSizeRate, toIP)
-			common.SendData(td, toIP, config.NodeTDListenPort, "")
+			common.SendData(td, toIP, config.NodeTDListenPort)
 
 			config.TDBufferPool.Put(td)
 		}

@@ -135,11 +135,7 @@ func (p BaseMulticast) HandleReq(reqs []*config.ReqData)  {
 	_ = reqs
 
 	for len(totalReqs) > 0 {
-		//过滤blocks
-		////findDistinctReqs()
-		//log.Printf("第%d轮 BaseMulticast：处理%d个block\n", round, len(curDistinctReq))
-		////执行base
-		//p.baseMulti(curDistinctReq)
+
 		batchReqs := getBatchReqs()
 		actualBlocks += len(batchReqs)
 		log.Printf("第%d轮 BaseMulticast：处理%d个block\n", round, len(batchReqs))
@@ -184,9 +180,8 @@ func (p BaseMulticast) handleOneBlock(reqData config.ReqData)  {
 		Helpers: make([]int, 0, 1),
 		Matched: 0,
 		SendSize: rangeRight - rangeLeft,
-		//SendSize: config.BlockSize,
 	}
-	common.SendData(cmd, fromIP, config.NodeCMDListenPort, "")
+	common.SendData(cmd, fromIP, config.NodeCMDListenPort)
 
 	//跨域流量统计
 	totalCrossRackTraffic += len(toIPs) * (rangeRight - rangeLeft)

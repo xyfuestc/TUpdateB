@@ -7,11 +7,11 @@ import (
 	"sort"
 )
 
-type TUpdate1 struct {
+type TUpdateBatch struct {
 
 }
 
-func (p TUpdate1) Init()  {
+func (p TUpdateBatch) Init()  {
 	totalCrossRackTraffic = 0
 	InitNetworkDistance()
 	ackMaps = &ACKMap{
@@ -27,7 +27,7 @@ func (p TUpdate1) Init()  {
 	round = 0
 }
 
-func (p TUpdate1) HandleReq(reqs []*config.ReqData)  {
+func (p TUpdateBatch) HandleReq(reqs []*config.ReqData)  {
 	totalReqs = reqs
 	log.Printf("一共接收到%d个请求...\n", len(totalReqs))
 
@@ -35,11 +35,11 @@ func (p TUpdate1) HandleReq(reqs []*config.ReqData)  {
 		//过滤blocks
 		curMatchBlocks := findDistinctBlocks()
 		actualBlocks += len(curDistinctBlocks)
-		//log.Printf("第%d轮 TUpdate1：处理%d个block\n", round, len(curDistinctBlocks))
-		log.Printf("第%d轮 TUpdate1：获取%d个请求，实际处理%d个block\n", round, len(curMatchBlocks), len(curDistinctBlocks))
+		//log.Printf("第%d轮 TUpdateBatch：处理%d个block\n", round, len(curDistinctBlocks))
+		log.Printf("第%d轮 TUpdateBatch：获取%d个请求，实际处理%d个block\n", round, len(curMatchBlocks), len(curDistinctBlocks))
 
 		//执行basex
-		p.TUpdate1(curDistinctBlocks)
+		p.TUpdateBatch(curDistinctBlocks)
 
 		for IsRunning {
 
@@ -51,7 +51,7 @@ func (p TUpdate1) HandleReq(reqs []*config.ReqData)  {
 	}
 }
 
-func (p TUpdate1) TUpdate1(distinctBlocks []int)  {
+func (p TUpdateBatch) TUpdateBatch(distinctBlocks []int)  {
 	for _, _ = range distinctBlocks {
 		ackMaps.pushACK(sid)
 		sid++
@@ -67,7 +67,7 @@ func (p TUpdate1) TUpdate1(distinctBlocks []int)  {
 	}
 }
 
-func (p TUpdate1) handleOneBlock(reqData * config.ReqData)  {
+func (p TUpdateBatch) handleOneBlock(reqData * config.ReqData)  {
 	tasks := GetBalanceTransmitTasks(reqData)
 	//tasks := GetTransmitTasks(reqData)
 	log.Printf("tasks: %v\n", tasks)
@@ -84,9 +84,9 @@ func (p TUpdate1) handleOneBlock(reqData * config.ReqData)  {
 	}
 }
 
-func (p TUpdate1) HandleTD(td *config.TD)  {
+func (p TUpdateBatch) HandleTD(td *config.TD)  {
 	//本地数据更新
-	go common.WriteDeltaBlock(td.BlockID, td.Buff)
+	common.WriteDeltaBlock(td.BlockID, td.Buff)
 
 	//有等待任务
 	cmds := CMDList.popRunnableCMDsWithSID(td.SID)
@@ -120,7 +120,7 @@ func (p TUpdate1) HandleTD(td *config.TD)  {
 				SendTD.SendSize = cmd.SendSize
 				sendSizeRate := float32(SendTD.SendSize * 1.0) / float32(config.BlockSize) * 100.0
 				log.Printf("发送 block:%d sendSize: %.2f%% -> %s.\n", SendTD.BlockID, sendSizeRate, toIP)
-				common.SendData(SendTD, toIP, config.NodeTDListenPort, "")
+				common.SendData(SendTD, toIP, config.NodeTDListenPort)
 
 				config.TDBufferPool.Put(SendTD)
 			}
@@ -156,7 +156,7 @@ func  GetBalanceTransmitTasks(reqData *config.ReqData) []Task {
 	})
 	return taskGroup
 }
-func (p TUpdate1) HandleCMD(cmd *config.CMD)  {
+func (p TUpdateBatch) HandleCMD(cmd *config.CMD)  {
 	if IsCMDDataExist(cmd) {
 		//添加ack监听
 		for _, _ = range cmd.ToIPs {
@@ -179,7 +179,7 @@ func (p TUpdate1) HandleCMD(cmd *config.CMD)  {
 			td.FromIP = cmd.FromIP
 			td.ToIP = toIP
 			td.SID = cmd.SID
-			common.SendData(td, toIP, config.NodeTDListenPort, "")
+			common.SendData(td, toIP, config.NodeTDListenPort)
 
 			config.TDBufferPool.Put(td)
 		}
@@ -191,7 +191,7 @@ func (p TUpdate1) HandleCMD(cmd *config.CMD)  {
 		CMDList.pushCMD(cmd)
 	}
 }
-func (p TUpdate1) HandleACK(ack *config.ACK)  {
+func (p TUpdateBatch) HandleACK(ack *config.ACK)  {
 	ackMaps.popACK(ack.SID)
 	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
 		//ms不需要反馈ack
@@ -203,7 +203,7 @@ func (p TUpdate1) HandleACK(ack *config.ACK)  {
 
 	}
 }
-func (p TUpdate1) Clear()  {
+func (p TUpdateBatch) Clear()  {
 	IsRunning = true
 	curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
 	curDistinctReq = make([]*config.ReqData, 0, config.MaxBatchSize)
@@ -213,12 +213,12 @@ func (p TUpdate1) Clear()  {
 	}
 	NodeMatrix = make(config.Matrix, (config.N)*(config.N))
 }
-func (p TUpdate1) RecordSIDAndReceiverIP(sid int, ip string)()  {
+func (p TUpdateBatch) RecordSIDAndReceiverIP(sid int, ip string)()  {
 	ackIPMaps.recordIP(sid, ip)
 }
-func (p TUpdate1) IsFinished() bool {
+func (p TUpdateBatch) IsFinished() bool {
 	return len(totalReqs) == 0 && ackMaps.isEmpty()
 }
-func (p TUpdate1) GetActualBlocks() int {
+func (p TUpdateBatch) GetActualBlocks() int {
 	return actualBlocks
 }
