@@ -46,8 +46,6 @@ func SendData(data interface{}, targetIP string, port string) {
 	addr := fmt.Sprintf("%s:%s", targetIP, port)
 	conn, err := net.Dial("tcp", addr)
 
-	defer conn.Close()
-
 	if err != nil {
 		if conn != nil {
 			conn.Close()
@@ -63,6 +61,7 @@ func SendData(data interface{}, targetIP string, port string) {
 		}
 		log.Fatal("common: SendData gob encode error:  ", err, " target: ", addr)
 	}
+	conn.Close()
 }
 func GetStripeIDFromBlockID(blockID int) int {
 	return blockID/(config.K * config.W)
