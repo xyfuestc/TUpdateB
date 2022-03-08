@@ -172,8 +172,10 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 
 			for _, toIP := range cmd.ToIPs {
 
-				SendTD := config.TDBufferPool.Get().(*config.TD)
+				var SendTD config.TD
+				//SendTD := config.TDBufferPool.Get().(*config.TD)
 				SendTD.BlockID = cmd.BlockID
+				//SendTD.Buff = make([]byte, cmd.SendSize)
 				SendTD.Buff = td.Buff[:cmd.SendSize]
 				SendTD.FromIP = cmd.FromIP
 				SendTD.ToIP = toIP
@@ -183,7 +185,7 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 				log.Printf("发送 block:%d sendSize: %.2f%% -> %s.\n", SendTD.BlockID, sendSizeRate, toIP)
 				common.SendData(SendTD, toIP, config.NodeTDListenPort)
 
-				config.TDBufferPool.Put(SendTD)
+				//config.TDBufferPool.Put(SendTD)
 
 			}
 			elapsed := time.Since(begin)

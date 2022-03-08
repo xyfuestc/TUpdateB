@@ -174,6 +174,11 @@ func BenchmarkPlusConcat(b *testing.B)    { benchmark(b, plusConcat) }
 func BenchmarkBuilderConcat(b *testing.B)    { benchmark(b, builderConcat) }
 
 func TestSendingQuitSignal(t *testing.T) {
+
+	var SendTD config.TD
+	config.InitBufferPool()
+	SendTD.Buff = common.ReadBlockWithSize(0, config.BlockSize)
+	fmt.Println(SendTD)
 	p := &config.Policy{
 		Type: -1,
 	}
