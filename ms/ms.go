@@ -12,10 +12,12 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 var numOfReq = 0
-var curPolicy = 6
+//var curPolicy = 6
+var curPolicy int32 = 0
 var NumOfMB = 4 //以这个为准，会同步到各个节点
 var traceName = "hm_1"
 var XOROutFilePath = "../request/"+traceName+"_"+strconv.Itoa(NumOfMB)+"M.csv.txt"
@@ -25,13 +27,23 @@ var actualUpdatedBlocks = 0
 var beginTime time.Time
 var totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 var finished = false
+var roundFinished int32 = 0  // 1-本轮结束 ； 0-本轮未结束
 //var connections []net.Conn
 //var receivedAckCh = make(chan config.ACK, 10)
+//var wg sync.WaitGroup
 func checkFinish() {
 	//defer conn.Close()
 	//ack := common.GetACK(conn)
 	//schedule.GetCurPolicy().HandleACK(&ack)
-	if schedule.GetCurPolicy().IsFinished() && curPolicy < config.NumOfAlgorithm {
+	isRoundFinished := atomic.LoadInt32(&roundFinished)
+	curPolicyVal := atomic.LoadInt32(&curPolicy)
+
+	if isRoundFinished == 0 && schedule.GetCurPolicy().IsFinished() && curPolicyVal < config.NumOfAlgorithm {
+
+		//本轮结束
+		atomic.StoreInt32(&roundFinished, 1)
+		//清空ACK
+		schedule.ClearChannels()
 
 		sumTime := time.Since(beginTime)
 		throughput :=  float32(numOfReq) * ( float32(config.BlockSize) / config.Megabyte) / float32(sumTime)
@@ -43,6 +55,10 @@ func checkFinish() {
 
 		schedule.GetCurPolicy().Clear()
 		clearRound()
+
+
+
+		//wg.Done()
 	}
 }
 /*所有算法跑完，清空操作*/
@@ -74,16 +90,21 @@ func main() {
 	listenAndReceive(config.NumOfWorkers)
 
 	getReqsFromTrace()
-	for curPolicy < config.NumOfAlgorithm {
+	curPolicyVal := atomic.LoadInt32(&curPolicy)
+	for curPolicyVal < config.NumOfAlgorithm {
 		start()
 		//保证主线程运行
 		for  {
-			if finished {
-				finished = false
+			isRoundFinished := atomic.LoadInt32(&roundFinished)
+			if isRoundFinished == 1 {
+				//进入下一轮
+				atomic.AddInt32(&curPolicy, 1)
 				break
 			}
 		}
-		curPolicy++
+		curPolicyVal = atomic.LoadInt32(&curPolicy)
+		//curPolicy++
+
 	}
 	//清空
 	clearAll()
@@ -97,9 +118,10 @@ func listenAndReceive(maxWorkers int)  {
 		log.Fatalln("listening ack err in listenAndReceive: ", err)
 	}
 
+	go listenACK(l2)
+
 	for i := 0; i < maxWorkers; i++ {
 		go msgSorter(schedule.ReceivedAckCh)
-		go listenACK(l2)
 	}
 }
 func setCurrentTrace() {
@@ -162,7 +184,7 @@ func notifyNodesQuit()  {
 	log.Printf("退出\n")
 
 }
-func settingCurrentPolicy(policyType int)  {
+func settingCurrentPolicy(policyType int32)  {
 
 	UsingMulticast := checkMulti(policyType)
 	p := &config.Policy{
@@ -187,11 +209,15 @@ func settingCurrentPolicy(policyType int)  {
 }
 
 func start()  {
+
 	setCurrentTrace() //专门针对CAURS改变数据源
 
 	beginTime = time.Now()
 	log.Printf(" 设置当前算法：[%s], 当前数据集为：%s, blockSize=%vMB.\n", config.Policies[curPolicy], OutFilePath, NumOfMB)
 	settingCurrentPolicy(curPolicy)
+
+	//重置为本轮未结束：0
+	atomic.StoreInt32(&roundFinished, 0)
 
 	log.Printf(" [%s]算法开始运行，总共block请求数量为：%d\n", config.Policies[curPolicy], numOfReq)
 	schedule.SetPolicy(config.Policies[curPolicy])
@@ -250,7 +276,7 @@ func registerSafeExit()  {
 		}
 	}()
 }
-func checkMulti(policy int) bool  {
+func checkMulti(policy int32) bool  {
 	UsingMulticast := false
 	if policy >= 0 && policy < config.NumOfAlgorithm {
 		UsingMulticast = strings.Contains(config.Policies[policy], "Multicast")

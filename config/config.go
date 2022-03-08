@@ -24,7 +24,7 @@ const MaxBaseBatchSize int = 100
 const MaxBlockSize int = 1000
 const TestFileSize = 10 * 1024 * Megabyte
 var MaxBlockIndex = TestFileSize / BlockSize - 1
-const NumOfAlgorithm int = 10 //采用3种算法执行相同任务
+const NumOfAlgorithm int32 = 10 //采用3种算法执行相同任务
 //var Policies = []string{"Base", "BaseMulticast", "BaseMulticastBatch", "TUpdate",
 //						"TUpdateBatch", "TUpdateDeltaBatch", "TUpdateDeltaBatchMulti",
 //						"DXR_DU", "DXR_DU_Multi", "CAU", "CAU1", "CAURS" }
@@ -75,7 +75,7 @@ type UserRequest struct {
 }
 
 type Policy struct {
-	Type      int
+	Type      int32
 	NumOfMB   int
 	TraceName string
 	Multicast bool

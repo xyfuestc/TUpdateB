@@ -156,13 +156,14 @@ func listenAndReceive(maxWorkers int) {
 		return
 	}
 
+	go listenCMD(l1)
+	go listenACK(l2)
+	go listenTD(l3)
+	go listenSettings(l4)
+	go common.Multicast(schedule.MulticastSendMTUCh)
+
 	for i := 0; i < maxWorkers; i++ {
 		go msgSorter(schedule.ReceivedAckCh, schedule.ReceivedTDCh, schedule.ReceivedCMDCh)
-		go listenCMD(l1)
-		go listenACK(l2)
-		go listenTD(l3)
-		go listenSettings(l4)
-		go common.Multicast(schedule.MulticastSendMTUCh)
 	}
 }
 func listenCMD(listen net.Listener) {

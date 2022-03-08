@@ -94,12 +94,14 @@ func listenAndReceive(workers int) {
 		log.Printf("listening settings failed, err:%v\n", err)
 		return
 	}
+
+	go listenCMD(l2)
+	go listenACK(l3)
+	go listenSettings(l4)
+	go listenTD(l1)
+	go common.ListenMulticast(schedule.MulticastReceiveMTUCh)
+
 	for i := 0; i < workers; i++ {
-		go listenCMD(l2)
-		go listenACK(l3)
-		go listenSettings(l4)
-		go listenTD(l1)
-		go common.ListenMulticast(schedule.MulticastReceiveMTUCh)
 		//go common.HandlingACK(schedule.MulticastReceiveAckCh)
 		go msgSorter(schedule.ReceivedAckCh, schedule.ReceivedTDCh, schedule.ReceivedCMDCh, schedule.MulticastReceiveMTUCh)
 	}

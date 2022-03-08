@@ -132,7 +132,6 @@ func (p BaseMulticast) Init()  {
 
 func (p BaseMulticast) HandleReq(reqs []*config.ReqData)  {
 	totalReqs = reqs
-	_ = reqs
 
 	for len(totalReqs) > 0 {
 
@@ -191,7 +190,18 @@ func (p BaseMulticast) handleOneBlock(reqData config.ReqData)  {
 func (p BaseMulticast) RecordSIDAndReceiverIP(sid int, ip string)  {
 	ackIPMaps.recordIP(sid, ip)
 }
+func ClearChannels()  {
+	//清空ACK
+	select {
+	case <-MulticastReceiveAckCh:
+	case <-MulticastReceiveMTUCh:
+	case <-MulticastSendMTUCh:
+	default:
+	}
+}
+
 func (p BaseMulticast) Clear()  {
+
 	sid = 0
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
@@ -199,6 +209,9 @@ func (p BaseMulticast) Clear()  {
 	ackIPMaps = &ACKIPMap{
 		ACKReceiverIPs: map[int]string{},
 	}
+
+	ClearChannels()
+
 
 	IsRunning = true
 	//清空SentMsgLog

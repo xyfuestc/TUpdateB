@@ -138,6 +138,8 @@ func (p BaseMulticastBatch) Clear()  {
 		ACKReceiverIPs: map[int]string{},
 	}
 
+	ClearChannels()
+
 	IsRunning = true
 	//清空SentMsgLog
 	SentMsgLog.Init()
