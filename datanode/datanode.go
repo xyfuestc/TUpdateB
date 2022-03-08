@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 )
 //var connections []net.Conn
@@ -47,7 +48,7 @@ func setPolicy(conn net.Conn)  {
 	if p.Type == -1 {
 		finish()
 		return
-	}else if config.Policies[p.Type] == "BaseMulticast" {
+	}else if strings.Contains(config.Policies[p.Type], "Multicast") {
 		//启动超时处理
 		ticker.Reset(tickerDuration)
 	}else{
