@@ -392,13 +392,6 @@ func easyjson6615c02eDecodeECConfig3(in *jlexer.Lexer, out *TD) {
 			out.ToIP = string(in.String())
 		case "FromIP":
 			out.FromIP = string(in.String())
-		case "Buff":
-			if in.IsNull() {
-				in.Skip()
-				out.Buff = nil
-			} else {
-				out.Buff = in.Bytes()
-			}
 		case "MultiTargetIPs":
 			if in.IsNull() {
 				in.Skip()
@@ -415,12 +408,19 @@ func easyjson6615c02eDecodeECConfig3(in *jlexer.Lexer, out *TD) {
 					out.MultiTargetIPs = (out.MultiTargetIPs)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v8 string
-					v8 = string(in.String())
-					out.MultiTargetIPs = append(out.MultiTargetIPs, v8)
+					var v7 string
+					v7 = string(in.String())
+					out.MultiTargetIPs = append(out.MultiTargetIPs, v7)
 					in.WantComma()
 				}
 				in.Delim(']')
+			}
+		case "Buff":
+			if in.IsNull() {
+				in.Skip()
+				out.Buff = nil
+			} else {
+				out.Buff = in.Bytes()
 			}
 		default:
 			in.SkipRecursive()
@@ -462,25 +462,25 @@ func easyjson6615c02eEncodeECConfig3(out *jwriter.Writer, in TD) {
 		out.String(string(in.FromIP))
 	}
 	{
-		const prefix string = ",\"Buff\":"
-		out.RawString(prefix)
-		out.Base64Bytes(in.Buff)
-	}
-	{
 		const prefix string = ",\"MultiTargetIPs\":"
 		out.RawString(prefix)
 		if in.MultiTargetIPs == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v11, v12 := range in.MultiTargetIPs {
-				if v11 > 0 {
+			for v9, v10 := range in.MultiTargetIPs {
+				if v9 > 0 {
 					out.RawByte(',')
 				}
-				out.String(string(v12))
+				out.String(string(v10))
 			}
 			out.RawByte(']')
 		}
+	}
+	{
+		const prefix string = ",\"Buff\":"
+		out.RawString(prefix)
+		out.Base64Bytes(in.Buff)
 	}
 	out.RawByte('}')
 }
@@ -883,7 +883,7 @@ func easyjson6615c02eDecodeECConfig7(in *jlexer.Lexer, out *Policy) {
 		}
 		switch key {
 		case "Type":
-			out.Type = int(in.Int())
+			out.Type = int32(in.Int32())
 		case "NumOfMB":
 			out.NumOfMB = int(in.Int())
 		case "TraceName":
@@ -907,7 +907,7 @@ func easyjson6615c02eEncodeECConfig7(out *jwriter.Writer, in Policy) {
 	{
 		const prefix string = ",\"Type\":"
 		out.RawString(prefix[1:])
-		out.Int(int(in.Type))
+		out.Int32(int32(in.Type))
 	}
 	{
 		const prefix string = ",\"NumOfMB\":"
@@ -1122,15 +1122,16 @@ func easyjson6615c02eDecodeECConfig9(in *jlexer.Lexer, out *MTU) {
 			out.BlockID = int(in.Int())
 		case "index":
 			out.Index = int(in.Int())
-		case "data":
-			if in.IsNull() {
-				in.Skip()
-				out.Data = nil
-			} else {
-				out.Data = in.Bytes()
-			}
 		case "from_ip":
 			out.FromIP = string(in.String())
+		case "is_fragment":
+			out.IsFragment = bool(in.Bool())
+		case "fragment_id":
+			out.FragmentID = int(in.Int())
+		case "fragment_count":
+			out.FragmentCount = int(in.Int())
+		case "send_size":
+			out.SendSize = int(in.Int())
 		case "multi_target_ips":
 			if in.IsNull() {
 				in.Skip()
@@ -1147,21 +1148,20 @@ func easyjson6615c02eDecodeECConfig9(in *jlexer.Lexer, out *MTU) {
 					out.MultiTargetIPs = (out.MultiTargetIPs)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v25 string
-					v25 = string(in.String())
-					out.MultiTargetIPs = append(out.MultiTargetIPs, v25)
+					var v24 string
+					v24 = string(in.String())
+					out.MultiTargetIPs = append(out.MultiTargetIPs, v24)
 					in.WantComma()
 				}
 				in.Delim(']')
 			}
-		case "is_fragment":
-			out.IsFragment = bool(in.Bool())
-		case "fragment_id":
-			out.FragmentID = int(in.Int())
-		case "fragment_count":
-			out.FragmentCount = int(in.Int())
-		case "send_size":
-			out.SendSize = int(in.Int())
+		case "data":
+			if in.IsNull() {
+				in.Skip()
+				out.Data = nil
+			} else {
+				out.Data = in.Bytes()
+			}
 		default:
 			in.SkipRecursive()
 		}
@@ -1202,16 +1202,6 @@ func easyjson6615c02eEncodeECConfig9(out *jwriter.Writer, in MTU) {
 		}
 		out.Int(int(in.Index))
 	}
-	if len(in.Data) != 0 {
-		const prefix string = ",\"data\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
-		out.Base64Bytes(in.Data)
-	}
 	if in.FromIP != "" {
 		const prefix string = ",\"from_ip\":"
 		if first {
@@ -1221,25 +1211,6 @@ func easyjson6615c02eEncodeECConfig9(out *jwriter.Writer, in MTU) {
 			out.RawString(prefix)
 		}
 		out.String(string(in.FromIP))
-	}
-	if len(in.MultiTargetIPs) != 0 {
-		const prefix string = ",\"multi_target_ips\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
-		{
-			out.RawByte('[')
-			for v28, v29 := range in.MultiTargetIPs {
-				if v28 > 0 {
-					out.RawByte(',')
-				}
-				out.String(string(v29))
-			}
-			out.RawByte(']')
-		}
 	}
 	if in.IsFragment {
 		const prefix string = ",\"is_fragment\":"
@@ -1280,6 +1251,35 @@ func easyjson6615c02eEncodeECConfig9(out *jwriter.Writer, in MTU) {
 			out.RawString(prefix)
 		}
 		out.Int(int(in.SendSize))
+	}
+	if len(in.MultiTargetIPs) != 0 {
+		const prefix string = ",\"multi_target_ips\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		{
+			out.RawByte('[')
+			for v26, v27 := range in.MultiTargetIPs {
+				if v26 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v27))
+			}
+			out.RawByte(']')
+		}
+	}
+	if len(in.Data) != 0 {
+		const prefix string = ",\"data\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Base64Bytes(in.Data)
 	}
 	out.RawByte('}')
 }
@@ -1511,6 +1511,8 @@ func easyjson6615c02eDecodeECConfig11(in *jlexer.Lexer, out *ACK) {
 			out.AckID = int(in.Int())
 		case "BlockID":
 			out.BlockID = int(in.Int())
+		case "FragmentID":
+			out.FragmentID = int(in.Int())
 		default:
 			in.SkipRecursive()
 		}
@@ -1539,6 +1541,11 @@ func easyjson6615c02eEncodeECConfig11(out *jwriter.Writer, in ACK) {
 		const prefix string = ",\"BlockID\":"
 		out.RawString(prefix)
 		out.Int(int(in.BlockID))
+	}
+	{
+		const prefix string = ",\"FragmentID\":"
+		out.RawString(prefix)
+		out.Int(int(in.FragmentID))
 	}
 	out.RawByte('}')
 }
