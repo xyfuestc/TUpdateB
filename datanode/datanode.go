@@ -68,7 +68,7 @@ func setPolicy(conn net.Conn)  {
 }
 
 func finish() {
-	done <- true
+	//done <- true
 	ticker.Stop()
 	clearAll()
 
