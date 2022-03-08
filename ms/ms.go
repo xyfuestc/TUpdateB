@@ -28,6 +28,7 @@ var beginTime time.Time
 var totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 var finished = false
 var roundFinished int32 = 0  // 1-本轮结束 ； 0-本轮未结束
+var curNumOfMB = 0
 //var connections []net.Conn
 //var receivedAckCh = make(chan config.ACK, 10)
 //var wg sync.WaitGroup
@@ -46,11 +47,11 @@ func checkFinish() {
 		schedule.ClearChannels()
 
 		sumTime := time.Since(beginTime)
-		throughput :=  float32(numOfReq) * ( float32(config.BlockSize) / config.Megabyte) / float32(sumTime)
+		throughput :=  float64(numOfReq) * float64(curNumOfMB) / float64(sumTime/time.Second)
 		actualUpdatedBlocks = schedule.GetCurPolicy().GetActualBlocks()
-		averageOneUpdateSpeed := float32(sumTime) / float32(actualUpdatedBlocks)
+		averageOneUpdateSpeed := float64(sumTime/time.Millisecond) / float64(actualUpdatedBlocks) / 1000
 		crossTraffic := schedule.GetCrossRackTraffic()
-		log.Printf("%s 总耗时: %s, 完成更新任务: %d, 实际处理任务数: %d, 单块更新时间: %0.4fs, 吞吐量: %0.2fMB/s，跨域流量为：%0.2fMB\n",
+		log.Printf("%s 总耗时: %s, 完成更新任务: %d, 实际处理任务数: %d, 单块更新时间: %0.2fs, 吞吐量: %0.2fMB/s，跨域流量为：%0.2fMB\n",
 			config.Policies[curPolicyVal], sumTime, numOfReq, actualUpdatedBlocks, averageOneUpdateSpeed, throughput, crossTraffic)
 
 		schedule.GetCurPolicy().Clear()
@@ -206,6 +207,12 @@ func settingCurrentPolicy(policyType int32)  {
 	}
 	log.Printf("等待设置完成...\n")
 	time.Sleep(3 * time.Second)
+
+	if config.Policies[curPolicy] == "CAURS" {
+		curNumOfMB = config.W * NumOfMB
+	}else{
+		curNumOfMB = NumOfMB
+	}
 }
 
 func start()  {
