@@ -12,6 +12,11 @@ type BaseMulticastBatch struct {
 }
 
 func (p BaseMulticastBatch) HandleCMD(cmd *config.CMD) {
+	//重复SID，不处理
+	if _, ok := ackMaps.getACK(cmd.SID); ok {
+		return
+	}
+
 	//利用多播将数据发出
 	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID, cmd.SendSize)
 
