@@ -32,11 +32,11 @@ func (p TUpdateDeltaBatch) HandleReq(reqs []*config.ReqData)  {
 
 	for len(totalReqs) > 0 {
 		//过滤blocks
-		findDistinctReqs()
+		lenOfBatch := findDistinctReqs()
 		actualBlocks += len(curDistinctReq)
-		log.Printf("第%d轮 TUpdateDeltaBatch：获取%d个请求，实际处理%d个block\n", round, len(curDistinctReq), len(curDistinctBlocks))
+		log.Printf("第%d轮 TUpdateDeltaBatch：获取%d个请求，实际处理%d个block\n", round, lenOfBatch, len(curDistinctReq))
 
-		//执行basex
+		//执行base
 		p.TUpdateDeltaBatch(curDistinctReq)
 
 		for IsRunning {
@@ -56,6 +56,7 @@ func (p TUpdateDeltaBatch) TUpdateDeltaBatch(reqs []*config.ReqData)   {
 	}
 	sid = 0
 	for _, req := range reqs {
+		req.SID = sid
 		p.handleOneBlock(req)
 		sid++
 	}

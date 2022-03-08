@@ -57,10 +57,11 @@ func (p DXR_DU_Multi) HandleReq(reqs []*config.ReqData)  {
 
 	for len(totalReqs) > 0 {
 		//过滤blocks
-		findDistinctReqs()
+		lenOfBatch := findDistinctReqs()
 		//执行cau
 		actualBlocks += len(curDistinctReq)
-		log.Printf("第%d轮 TAR-CAU：处理%d个block，剩余%v个block待处理。\n", round, len(curDistinctReq), len(totalReqs))
+		//log.Printf("第%d轮 TAR-CAU：处理%d个block，剩余%v个block待处理。\n", round, len(curDistinctReq), len(totalReqs))
+		log.Printf("第%d轮 DXR-DU-Multi：获取%d个请求，实际处理%d个block，剩余%v个block待处理。\n", round, lenOfBatch, len(curDistinctReq), len(totalReqs))
 
 		dxr_du_multi()
 

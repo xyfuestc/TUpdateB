@@ -123,10 +123,10 @@ func (p DXR_DU) HandleReq(reqs []*config.ReqData)  {
 
 	for len(totalReqs) > 0 {
 		//过滤blocks
-		findDistinctReqs()
+		lenOfBatch := findDistinctReqs()
 		//执行cau
 		actualBlocks += len(curDistinctReq)
-		log.Printf("第%d轮 TAR-CAU：处理%d个block，剩余%v个block待处理。\n", round, len(curDistinctReq), len(totalReqs))
+		log.Printf("第%d轮 DXR-DU：获取%d个请求，实际处理%d个block，剩余%v个block待处理。\n", round, lenOfBatch, len(curDistinctReq), len(totalReqs))
 
 		dxr_du()
 
@@ -156,19 +156,18 @@ func turnMatchReqsToDistinctReqs(curMatchReqs []*config.ReqData)   {
 		}
 	}
 }
-func findDistinctReqs() {
-	//获取curDistinctBlocks
+func findDistinctReqs() int {
 	curMatchReqs := make([]*config.ReqData, 0, config.MaxBatchSize)
 	if len(totalReqs) > config.MaxBatchSize {
 		curMatchReqs = totalReqs[:config.MaxBatchSize]
-		turnMatchReqsToDistinctReqs(curMatchReqs)
 		totalReqs = totalReqs[config.MaxBatchSize:]
 	}else { //处理最后不到100个请求
-
 		curMatchReqs = totalReqs
-		turnMatchReqsToDistinctReqs(curMatchReqs)
 		totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 	}
+	turnMatchReqsToDistinctReqs(curMatchReqs)
+
+	return len(curMatchReqs)
 }
 
 func findBlockIndexInReqs(reqs []*config.ReqData, blockID int) int {
