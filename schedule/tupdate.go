@@ -175,7 +175,7 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 				var SendTD config.TD
 				//SendTD := config.TDBufferPool.Get().(*config.TD)
 				SendTD.BlockID = cmd.BlockID
-				//SendTD.Buff = make([]byte, cmd.SendSize)
+				SendTD.Buff = make([]byte, cmd.SendSize)
 				SendTD.Buff = td.Buff[:cmd.SendSize]
 				SendTD.FromIP = cmd.FromIP
 				SendTD.ToIP = toIP
@@ -380,27 +380,29 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 		for _, _ = range cmd.ToIPs {
 			ackMaps.pushACK(cmd.SID)
 		}
-		//log.Printf("block %d is local\n", cmd.BlockID)
+
 		begin := time.Now()
 		buff := common.ReadBlockWithSize(cmd.BlockID, config.BlockSize)
-
+		log.Printf("TUpdate: HandleCMD: read block %d with size: %v.\n", cmd.BlockID, len(buff))
 		for _, toIP := range cmd.ToIPs {
-			//td := &config.TD{
-			//	BlockID: cmd.BlockID,
-			//	Buff: buff,
-			//	FromIP: cmd.FromIP,
-			//	ToIP: toIP,
-			//	SID: cmd.SID,
-			//}
-			td := config.TDBufferPool.Get().(*config.TD)
-			td.BlockID = cmd.BlockID
-			td.Buff = buff[:config.BlockSize]
-			td.FromIP = cmd.FromIP
-			td.ToIP = toIP
-			td.SID = cmd.SID
+			td := &config.TD{
+				BlockID: cmd.BlockID,
+				Buff: buff,
+				FromIP: cmd.FromIP,
+				ToIP: toIP,
+				SID: cmd.SID,
+				SendSize: cmd.SendSize,
+			}
+			//td := config.TDBufferPool.Get().(*config.TD)
+			//td.BlockID = cmd.BlockID
+			//td.Buff = buff
+			//td.FromIP = cmd.FromIP
+			//td.ToIP = toIP
+			//td.SID = cmd.SID
+			//td.SendSize = cmd.SendSize
 			common.SendData(td, toIP, config.NodeTDListenPort)
 
-			config.TDBufferPool.Put(td)
+			//config.TDBufferPool.Put(td)
 		}
 		elapsed := time.Since(begin)
 		log.Printf("发送 block %d 给 %v 用时：%s.\n", cmd.BlockID, cmd.ToIPs, elapsed)

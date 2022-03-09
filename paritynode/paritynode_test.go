@@ -94,18 +94,21 @@ func TestReceive(t *testing.T) {
 func TestSend(t *testing.T) {
 	config.Init()
 	config.InitBufferPool()
+	buff := common.ReadBlockWithSize(1, config.BlockSize)
+	log.Println(buff[:2*config.BlockSize])
 
-	for i := 0; i < 1; i++ {
-		buff := common.ReadBlockWithSize(i+1, config.BlockSize)
-		td := &config.TD{
-			SID: i,
-			BlockID: i+1,
-			FromIP: common.GetLocalIP(),
-			ToIP: "192.168.1.120",
-			Buff: buff,
-		}
-		common.SendData(td, common.GetLocalIP(), config.NodeTDListenPort)
-	}
+
+	//for i := 0; i < 1; i++ {
+	//	buff := common.ReadBlockWithSize(i+1, config.BlockSize)
+	//	td := &config.TD{
+	//		SID: i,
+	//		BlockID: i+1,
+	//		FromIP: common.GetLocalIP(),
+	//		ToIP: "192.168.1.120",
+	//		Buff: buff,
+	//	}
+	//	common.SendData(td, common.GetLocalIP(), config.NodeTDListenPort)
+	//}
 }
 func TestListeningQuit(t *testing.T) {
 
@@ -158,11 +161,11 @@ func listenQuit(listen net.Listener, done chan<- bool) {
 		}
 
 		//config.AckBufferPool.Put(ack)
-
-		connections = append(connections, conn)
-		if len(connections)%100 == 0 {
-			log.Printf("total number of connections: %v", len(connections))
-		}
+		//
+		//connections = append(connections, conn)
+		//if len(connections)%100 == 0 {
+		//	log.Printf("total number of connections: %v", len(connections))
+		//}
 	}
 }
 func RunPrintMsg(receiveCh <-chan config.MTU) {
