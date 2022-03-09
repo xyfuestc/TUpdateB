@@ -136,7 +136,8 @@ func (p BaseMulticastBatch) RecordSIDAndReceiverIP(sid int, ip string)  {
 	ackIPMaps.recordIP(sid, ip)
 }
 func (p BaseMulticastBatch) Clear()  {
-	sid = 0
+
+	//sid = 0
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
 	}
@@ -145,6 +146,7 @@ func (p BaseMulticastBatch) Clear()  {
 	}
 
 	ClearChannels()
+
 
 	IsRunning = true
 	//清空SentMsgLog

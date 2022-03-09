@@ -58,6 +58,10 @@ var MulticastReceiveMTUCh = make(chan config.MTU, 100)
 var MulticastReceiveAckCh = make(chan config.ACK)
 var SentMsgLog MsgLogMap
 func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
+	//重复SID，不处理
+	if _, ok := ackMaps.getACK(cmd.SID); ok {
+		return
+	}
 	//利用多播将数据发出
 	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID, cmd.SendSize)
 
@@ -205,7 +209,7 @@ func ClearChannels()  {
 
 func (p BaseMulticast) Clear()  {
 
-	sid = 0
+	//sid = 0
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
 	}
