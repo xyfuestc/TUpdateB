@@ -88,7 +88,10 @@ func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, r
 
 		case <- ticker.C:
 			log.Printf("处理超时！")
-			schedule.HandleTimeout()
+			count := schedule.HandleTimeout()
+			if count == 0 {
+				ticker.Stop()
+			}
 		}
 	}
 }

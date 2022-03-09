@@ -92,13 +92,16 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 	log.Printf("HandleCMD: 发送td(sid:%d, blockID:%d)，从%s到%v \n", cmd.SID, cmd.BlockID, common.GetLocalIP(), cmd.ToIPs)
 
 }
-//处理UDP超时
-func HandleTimeout()  {
+//处理UDP超时,返回处理msg数量
+func HandleTimeout() int {
+	count := 0
 	msgLog := SentMsgLog.getAllMsg()
 	for sid, msg := range msgLog{
+		count++
 		MulticastSendMTUCh <- msg
 		log.Printf("重发: sid:%v, blockID:%v", sid, msg.BlockID)
 	}
+	return count
 }
 func (p BaseMulticast) HandleTD(td *config.TD)  {
 	handleOneTD(td)
