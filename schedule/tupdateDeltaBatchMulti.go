@@ -24,6 +24,7 @@ func (p TUpdateDeltaBatchMulti) Init()  {
 	}
 	actualBlocks = 0
 	round = 0
+	sid = 0
 }
 
 func (p TUpdateDeltaBatchMulti) HandleReq(reqs []*config.ReqData)  {

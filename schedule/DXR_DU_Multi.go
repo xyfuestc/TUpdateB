@@ -30,6 +30,7 @@ func (p DXR_DU_Multi) Init()  {
 	curReceivedTDs = &ReceivedTDs{
 		TDs: make([]*config.TD, 0, config.MaxBatchSize),
 	}
+	sid = 0
 }
 func (p DXR_DU_Multi) HandleTD(td *config.TD) {
 	//记录当前轮次接收到的blockID

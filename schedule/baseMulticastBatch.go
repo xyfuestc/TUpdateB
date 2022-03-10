@@ -71,6 +71,7 @@ func (p BaseMulticastBatch) Init()  {
 	actualBlocks = 0
 	round = 0
 	totalCrossRackTraffic = 0
+	sid = 0
 	SentMsgLog.Init()
 }
 

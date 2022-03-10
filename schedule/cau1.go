@@ -24,6 +24,7 @@ func (p CAU1) Init()  {
 	}
 	actualBlocks = 0
 	round = 0
+	sid = 0
 }
 
 func (p CAU1) HandleTD(td *config.TD) {

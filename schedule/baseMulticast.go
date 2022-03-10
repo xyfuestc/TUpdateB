@@ -133,6 +133,7 @@ func (p BaseMulticast) Init()  {
 	actualBlocks = 0
 	round = 0
 	totalCrossRackTraffic = 0
+	sid = 0
 	SentMsgLog.Init()
 }
 

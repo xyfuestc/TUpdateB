@@ -118,6 +118,7 @@ func (p TUpdate) Init()  {
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
 	actualBlocks = 0
+	sid = 0
 }
 
 func (p TUpdate) HandleReq(reqs []*config.ReqData)  {

@@ -25,6 +25,7 @@ func (p TUpdateBatch) Init()  {
 	}
 	actualBlocks = 0
 	round = 0
+	sid = 0
 }
 
 func (p TUpdateBatch) HandleReq(reqs []*config.ReqData)  {

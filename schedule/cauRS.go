@@ -29,6 +29,7 @@ func (p CAURS) Init()  {
 	curReceivedTDs = &ReceivedTDs{
 		TDs: make([]*config.TD, 0, config.MaxRSBatchSize),
 	}
+	sid = 0
 }
 
 func (p CAURS) HandleTD(td *config.TD) {
