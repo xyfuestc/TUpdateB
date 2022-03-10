@@ -16,6 +16,7 @@ type BaseMulticast struct {
 type MsgLogMap struct {
 	sync.RWMutex
 	MsgLog map[int]config.MTU
+	countLog map[int]int
 }
 func (M *MsgLogMap) getMsg(sid int) (config.MTU, bool)  {
 	M.RLock()
@@ -39,11 +40,18 @@ func (M *MsgLogMap) PushMsg(sid int, msg config.MTU)  {
 	M.Lock()
 	M.MsgLog[sid] = config.MTU{}
 	M.MsgLog[sid] = msg
+	M.countLog[sid] = len(msg.MultiTargetIPs)
 	M.Unlock()
 }
 func (M *MsgLogMap) popMsg(sid int)  {
 	M.Lock()
-	delete(M.MsgLog, sid)
+	if _, ok := M.MsgLog[sid]; ok {
+		M.countLog[sid]--
+		if M.countLog[sid] == 0 {
+			delete(M.MsgLog, sid)
+			delete(M.countLog, sid)
+		}
+	}
 	M.Unlock()
 }
 
@@ -113,7 +121,7 @@ func (p BaseMulticast) HandleTD(td *config.TD)  {
 func (p BaseMulticast) HandleACK(ack *config.ACK)  {
 	restACKs := ackMaps.popACK(ack.SID)
 	if restACKs == 0 {
-		SentMsgLog.popMsg(ack.SID)      //该SID不需要重发
+		SentMsgLog.popMsg(ack.SID)      //该SID重发数-1
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)

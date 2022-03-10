@@ -51,7 +51,7 @@ func (p BaseMulticastBatch) HandleTD(td *config.TD)  {
 func (p BaseMulticastBatch) HandleACK(ack *config.ACK)  {
 	restACKs := ackMaps.popACK(ack.SID)
 	if restACKs == 0 {
-		SentMsgLog.popMsg(ack.SID)      //该SID不需要重发
+		SentMsgLog.popMsg(ack.SID)      //该SID重发数量-1
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)

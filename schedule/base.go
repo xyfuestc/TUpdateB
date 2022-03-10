@@ -191,7 +191,7 @@ func handleOneTD(td *config.TD)  {
 func (p Base) HandleACK(ack *config.ACK)  {
 	restACKs := ackMaps.popACK(ack.SID)
 	if restACKs == 0 {
-		SentMsgLog.popMsg(ack.SID)      //该SID不需要重发
+		//SentMsgLog.popMsg(ack.SID)      //该SID不需要重发
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)
