@@ -111,6 +111,11 @@ func (p BaseMulticast) HandleTD(td *config.TD)  {
 	handleOneTD(td)
 }
 func (p BaseMulticast) HandleACK(ack *config.ACK)  {
+	//不需要处理的ack
+	if v, _ := ackMaps.getACK(ack.SID) ; v <= 0 {
+		return
+	}
+
 	ackMaps.popACK(ack.SID)
 	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
 		SentMsgLog.popMsg(ack.SID)      //该SID不需要重发

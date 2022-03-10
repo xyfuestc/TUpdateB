@@ -17,9 +17,9 @@ import (
 )
 var numOfReq = 0
 //var curPolicy = 6
-var curPolicy int32 = 0
-var NumOfMB = 4 //以这个为准，会同步到各个节点
-var traceName = "hm_1"
+var curPolicy int32 = 1
+var NumOfMB = 1 //以这个为准，会同步到各个节点
+var traceName = "hm_0"
 var XOROutFilePath = "../request/"+traceName+"_"+strconv.Itoa(NumOfMB)+"M.csv.txt"
 var RSOutFilePath = "../request/"+traceName+"_"+strconv.Itoa(NumOfMB*config.W)+"M.csv.txt"
 var OutFilePath = XOROutFilePath
