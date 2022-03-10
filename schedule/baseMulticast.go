@@ -111,13 +111,8 @@ func (p BaseMulticast) HandleTD(td *config.TD)  {
 	handleOneTD(td)
 }
 func (p BaseMulticast) HandleACK(ack *config.ACK)  {
-	//不需要处理的ack
-	if v, _ := ackMaps.getACK(ack.SID) ; v <= 0 {
-		return
-	}
-
-	ackMaps.popACK(ack.SID)
-	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
+	restACKs := ackMaps.popACK(ack.SID)
+	if restACKs == 0 {
 		SentMsgLog.popMsg(ack.SID)      //该SID不需要重发
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
@@ -216,7 +211,7 @@ func ClearChannels()  {
 
 func (p BaseMulticast) Clear()  {
 
-	//sid = 0
+	sid = 0
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
 	}

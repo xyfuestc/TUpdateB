@@ -43,20 +43,26 @@ func (M *ACKMap) pushACK(sid int)  {
 	}
 	M.Unlock()
 }
-func (M *ACKMap) popACK(sid int)  {
+/* restACKs——指定sid剩余ack数量 */
+func (M *ACKMap) popACK(sid int) (restACKs int)  {
 	M.Lock()
-	if M.RequireACKs[sid] > 0 {
+	if _, ok := M.RequireACKs[sid]; ok {
 		M.RequireACKs[sid]--
+		if M.RequireACKs[sid] == 0 {
+			delete(M.RequireACKs, sid)
+		}
+		restACKs = M.RequireACKs[sid]
+	}else{
+		restACKs = -1
 	}
 	M.Unlock()
+	return restACKs
 }
 
 func (M *ACKMap) isEmpty() bool {
 	M.RLock()
 	for _, num := range M.RequireACKs {
 		if num > 0 {
-			//log.PrintfACKMap非空("ACKMap非空：%v\n", M.RequireACKs)
-			//log.Printf("%d：%v\n", i, num)
 			M.RUnlock()
 			return false
 		}
@@ -183,8 +189,9 @@ func handleOneTD(td *config.TD)  {
 
 }
 func (p Base) HandleACK(ack *config.ACK)  {
-	ackMaps.popACK(ack.SID)
-	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
+	restACKs := ackMaps.popACK(ack.SID)
+	if restACKs == 0 {
+		SentMsgLog.popMsg(ack.SID)      //该SID不需要重发
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)

@@ -49,8 +49,8 @@ func (p BaseMulticastBatch) HandleTD(td *config.TD)  {
 	handleOneTD(td)
 }
 func (p BaseMulticastBatch) HandleACK(ack *config.ACK)  {
-	ackMaps.popACK(ack.SID)
-	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
+	restACKs := ackMaps.popACK(ack.SID)
+	if restACKs == 0 {
 		SentMsgLog.popMsg(ack.SID)      //该SID不需要重发
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
@@ -139,7 +139,7 @@ func (p BaseMulticastBatch) RecordSIDAndReceiverIP(sid int, ip string)  {
 }
 func (p BaseMulticastBatch) Clear()  {
 
-	//sid = 0
+	sid = 0
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
 	}
@@ -148,7 +148,6 @@ func (p BaseMulticastBatch) Clear()  {
 	}
 
 	ClearChannels()
-
 
 	IsRunning = true
 	//清空SentMsgLog
