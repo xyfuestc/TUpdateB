@@ -27,6 +27,7 @@ func (M *MsgLogMap) getMsg(sid int) (config.MTU, bool)  {
 func (M *MsgLogMap) Init()  {
 	M.Lock()
 	M.MsgLog = make(map[int]config.MTU)
+	M.countLog = make(map[int]int)
 	M.Unlock()
 }
 func (M *MsgLogMap) getAllMsg() map[int]config.MTU  {
