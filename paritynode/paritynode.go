@@ -210,8 +210,7 @@ func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, r
 			schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, td.FromIP)
 			//log.Printf("记录 ackReceiverIP[%v]=%v.", td.SID, td.FromIP)
 			schedule.GetCurPolicy().HandleTD(td)
-			config.TDBufferPool.Put(td)
-
+			config.TDBufferPool.Put(td.Buff)
 		}
 	}
 }
@@ -229,7 +228,7 @@ func GetTDFromMulticast(message config.MTU) *config.TD  {
 	//构造td
 	td := &config.TD{
 		SID:            message.SID,
-		Buff:           message.Data,
+		Buff:           common.ReadBlockWithSize(message.BlockID, message.SendSize),
 		BlockID:        message.BlockID,
 		MultiTargetIPs: message.MultiTargetIPs,
 		FromIP:         message.FromIP,
