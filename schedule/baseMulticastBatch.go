@@ -97,11 +97,12 @@ func (p BaseMulticastBatch) HandleReq(reqs []*config.ReqData)  {
 	}
 }
 func (p BaseMulticastBatch) baseMulti(reqs []*config.ReqData)  {
+	oldSIDStart := sid
 	for _, _ = range reqs {
 		ackMaps.pushACK(sid)
 		sid++
 	}
-	sid = 0
+	sid = oldSIDStart
 	for _, req := range reqs {
 		req.SID = sid
 		p.handleOneBlock(*req)
