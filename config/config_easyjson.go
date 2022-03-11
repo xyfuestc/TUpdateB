@@ -1328,8 +1328,6 @@ func easyjson6615c02eDecodeECConfig10(in *jlexer.Lexer, out *CMD) {
 		switch key {
 		case "SID":
 			out.SID = int(in.Int())
-		case "StripeID":
-			out.StripeID = int(in.Int())
 		case "BlockID":
 			out.BlockID = int(in.Int())
 		case "FromIP":
@@ -1402,11 +1400,6 @@ func easyjson6615c02eEncodeECConfig10(out *jwriter.Writer, in CMD) {
 		const prefix string = ",\"SID\":"
 		out.RawString(prefix[1:])
 		out.Int(int(in.SID))
-	}
-	{
-		const prefix string = ",\"StripeID\":"
-		out.RawString(prefix)
-		out.Int(int(in.StripeID))
 	}
 	{
 		const prefix string = ",\"BlockID\":"
