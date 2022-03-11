@@ -77,15 +77,15 @@ func (p BaseMulticastBatch) Init()  {
 
 
 func (p BaseMulticastBatch) HandleReq(reqs []*config.ReqData)  {
+
 	totalReqs = reqs
 
 	for len(totalReqs) > 0 {
 		lenOfBatch := findDistinctReqs()
 		actualBlocks += len(curDistinctReq)
-		//log.Printf("第%d轮 BaseMulticastBatch：处理%d个block\n", round, len(curDistinctReq))
 		log.Printf("第%d轮 BaseMulticastBatch：获取%d个请求，实际处理%d个block，剩余%v个block待处理。\n", round, lenOfBatch, len(curDistinctReq), len(totalReqs))
 
-		//执行base
+		//处理reqs
 		p.baseMulti(curDistinctReq)
 
 		for IsRunning {

@@ -71,20 +71,14 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 	if _, ok := ackMaps.getACK(cmd.SID); ok {
 		return
 	}
-	//利用多播将数据发出
 	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID, cmd.SendSize)
-
-	//buff := common.ReadBlock(cmd.BlockID)
-	//log.Printf("读取到数据 block %d: size: %v\n", cmd.BlockID, len(buff))
+	//记录ack
 	for _, _ = range cmd.ToIPs {
 		ackMaps.pushACK(cmd.SID)
 	}
-	//fragments := GetFragments(cmd)
-	//for _, f := range fragments {
-	//	MulticastSendMTUCh <- *f
-	//}
+	//计算分片数量
 	count := 1 + cmd.SendSize / config.MTUSize
-
+	//发送数据
 	message := &config.MTU{
 		BlockID:        cmd.BlockID,
 		Data:           buff[:config.MTUSize],
@@ -97,11 +91,10 @@ func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 		SendSize:       cmd.SendSize,
 	}
 	MulticastSendMTUCh <- *message
-	//time.Sleep(config.UDPDuration)
+	//发送日志：为timeout提供数据支持
 	SentMsgLog.PushMsg(message.SID, *message) //记录block
 
 	config.BlockBufferPool.Put(buff)
-	//SendMessageAndWaitingForACK(message)
 	log.Printf("HandleCMD: 发送td(sid:%d, blockID:%d)，从%s到%v \n", cmd.SID, cmd.BlockID, common.GetLocalIP(), cmd.ToIPs)
 
 }
@@ -178,15 +171,14 @@ func (p BaseMulticast) baseMulti(reqs []*config.ReqData)  {
 	sid = oldSIDStart
 	for _, req := range reqs {
 		req.SID = sid
-		p.handleOneBlock(*req)
+		p.handleOneReq(*req)
 		sid++
 	}
 }
-func (p BaseMulticast) handleOneBlock(reqData config.ReqData)  {
+func (p BaseMulticast) handleOneReq(reqData config.ReqData)  {
 	nodeID := common.GetNodeID(reqData.BlockID)
 	fromIP := common.GetNodeIP(nodeID)
 	toIPs := common.GetRelatedParityIPs(reqData.BlockID)
-	//common.SendCMD(fromIP, toIPs, reqData.SID, reqData.BlockID)
 
 	rangeLeft, rangeRight := reqData.RangeLeft, reqData.RangeRight
 	cmd := &config.CMD{
@@ -200,8 +192,8 @@ func (p BaseMulticast) handleOneBlock(reqData config.ReqData)  {
 	}
 	common.SendData(cmd, fromIP, config.NodeCMDListenPort)
 
-	//跨域流量统计
-	totalCrossRackTraffic += len(toIPs) * (rangeRight - rangeLeft)
+	//跨域流量统计：多播只需要发给网络设备，由网络设备转发给组内节点
+	totalCrossRackTraffic += rangeRight - rangeLeft
 	log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v. SendSize: %v\n", reqData.SID,
 		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, toIPs, cmd.SendSize)
 }

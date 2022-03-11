@@ -52,7 +52,6 @@ func (p CAURS) HandleTD(td *config.TD) {
 	//有等待任务
 	indexes := meetCMDNeed(td.BlockID)
 	if len(indexes) > 0 {
-		//log.Printf("有等待任务可以执行：%v\n", indexes)
 		//添加ack监听
 		for _, cmd := range indexes {
 			log.Printf("执行TD任务：sid:%d blockID:%d\n", cmd.SID, cmd.BlockID)
@@ -60,6 +59,7 @@ func (p CAURS) HandleTD(td *config.TD) {
 				ackMaps.pushACK(cmd.SID)
 			}
 		}
+		//执行cmd
 		for _, cmd := range indexes {
 			xorBuff := getXORBuffFromCMD(cmd)
 			toIP := cmd.ToIPs[0]
@@ -69,6 +69,7 @@ func (p CAURS) HandleTD(td *config.TD) {
 				FromIP:  cmd.FromIP,
 				ToIP:    toIP,
 				SID:     cmd.SID,
+				SendSize: cmd.SendSize,
 			}
 			common.SendData(td, toIP, config.NodeTDListenPort)
 		}
@@ -138,7 +139,6 @@ func findRSDistinctBlocks() {
 func (p CAURS) HandleReq(reqs []*config.ReqData)  {
 
 	totalReqs = reqs
-	_ = reqs
 	log.Printf("一共接收到%d个请求...\n", len(totalReqs))
 
 	for len(totalReqs) > 0 {
@@ -281,19 +281,22 @@ func dataUpdateRS(rackID int, stripe []int)  {
 }
 
 func (p CAURS) HandleCMD(cmd *config.CMD)  {
-	//handleOneCMD(cmd)
+	//helpers已到位
 	if len(cmd.Helpers) == 0 {
+
 		//添加ack监听
 		for _, _ = range cmd.ToIPs {
 			ackMaps.pushACK(cmd.SID)
 		}
-		//log.Printf("block %d size :%d\n", cmd.BlockID, cmd.SendSize)
+
+		//读取本地数据
 		buff := common.ReadBlockWithSize(cmd.BlockID, cmd.SendSize)
 
+		//执行命令
 		for _, toIP := range cmd.ToIPs {
 			td := config.TDBufferPool.Get().(*config.TD)
 			td.BlockID = cmd.BlockID
-			td.Buff = buff[:cmd.SendSize]
+			td.Buff = buff
 			td.FromIP = cmd.FromIP
 			td.ToIP = toIP
 			td.SID = cmd.SID
@@ -301,9 +304,10 @@ func (p CAURS) HandleCMD(cmd *config.CMD)  {
 			config.TDBufferPool.Put(td)
 		}
 
+		//内存回收
 		config.BlockBufferPool.Put(buff)
 
-
+	//helpers未到位
 	}else{
 		CMDList.pushCMD(cmd)
 	}
@@ -311,14 +315,13 @@ func (p CAURS) HandleCMD(cmd *config.CMD)  {
 }
 
 func (p CAURS) HandleACK(ack *config.ACK)  {
-	ackMaps.popACK(ack.SID)
-	//log.Printf("接收到ack：%+v\n", ack)
-	//log.Printf("当前剩余ack：%d\n", ackMaps)
-	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
+	restACKs := ackMaps.popACK(ack.SID)
+	if restACKs == 0 {
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)
-		}else if ACKIsEmpty() { //ms检查是否全部完成，若完成，进入下一轮
+		//检查是否全部完成，若完成，进入下一轮
+		}else if ACKIsEmpty() {
 			IsRunning = false
 		}
 	}
@@ -337,7 +340,6 @@ func (p CAURS) Clear()  {
 	CMDList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxRSBatchSize),
 	}
-	//round = 0
 	curReceivedTDs = &ReceivedTDs{
 		TDs: make([]*config.TD, 0, config.MaxRSBatchSize),
 	}

@@ -28,6 +28,7 @@ func (p TUpdateDeltaBatch) Init()  {
 }
 
 func (p TUpdateDeltaBatch) HandleReq(reqs []*config.ReqData)  {
+
 	totalReqs = reqs
 	log.Printf("一共接收到%d个请求...\n", len(totalReqs))
 
@@ -37,7 +38,7 @@ func (p TUpdateDeltaBatch) HandleReq(reqs []*config.ReqData)  {
 		actualBlocks += len(curDistinctReq)
 		log.Printf("第%d轮 TUpdateDeltaBatch：获取%d个请求，实际处理%d个block\n", round, lenOfBatch, len(curDistinctReq))
 
-		//执行base
+		//执行reqs
 		p.TUpdateDeltaBatch(curDistinctReq)
 
 		for IsRunning {
@@ -51,42 +52,61 @@ func (p TUpdateDeltaBatch) HandleReq(reqs []*config.ReqData)  {
 }
 
 func (p TUpdateDeltaBatch) TUpdateDeltaBatch(reqs []*config.ReqData)   {
+
+	//记录ack
 	for _, _ = range reqs {
 		ackMaps.pushACK(sid)
 		sid++
 	}
+
+	//处理reqs
 	sid = 0
 	for _, req := range reqs {
 		req.SID = sid
-		p.handleOneBlock(req)
+		p.handleOneReq(req)
 		sid++
 	}
 }
 
-func (p TUpdateDeltaBatch) handleOneBlock(reqData * config.ReqData)  {
+func (p TUpdateDeltaBatch) handleOneReq(reqData * config.ReqData)  {
 	tasks := GetBalanceTransmitTasks(reqData)
 	//tasks := GetTransmitTasks(reqData)
 	log.Printf("tasks: %v\n", tasks)
 	for _, task := range tasks {
+
+		//构造cmd
 		fromIP := common.GetNodeIP(int(task.Start))
 		toIPs := []string{common.GetNodeIP(int(task.End))}
-		common.SendCMD(fromIP, toIPs, task.SID, task.BlockID)
+		SendSize := reqData.RangeRight - reqData.RangeLeft
+		cmd := &config.CMD{
+			SID: task.SID,
+			BlockID: task.BlockID,
+			FromIP: fromIP,
+			ToIPs: toIPs,
+			Helpers: make([]int, 0, 1),
+			Matched: 0,
+			SendSize: SendSize,
+		}
+
+		//发送cmd
+		common.SendData(cmd, fromIP, config.NodeCMDListenPort)
+
 		//统计跨域流量
 		rack1 := getRackIDFromNodeID(task.Start)
 		rack2 := getRackIDFromNodeID(task.End)
 		if rack1 != rack2 {
-			totalCrossRackTraffic += config.BlockSize
+			totalCrossRackTraffic += SendSize
 		}
 	}
 }
 
 func (p TUpdateDeltaBatch) HandleTD(td *config.TD)  {
+
 	//本地数据更新
 	common.WriteDeltaBlock(td.BlockID, td.Buff)
 
-	//有等待任务
+	//有可以执行的等待任务
 	cmds := CMDList.popRunnableCMDsWithSID(td.SID)
-
 	if len(cmds) > 0 {
 		//添加ack监听
 		for _, cmd := range cmds {
@@ -96,24 +116,25 @@ func (p TUpdateDeltaBatch) HandleTD(td *config.TD)  {
 		}
 		for _, cmd := range cmds {
 			for _, toIP := range cmd.ToIPs {
-				//SendTD := &config.TD{
-				//	BlockID: cmd.BlockID,
-				//	Buff: td.Buff,
-				//	FromIP: cmd.FromIP,
-				//	ToIP: toIP,
-				//	SID: cmd.SID,
-				//}
+				SendTD := &config.TD{
+					BlockID: cmd.BlockID,
+					Buff: td.Buff,
+					FromIP: cmd.FromIP,
+					ToIP: toIP,
+					SID: cmd.SID,
+					SendSize: cmd.SendSize,
+				}
 				//sendSizeRate := float32(SendTD.SendSize * 1.0) / float32(config.BlockSize) * 100.0
 				//log.Printf("发送 block:%d sendSize: %.2f%% -> %s.\n", SendTD.BlockID, sendSizeRate, toIP)
 				//common.SendData(SendTD, toIP, config.NodeTDListenPort, "")
 
-				SendTD := config.TDBufferPool.Get().(*config.TD)
-				SendTD.BlockID = cmd.BlockID
-				SendTD.Buff = td.Buff[:cmd.SendSize]
-				SendTD.FromIP = cmd.FromIP
-				SendTD.ToIP = toIP
-				SendTD.SID = cmd.SID
-				SendTD.SendSize = cmd.SendSize
+				//SendTD := config.TDBufferPool.Get().(*config.TD)
+				//SendTD.BlockID = cmd.BlockID
+				//SendTD.Buff = td.Buff[:cmd.SendSize]
+				//SendTD.FromIP = cmd.FromIP
+				//SendTD.ToIP = toIP
+				//SendTD.SID = cmd.SID
+				//SendTD.SendSize = cmd.SendSize
 				sendSizeRate := float32(SendTD.SendSize * 1.0) / float32(config.BlockSize) * 100.0
 				log.Printf("发送 block:%d sendSize: %.2f%% -> %s.\n", SendTD.BlockID, sendSizeRate, toIP)
 				common.SendData(SendTD, toIP, config.NodeTDListenPort)
@@ -134,34 +155,36 @@ func (p TUpdateDeltaBatch) HandleTD(td *config.TD)  {
 }
 
 func (p TUpdateDeltaBatch) HandleCMD(cmd *config.CMD)  {
+
+	//helpers已到位
 	if IsCMDDataExist(cmd) {
 		//添加ack监听
 		for _, _ = range cmd.ToIPs {
 			ackMaps.pushACK(cmd.SID)
 		}
-		//log.Printf("block %d is local\n", cmd.BlockID)
-		buff := common.ReadBlockWithSize(cmd.BlockID, config.BlockSize)
+		buff := common.ReadBlockWithSize(cmd.BlockID, cmd.SendSize)
 
 		for _, toIP := range cmd.ToIPs {
-			//td := &config.TD{
-			//	BlockID: cmd.BlockID,
-			//	Buff: buff,
-			//	FromIP: cmd.FromIP,
-			//	ToIP: toIP,
-			//	SID: cmd.SID,
-			//}
-			td := config.TDBufferPool.Get().(*config.TD)
-			td.BlockID = cmd.BlockID
-			td.Buff = buff[:config.BlockSize]
-			td.FromIP = cmd.FromIP
-			td.ToIP = toIP
-			td.SID = cmd.SID
+			td := &config.TD{
+				BlockID: cmd.BlockID,
+				Buff: buff,
+				FromIP: cmd.FromIP,
+				ToIP: toIP,
+				SID: cmd.SID,
+			}
+			//td := config.TDBufferPool.Get().(*config.TD)
+			//td.BlockID = cmd.BlockID
+			//td.Buff = buff
+			//td.FromIP = cmd.FromIP
+			//td.ToIP = toIP
+			//td.SID = cmd.SID
 			common.SendData(td, toIP, config.NodeTDListenPort)
 
-			config.TDBufferPool.Put(td)
+			//config.TDBufferPool.Put(td)
 		}
 		config.BlockBufferPool.Put(buff)
 
+	//helpers未到位
 	}else{
 		cmd.Helpers = append(cmd.Helpers, cmd.BlockID)
 		log.Printf("添加sid: %d, blockID: %d, helpers: %v到cmdList.\n", cmd.SID, cmd.BlockID, cmd.Helpers)
@@ -169,15 +192,15 @@ func (p TUpdateDeltaBatch) HandleCMD(cmd *config.CMD)  {
 	}
 }
 func (p TUpdateDeltaBatch) HandleACK(ack *config.ACK)  {
-	ackMaps.popACK(ack.SID)
-	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
+	restACKs := ackMaps.popACK(ack.SID)
+	if restACKs == 0 {
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)
-		}else if ACKIsEmpty() { //检查是否全部完成，若完成，进入下一轮
+		//检查是否全部完成，若完成，进入下一轮
+		}else if ACKIsEmpty() {
 			IsRunning = false
 		}
-
 	}
 }
 func (p TUpdateDeltaBatch) Clear()  {

@@ -29,6 +29,7 @@ func (p TUpdateBatch) Init()  {
 }
 
 func (p TUpdateBatch) HandleReq(reqs []*config.ReqData)  {
+
 	totalReqs = reqs
 	log.Printf("一共接收到%d个请求...\n", len(totalReqs))
 
@@ -36,27 +37,29 @@ func (p TUpdateBatch) HandleReq(reqs []*config.ReqData)  {
 		//过滤blocks
 		curMatchBlocks := findDistinctBlocks()
 		actualBlocks += len(curDistinctBlocks)
-		//log.Printf("第%d轮 TUpdateBatch：处理%d个block\n", round, len(curDistinctBlocks))
 		log.Printf("第%d轮 TUpdateBatch：获取%d个请求，实际处理%d个block\n", round, len(curMatchBlocks), len(curDistinctBlocks))
 
-		//执行basex
+		//处理reqs
 		p.TUpdateBatch(curDistinctBlocks)
 
 		for IsRunning {
-
 		}
+
 		log.Printf("本轮结束！\n")
 		log.Printf("======================================\n")
 		round++
+
 		p.Clear()
 	}
 }
 
 func (p TUpdateBatch) TUpdateBatch(distinctBlocks []int)  {
+	//记录ack
 	for _, _ = range distinctBlocks {
 		ackMaps.pushACK(sid)
 		sid++
 	}
+	//处理blocks
 	sid = 0
 	for _, blockID := range distinctBlocks {
 		req := &config.ReqData{
@@ -86,12 +89,12 @@ func (p TUpdateBatch) handleOneBlock(reqData * config.ReqData)  {
 }
 
 func (p TUpdateBatch) HandleTD(td *config.TD)  {
+
 	//本地数据更新
 	common.WriteDeltaBlock(td.BlockID, td.Buff)
 
 	//有等待任务
 	cmds := CMDList.popRunnableCMDsWithSID(td.SID)
-
 	if len(cmds) > 0 {
 		//添加ack监听
 		for _, cmd := range cmds {
@@ -126,6 +129,7 @@ func (p TUpdateBatch) HandleTD(td *config.TD)  {
 				config.TDBufferPool.Put(SendTD)
 			}
 		}
+	//叶子节点
 	}else{
 		if _, ok := ackMaps.getACK(td.SID); !ok {
 			//返回ack
@@ -158,34 +162,34 @@ func  GetBalanceTransmitTasks(reqData *config.ReqData) []Task {
 	return taskGroup
 }
 func (p TUpdateBatch) HandleCMD(cmd *config.CMD)  {
+	//该cmd的数据存在
 	if IsCMDDataExist(cmd) {
+
 		//添加ack监听
 		for _, _ = range cmd.ToIPs {
 			ackMaps.pushACK(cmd.SID)
 		}
-		//log.Printf("block %d is local\n", cmd.BlockID)
+
+		//读取数据
 		buff := common.ReadBlockWithSize(cmd.BlockID, config.BlockSize)
 
+		//发送数据
 		for _, toIP := range cmd.ToIPs {
-			//td := &config.TD{
-			//	BlockID: cmd.BlockID,
-			//	Buff: buff,
-			//	FromIP: cmd.FromIP,
-			//	ToIP: toIP,
-			//	SID: cmd.SID,
-			//}
-			td := config.TDBufferPool.Get().(*config.TD)
-			td.BlockID = cmd.BlockID
-			td.Buff = buff[:config.BlockSize]
-			td.FromIP = cmd.FromIP
-			td.ToIP = toIP
-			td.SID = cmd.SID
+			td := &config.TD{
+				BlockID: cmd.BlockID,
+				Buff: buff,
+				FromIP: cmd.FromIP,
+				ToIP: toIP,
+				SID: cmd.SID,
+				SendSize: cmd.SendSize,
+			}
 			common.SendData(td, toIP, config.NodeTDListenPort)
-
-			config.TDBufferPool.Put(td)
 		}
+
+		//内存回收
 		config.BlockBufferPool.Put(buff)
 
+	//该cmd的数据不存在（需要等待）
 	}else{
 		cmd.Helpers = append(cmd.Helpers, cmd.BlockID)
 		log.Printf("添加sid: %d, blockID: %d, helpers: %v到cmdList.\n", cmd.SID, cmd.BlockID, cmd.Helpers)
@@ -193,15 +197,15 @@ func (p TUpdateBatch) HandleCMD(cmd *config.CMD)  {
 	}
 }
 func (p TUpdateBatch) HandleACK(ack *config.ACK)  {
-	ackMaps.popACK(ack.SID)
-	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
+	restACKs := ackMaps.popACK(ack.SID)
+	if restACKs == 0 {
+		//SentMsgLog.popMsg(ack.SID)      //该SID不需要重发
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)
 		}else if ACKIsEmpty() { //检查是否全部完成，若完成，进入下一轮
 			IsRunning = false
 		}
-
 	}
 }
 func (p TUpdateBatch) Clear()  {

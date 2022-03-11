@@ -111,12 +111,8 @@ func SetPolicy(policyType string)  {
 		CurPolicy = TUpdateBatch{}
 	case "TUpdateDeltaBatch":
 		CurPolicy = TUpdateDeltaBatch{}
-	case "TUpdateDeltaBatchMulti":
-		CurPolicy = TUpdateDeltaBatchMulti{}
 	case "DXR_DU":
 		CurPolicy = DXR_DU{}
-	case "DXR_DU_Multi":
-		CurPolicy = DXR_DU_Multi{}
 	case "CAU":
 		CurPolicy = CAU{}
 	case "CAU1":
@@ -191,11 +187,11 @@ func handleOneTD(td *config.TD)  {
 func (p Base) HandleACK(ack *config.ACK)  {
 	restACKs := ackMaps.popACK(ack.SID)
 	if restACKs == 0 {
-		//SentMsgLog.popMsg(ack.SID)      //该SID不需要重发
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)
-		}else if ACKIsEmpty() { //检查是否全部完成，若完成，进入下一轮
+		//检查是否全部完成，若完成，进入下一轮
+		}else if ACKIsEmpty() {
 			IsRunning = false
 		}
 	}

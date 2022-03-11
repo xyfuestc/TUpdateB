@@ -35,7 +35,6 @@ func (p CAU) Init()  {
 func (p CAU) HandleTD(td *config.TD) {
 	//校验节点本地数据更新
 	localID := arrays.ContainsString(config.NodeIPs, common.GetLocalIP())
-	log.Printf("cau localID:%d\n", localID)
 	if localID >= config.K {
 		common.WriteDeltaBlock(td.BlockID, td.Buff)
 	}
@@ -45,7 +44,7 @@ func (p CAU) HandleTD(td *config.TD) {
 		BlockID: td.BlockID,
 	}
 	ReturnACK(ack)
-	//有等待任务
+	//处理需要helpers的CMD
 	handleWaitingCMDs(td)
 }
 
@@ -71,14 +70,15 @@ func findDistinctBlocks() []*config.ReqData {
 	return curMatchReqs
 }
 func (p CAU) HandleReq(reqs []*config.ReqData)  {
+
 	totalReqs = reqs
 	log.Printf("一共接收到%d个请求...\n", len(totalReqs))
+
 	for len(totalReqs) > 0 {
 		//过滤blocks
 		curMatchBlocks := findDistinctBlocks()
 		//执行cau
 		actualBlocks += len(curDistinctBlocks)
-		//log.Printf("第%d轮 CAU：处理%d个block\n", round, len(curDistinctBlocks))
 		log.Printf("第%d轮 CAU：获取%d个请求，实际处理%d个block\n", round, len(curMatchBlocks), len(curDistinctBlocks))
 
 		p.cau()
@@ -391,22 +391,22 @@ func (p CAU) HandleCMD(cmd *config.CMD)  {
 		buff := common.ReadBlockWithSize(cmd.BlockID, cmd.SendSize)
 
 		for _, toIP := range cmd.ToIPs {
-			//td := &config.TD{
-			//	BlockID: cmd.BlockID,
-			//	Buff: buff[:cmd.SendSize],
-			//	FromIP: cmd.FromIP,
-			//	ToIP: toIP,
-			//	SID: cmd.SID,
-			//}
-
-			td := config.TDBufferPool.Get().(*config.TD)
-			td.BlockID = cmd.BlockID
-			td.Buff = buff[:cmd.SendSize]
-			td.FromIP = cmd.FromIP
-			td.ToIP = toIP
-			td.SID = cmd.SID
+			td := &config.TD{
+				BlockID: cmd.BlockID,
+				Buff: buff[:cmd.SendSize],
+				FromIP: cmd.FromIP,
+				ToIP: toIP,
+				SID: cmd.SID,
+			}
+			//
+			//td := config.TDBufferPool.Get().(*config.TD)
+			//td.BlockID = cmd.BlockID
+			//td.Buff = buff[:cmd.SendSize]
+			//td.FromIP = cmd.FromIP
+			//td.ToIP = toIP
+			//td.SID = cmd.SID
 			common.SendData(td, toIP, config.NodeTDListenPort)
-			config.TDBufferPool.Put(td)
+			//config.TDBufferPool.Put(td)
 			//common.SendData(td, toIP, config.NodeTDListenPort, "")
 		}
 
@@ -417,13 +417,13 @@ func (p CAU) HandleCMD(cmd *config.CMD)  {
 }
 
 func (p CAU) HandleACK(ack *config.ACK)  {
-	ackMaps.popACK(ack.SID)
-	//log.Printf("当前剩余ack：%d\n", ackMaps)
-	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
+	restACKs := ackMaps.popACK(ack.SID)
+	if restACKs == 0 {
+		//SentMsgLog.popMsg(ack.SID)      //该SID不需要重发
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)
-		}else if ACKIsEmpty() { //ms检查是否全部完成，若完成，进入下一轮
+		}else if ACKIsEmpty() { //检查是否全部完成，若完成，进入下一轮
 			IsRunning = false
 		}
 	}

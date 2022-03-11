@@ -26,16 +26,13 @@ var OutFilePath = XOROutFilePath
 var actualUpdatedBlocks = 0
 var beginTime time.Time
 var totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
-var finished = false
 var roundFinished int32 = 0  // 1-本轮结束 ； 0-本轮未结束
 var curNumOfMB = 0
 //var connections []net.Conn
 //var receivedAckCh = make(chan config.ACK, 10)
 //var wg sync.WaitGroup
 func checkFinish() {
-	//defer conn.Close()
-	//ack := common.GetACK(conn)
-	//schedule.GetCurPolicy().HandleACK(&ack)
+
 	isRoundFinished := atomic.LoadInt32(&roundFinished)
 	curPolicyVal := atomic.LoadInt32(&curPolicy)
 
@@ -51,15 +48,12 @@ func checkFinish() {
 		actualUpdatedBlocks = schedule.GetCurPolicy().GetActualBlocks()
 		averageOneUpdateSpeed := float64(sumTime/time.Millisecond) / float64(actualUpdatedBlocks) / 1000
 		crossTraffic := schedule.GetCrossRackTraffic()
-		log.Printf("%s 总耗时: %s, 完成更新任务: %d, 实际处理任务数: %d, 单块更新时间: %0.2fs, 吞吐量: %0.2fMB/s，跨域流量为：%0.2fMB\n",
-			config.Policies[curPolicyVal], sumTime, numOfReq, actualUpdatedBlocks, averageOneUpdateSpeed, throughput, crossTraffic)
+		log.Printf("%s 总耗时: %.2fs, 完成更新任务: %d, 实际处理任务数: %d, 单块更新时间: %0.2fs, 吞吐量: %0.2fMB/s，跨域流量为：%0.2fMB\n",
+			config.Policies[curPolicyVal], sumTime.Seconds(), numOfReq, actualUpdatedBlocks, averageOneUpdateSpeed, throughput, crossTraffic)
+
 
 		schedule.GetCurPolicy().Clear()
 		clearRound()
-
-
-
-		//wg.Done()
 	}
 }
 /*所有算法跑完，清空操作*/
@@ -68,12 +62,9 @@ func clearAll() {
 	//schedule.CloseAllChannels()
 	actualUpdatedBlocks = 0
 	numOfReq = 0
-	finished = true
 }
 /*每种算法结束后，清空操作*/
 func clearRound()  {
-	//totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
-	finished = true
 	actualUpdatedBlocks = 0
 }
 func main() {
@@ -219,6 +210,7 @@ func start()  {
 
 	setCurrentTrace() //专门针对CAURS改变数据源
 
+	time.Sleep(2 * time.Second)
 	beginTime = time.Now()
 	log.Printf(" 设置当前算法：[%s], 当前数据集为：%s, blockSize=%vMB.\n", config.Policies[curPolicy], OutFilePath, NumOfMB)
 	settingCurrentPolicy(curPolicy)

@@ -30,17 +30,17 @@ func (p CAU1) Init()  {
 func (p CAU1) HandleTD(td *config.TD) {
 	//校验节点本地数据更新
 	localID := arrays.ContainsString(config.NodeIPs, common.GetLocalIP())
-	//localID := common.GetIDFromIP(common.GetLocalIP())
 	if localID >= config.K {
-		log.Printf("cau1 localID:%d\n", localID)
 		common.WriteDeltaBlock(td.BlockID, td.Buff)
 	}
+
 	//返回ack
 	ack := &config.ACK{
 		SID:     td.SID,
 		BlockID: td.BlockID,
 	}
 	ReturnACK(ack)
+	//处理需要helpers的CMD
 	handleWaitingCMDs(td)
 }
 
@@ -268,28 +268,29 @@ func (p CAU1) HandleCMD(cmd *config.CMD)  {
 		buff := common.ReadBlockWithSize(cmd.BlockID, cmd.SendSize)
 
 		for _, toIP := range cmd.ToIPs {
-			//td := &config.TD{
-			//	BlockID: cmd.BlockID,
-			//	Buff: buff,
-			//	FromIP: cmd.FromIP,
-			//	ToIP: toIP,
-			//	SID: cmd.SID,
-			//}
+			td := &config.TD{
+				BlockID: cmd.BlockID,
+				Buff: buff,
+				FromIP: cmd.FromIP,
+				ToIP: toIP,
+				SID: cmd.SID,
+				SendSize: cmd.SendSize,
+			}
 			//
 			//common.SendData(td, toIP, config.NodeTDListenPort, "")
 
-			td := config.TDBufferPool.Get().(*config.TD)
-			td.BlockID = cmd.BlockID
-			td.Buff = buff
-			td.FromIP = cmd.FromIP
-			td.ToIP = toIP
-			td.SID = cmd.SID
-			td.SendSize = cmd.SendSize
+			//td := config.TDBufferPool.Get().(*config.TD)
+			//td.BlockID = cmd.BlockID
+			//td.Buff = buff
+			//td.FromIP = cmd.FromIP
+			//td.ToIP = toIP
+			//td.SID = cmd.SID
+			//td.SendSize = cmd.SendSize
 			//sendSizeRate := float32(td.SendSize*1.0) / float32(config.BlockSize) * 100.0
 			//log.Printf("发送 block:%d sendSize:%.2f%% 的数据到%s.\n", td.BlockID, sendSizeRate, toIP)
 			common.SendData(td, toIP, config.NodeTDListenPort)
 
-			config.TDBufferPool.Put(td)
+			//config.TDBufferPool.Put(td)
 		}
 		config.BlockBufferPool.Put(buff)
 	}else{
@@ -298,13 +299,13 @@ func (p CAU1) HandleCMD(cmd *config.CMD)  {
 }
 
 func (p CAU1) HandleACK(ack *config.ACK)  {
-	ackMaps.popACK(ack.SID)
-	//log.Printf("当前剩余ack：%d\n", ackMaps)
-	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
+	restACKs := ackMaps.popACK(ack.SID)
+	if restACKs == 0 {
+		//SentMsgLog.popMsg(ack.SID)      //该SID不需要重发
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)
-		}else if ACKIsEmpty() { //ms检查是否全部完成，若完成，进入下一轮
+		}else if ACKIsEmpty() { //检查是否全部完成，若完成，进入下一轮
 			IsRunning = false
 		}
 	}

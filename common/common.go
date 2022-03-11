@@ -125,7 +125,7 @@ func ReadBlockWithSize(blockID, size int) []byte  {
 
 	defer file.Close()
 
-	readSize, err := file.ReadAt(buff[:size], int64(index * size))
+	readSize, err := file.ReadAt(buff, int64(index * size))
 
 	if err != nil {
 		log.Fatal("读取文件失败：", err)
@@ -134,7 +134,7 @@ func ReadBlockWithSize(blockID, size int) []byte  {
 		log.Printf("读取大小为不一致 in ReadBlockWithSize：%+v, %+v", readSize, size)
 	}
 
-	return buff[:size]
+	return buff
 }
 func WriteBlockWithSize(blockID int, buff []byte, size int)  {
 	index := GetIndex(blockID)
@@ -146,7 +146,7 @@ func WriteBlockWithSize(blockID int, buff []byte, size int)  {
 		log.Fatalln("打开文件出错: ", err)
 	}
 
-	_, err = file.WriteAt(buff[:size], int64(index * size))
+	_, err = file.WriteAt(buff, int64(index * size))
 }
 func GetNodeID(blockID int) int {
 	return blockID % (config.K * config.W) / config.W
@@ -182,7 +182,7 @@ func RandWriteBlockAndRetDelta(blockID, size int) []byte  {
 	config.BlockBufferPool.Put(oldBuff)
 	config.BlockBufferPool.Put(newBuff)
 
-	return deltaBuff[:size]
+	return deltaBuff
 }
 func WriteDeltaBlock(blockID int, deltaBuff []byte)   {
 	size := len(deltaBuff)

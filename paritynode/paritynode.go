@@ -200,28 +200,26 @@ func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, r
 			schedule.GetCurPolicy().HandleCMD(&cmd)
 
 		case mtu := <-receivedMultiMTUCh:
-			//common.PrintMessage(mtu)
+
 			td := GetTDFromMulticast(mtu)
 			//模拟接收剩下的切片
-			d := randomDelay(mtu)  //模拟延时（有10%的概率延时）
-			//time.Sleep(d)
-			//td.Buff = make([]byte, mtu.SendSize)
+			d := randomDelay(mtu)
 			log.Printf("收到sid: %v, blockID: %v, size: %v，模拟延时：%v.", td.SID, td.BlockID, td.SendSize, d)
+			//记录fromIP:sid
 			schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, td.FromIP)
-			//log.Printf("记录 ackReceiverIP[%v]=%v.", td.SID, td.FromIP)
+			//处理TD
 			schedule.GetCurPolicy().HandleTD(td)
+			//内存回收
 			config.TDBufferPool.Put(td.Buff)
 		}
 	}
 }
 func randomDelay(mtu config.MTU) time.Duration {
 	var d time.Duration = 0
-	//r := rand.Int31n(100)
-	//if r <= 100  {
 	d = time.Duration(mtu.FragmentCount - 1) * config.UDPDuration
 	log.Printf("收到sid: %v, blockID: %v, size: %v，模拟延时：%v.", mtu.SID, mtu.BlockID, mtu.SendSize, d)
 	time.Sleep(d)
-	//}
+
 	return d
 }
 func GetTDFromMulticast(message config.MTU) *config.TD  {

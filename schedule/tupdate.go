@@ -122,12 +122,16 @@ func (p TUpdate) Init()  {
 }
 
 func (p TUpdate) HandleReq(reqs []*config.ReqData)  {
+
+	//接收reqs
 	actualBlocks = len(reqs)
 
+	//记录ack
 	for _, _ = range reqs {
 		ackMaps.pushACK(sid)
 		sid++
 	}
+	//处理blocks
 	sid = 0
 	for _, req := range reqs {
 		req := &config.ReqData{
@@ -156,11 +160,12 @@ func (p TUpdate) handleOneBlock(reqData * config.ReqData)  {
 }
 
 func (p TUpdate) HandleTD(td *config.TD)  {
+
 	//本地数据更新
 	common.WriteDeltaBlock(td.BlockID, td.Buff)
-	//有等待任务
-	cmds := CMDList.popRunnableCMDsWithSID(td.SID)
 
+	//有可以执行的等待任务
+	cmds := CMDList.popRunnableCMDsWithSID(td.SID)
 	if len(cmds) > 0 {
 		//添加ack监听
 		for _, cmd := range cmds {
@@ -169,6 +174,7 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 			}
 		}
 		for _, cmd := range cmds {
+
 			begin := time.Now()
 
 			for _, toIP := range cmd.ToIPs {
@@ -182,18 +188,21 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 				SendTD.ToIP = toIP
 				SendTD.SID = cmd.SID
 				SendTD.SendSize = cmd.SendSize
+
 				sendSizeRate := float32(SendTD.SendSize * 1.0) / float32(config.BlockSize) * 100.0
 				log.Printf("发送 block:%d sendSize: %.2f%% -> %s.\n", SendTD.BlockID, sendSizeRate, toIP)
+
 				common.SendData(SendTD, toIP, config.NodeTDListenPort)
 
-				//config.TDBufferPool.Put(SendTD)
-
 			}
+
 			elapsed := time.Since(begin)
 			log.Printf("发送 block %d 给 %v， 发送大小为：%vMB， 用时：%s.\n", cmd.BlockID, cmd.ToIPs, len(td.Buff),
 			elapsed)
 
 		}
+
+	//没有可执行的等待任务（叶子节点）
 	}else{
 		if _, ok := ackMaps.getACK(td.SID); !ok {
 			//返回ack
@@ -376,15 +385,21 @@ func getAdjacentMatrix(parities []byte, nodeID int, allMatrix []byte) (config.Ma
 	return newMatrix, nodeIDs
 }
 func (p TUpdate) HandleCMD(cmd *config.CMD)  {
+
+	//helpers已就位
 	if IsCMDDataExist(cmd) {
 		//添加ack监听
 		for _, _ = range cmd.ToIPs {
 			ackMaps.pushACK(cmd.SID)
 		}
 
-		begin := time.Now()
+		//读取数据
 		buff := common.ReadBlockWithSize(cmd.BlockID, config.BlockSize)
-		log.Printf("TUpdate: HandleCMD: read block %d with size: %v.\n", cmd.BlockID, len(buff))
+
+		//记录发送数据起始时间
+		begin := time.Now()
+
+		//发送数据
 		for _, toIP := range cmd.ToIPs {
 			td := &config.TD{
 				BlockID: cmd.BlockID,
@@ -394,21 +409,17 @@ func (p TUpdate) HandleCMD(cmd *config.CMD)  {
 				SID: cmd.SID,
 				SendSize: cmd.SendSize,
 			}
-			//td := config.TDBufferPool.Get().(*config.TD)
-			//td.BlockID = cmd.BlockID
-			//td.Buff = buff
-			//td.FromIP = cmd.FromIP
-			//td.ToIP = toIP
-			//td.SID = cmd.SID
-			//td.SendSize = cmd.SendSize
 			common.SendData(td, toIP, config.NodeTDListenPort)
-
-			//config.TDBufferPool.Put(td)
 		}
+
+		//记录发送数据耗时
 		elapsed := time.Since(begin)
 		log.Printf("发送 block %d 给 %v 用时：%s.\n", cmd.BlockID, cmd.ToIPs, elapsed)
 
+		//内存回收
 		config.BlockBufferPool.Put(buff)
+
+	//helpers未就位
 	}else{
 		cmd.Helpers = append(cmd.Helpers, cmd.BlockID)
 		log.Printf("添加sid: %d, blockID: %d, helpers: %v到cmdList.\n", cmd.SID, cmd.BlockID, cmd.Helpers)
@@ -424,11 +435,14 @@ func IsCMDDataExist(cmd *config.CMD) bool {
 }
 
 func (p TUpdate) HandleACK(ack *config.ACK)  {
-	ackMaps.popACK(ack.SID)
-	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
+	restACKs := ackMaps.popACK(ack.SID)
+	if restACKs == 0 {
+		//SentMsgLog.popMsg(ack.SID)      //该SID不需要重发
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)
+		}else if ACKIsEmpty() { //检查是否全部完成，若完成，进入下一轮
+			IsRunning = false
 		}
 	}
 }

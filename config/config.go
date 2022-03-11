@@ -25,9 +25,6 @@ const MaxBlockSize int = 1000
 const TestFileSize = 10 * 1024 * Megabyte
 var MaxBlockIndex = TestFileSize / BlockSize - 1
 const NumOfAlgorithm int32 = 10 //采用3种算法执行相同任务
-//var Policies = []string{"Base", "BaseMulticast", "BaseMulticastBatch", "TUpdate",
-//						"TUpdateBatch", "TUpdateDeltaBatch", "TUpdateDeltaBatchMulti",
-//						"DXR_DU", "DXR_DU_Multi", "CAU", "CAU1", "CAURS" }
 var Policies = []string{"Base", "BaseMulticast", "BaseMulticastBatch", "TUpdate",
 						"TUpdateBatch", "TUpdateDeltaBatch",
 						"DXR_DU", "CAU", "CAU1", "CAURS" }
@@ -122,8 +119,7 @@ type TD struct {
 
 //传输命令格式
 type CMD struct {
-	SID                int            //
-	StripeID           int
+	SID                int
 	BlockID            int             //如果有协作者ID，意思就是传XOR结果过去，blockID=第一条ID
 	FromIP             string
 	ToIPs              []string

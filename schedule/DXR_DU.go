@@ -62,13 +62,16 @@ func (p DXR_DU) Init()  {
 	sid = 0
 }
 func (p DXR_DU) HandleTD(td *config.TD) {
+
 	//记录当前轮次接收到的blockID
 	curReceivedTDs.pushTD(td)
+
 	//校验节点本地数据更新
 	localID := arrays.ContainsString(config.NodeIPs, common.GetLocalIP())
 	if localID >= config.K {
 		common.WriteDeltaBlock(td.BlockID, td.Buff)
 	}
+
 	//返回ack
 	ack := &config.ACK{
 		SID:     td.SID,
@@ -76,6 +79,7 @@ func (p DXR_DU) HandleTD(td *config.TD) {
 	}
 	ReturnACK(ack)
 
+	//处理需要helpers的cmd
 	handleWaitingCMDs(td)
 }
 
@@ -119,16 +123,18 @@ func handleWaitingCMDs(td *config.TD) {
 }
 
 func (p DXR_DU) HandleReq(reqs []*config.ReqData)  {
+
 	totalReqs = reqs
 	log.Printf("一共接收到%d个请求...\n", len(totalReqs))
 
 	for len(totalReqs) > 0 {
 		//过滤blocks
 		lenOfBatch := findDistinctReqs()
-		//执行cau
+
 		actualBlocks += len(curDistinctReq)
 		log.Printf("第%d轮 DXR-DU：获取%d个请求，实际处理%d个block，剩余%v个block待处理。\n", round, lenOfBatch, len(curDistinctReq), len(totalReqs))
 
+		//执行reqs
 		dxr_du()
 
 		for IsRunning {
@@ -139,8 +145,6 @@ func (p DXR_DU) HandleReq(reqs []*config.ReqData)  {
 		round++
 		p.Clear()
 	}
-	//p.Clear()
-
 }
 
 func turnMatchReqsToDistinctReqs(curMatchReqs []*config.ReqData)   {
@@ -166,6 +170,7 @@ func findDistinctReqs() int {
 		curMatchReqs = totalReqs
 		totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 	}
+	//将同一block的不同修改合并（rangL，rangR）
 	turnMatchReqsToDistinctReqs(curMatchReqs)
 
 	return len(curMatchReqs)
@@ -514,8 +519,9 @@ func dxr_parityUpdate(rackID int, stripe []int) {
 											stripe, parities, unionParities, curRackNodes)
 }
 func (p DXR_DU) HandleCMD(cmd *config.CMD)  {
-	//handleOneCMD(cmd)
-	if len(cmd.Helpers) == 0 {	//本地数据，直接发送
+
+	//直接发送（数据在本地）
+	if len(cmd.Helpers) == 0 {
 		//添加ack监听
 		for _, _ = range cmd.ToIPs {
 			ackMaps.pushACK(cmd.SID)
@@ -526,49 +532,50 @@ func (p DXR_DU) HandleCMD(cmd *config.CMD)  {
 		log.Printf("读取 block:%d size:%.2f%% 本地数据.\n", cmd.BlockID, sendSizeRate)
 
 		for _, toIP := range cmd.ToIPs {
-			//td := &config.TD{
-			//	BlockID: cmd.BlockID,
-			//	Buff: buff,
-			//	FromIP: cmd.FromIP,
-			//	ToIP: toIP,
-			//	SID: cmd.SID,
-			//	SendSize: cmd.SendSize,
-			//}
-			td := config.TDBufferPool.Get().(*config.TD)
-			td.BlockID = cmd.BlockID
-			td.Buff = buff[:cmd.SendSize]
-			td.FromIP = cmd.FromIP
-			td.ToIP = toIP
-			td.SID = cmd.SID
-			td.SendSize = cmd.SendSize
+			td := &config.TD{
+				BlockID: cmd.BlockID,
+				Buff: buff,
+				FromIP: cmd.FromIP,
+				ToIP: toIP,
+				SID: cmd.SID,
+				SendSize: cmd.SendSize,
+			}
+			//td := config.TDBufferPool.Get().(*config.TD)
+			//td.BlockID = cmd.BlockID
+			//td.Buff = buff[:cmd.SendSize]
+			//td.FromIP = cmd.FromIP
+			//td.ToIP = toIP
+			//td.SID = cmd.SID
+			//td.SendSize = cmd.SendSize
 			sendSizeRate := float32(td.SendSize*1.0) / float32(config.BlockSize) * 100.0
 			log.Printf("发送 block:%d sendSize:%.2f%% 的数据到%s.\n", td.BlockID, sendSizeRate, toIP)
 			common.SendData(td, toIP, config.NodeTDListenPort)
 
-			config.TDBufferPool.Put(td)
+			//config.TDBufferPool.Put(td)
 		}
-
 		config.BlockBufferPool.Put(buff)
 
-	}else if !curReceivedTDs.isEmpty() {  //如果已收到过相关td
+	//helpers已收到一部分
+	}else if !curReceivedTDs.isEmpty() {
 		CMDList.pushCMD(cmd)
 		for _, td := range curReceivedTDs.getTDs(){
 			handleWaitingCMDs(td)
 		}
-	}else{  //否则
+
+	//helpers未就位
+	}else{
 		CMDList.pushCMD(cmd)
 	}
 }
 
 func (p DXR_DU) HandleACK(ack *config.ACK)  {
-	ackMaps.popACK(ack.SID)
-	//log.Printf("当前剩余ack：%d\n", ackMaps)
-	if v, _ := ackMaps.getACK(ack.SID) ; v == 0 {
+	restACKs := ackMaps.popACK(ack.SID)
+	if restACKs == 0 {
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)
-		}else if ACKIsEmpty() { //ms检查是否全部完成，若完成，进入下一轮
-			log.Printf("当前任务已完成...\n")
+		//检查是否全部完成，若完成，进入下一轮
+		}else if ACKIsEmpty() {
 			IsRunning = false
 		}
 	}
