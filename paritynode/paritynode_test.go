@@ -92,10 +92,12 @@ func TestReceive(t *testing.T) {
 
 }
 func TestSend(t *testing.T) {
+
 	config.Init()
 	config.InitBufferPool()
 	buff := common.ReadBlockWithSize(1, config.BlockSize)
-	log.Println(buff[:2*config.BlockSize])
+	log.Println(len(buff))
+
 
 
 	//for i := 0; i < 1; i++ {

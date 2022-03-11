@@ -12,7 +12,7 @@ const K int = 8
 const M int = 4
 const W int = 4
 const N  = K + M
-var NumOfMB = 16
+var NumOfMB = 4
 const InnerBandWidth int = 200 * Megabyte / 8    //200Mbps
 const OuterBandWidth = InnerBandWidth / 5   //40Mbps
 var BlockSize = Megabyte * NumOfMB //1MB
@@ -233,7 +233,7 @@ func InitBufferPool()  {
 	//}
 	BlockBufferPool = sync.Pool{
 		New: func() interface{} {
-			return make([]byte, RSBlockSize)
+			return make([]byte, BlockSize)
 		},
 	}
 }

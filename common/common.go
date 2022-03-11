@@ -125,7 +125,7 @@ func ReadBlockWithSize(blockID, size int) []byte  {
 
 	defer file.Close()
 
-	readSize, err := file.ReadAt(buff, int64(index * size))
+	readSize, err := file.ReadAt(buff[:size], int64(index * size))
 
 	if err != nil {
 		log.Fatal("读取文件失败：", err)
@@ -134,7 +134,7 @@ func ReadBlockWithSize(blockID, size int) []byte  {
 		log.Printf("读取大小为不一致 in ReadBlockWithSize：%+v, %+v", readSize, size)
 	}
 
-	return buff
+	return buff[:size]
 }
 func WriteBlockWithSize(blockID int, buff []byte, size int)  {
 	index := GetIndex(blockID)
@@ -182,7 +182,7 @@ func RandWriteBlockAndRetDelta(blockID, size int) []byte  {
 	config.BlockBufferPool.Put(oldBuff)
 	config.BlockBufferPool.Put(newBuff)
 
-	return deltaBuff
+	return deltaBuff[:size]
 }
 func WriteDeltaBlock(blockID int, deltaBuff []byte)   {
 	size := len(deltaBuff)
@@ -306,8 +306,10 @@ func GetConnIP(conn net.Conn) string  {
 	ip := strings.Split(addr, ":")[0]
 	return ip
 }
+
+// GetIndex ：rowIndex= blockID/K (行数) + blockID%W (列数)
 func GetIndex(blockID int) int {
-	return int(math.Min(float64(blockID/(config.K*config.W)), float64(config.MaxBlockIndex)))
+	return int(math.Min(float64(blockID/config.K+blockID%config.W), float64(config.MaxBlockIndex)))
 }
 //求并集
 func Union(slice1, slice2 []int) []int {
