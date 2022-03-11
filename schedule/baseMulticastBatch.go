@@ -73,6 +73,7 @@ func (p BaseMulticastBatch) Init()  {
 	totalCrossRackTraffic = 0
 	sid = 0
 	SentMsgLog.Init()
+	ClearChannels()
 }
 
 

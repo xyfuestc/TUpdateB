@@ -12,6 +12,7 @@ type TUpdateBatch struct {
 }
 
 func (p TUpdateBatch) Init()  {
+
 	totalCrossRackTraffic = 0
 	InitNetworkDistance()
 	ackMaps = &ACKMap{
@@ -24,8 +25,9 @@ func (p TUpdateBatch) Init()  {
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
 	actualBlocks = 0
-	round = 0
 	sid = 0
+	round = 0
+	ClearChannels()
 }
 
 func (p TUpdateBatch) HandleReq(reqs []*config.ReqData)  {

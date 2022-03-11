@@ -218,6 +218,7 @@ func (p Base) Init()  {
 	actualBlocks = 0
 	round = 0
 	totalCrossRackTraffic = 0
+	ClearChannels()
 
 }
 

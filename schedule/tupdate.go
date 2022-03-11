@@ -106,7 +106,7 @@ func TaskAdjust(taskGroup []Task)  {
 	}
 }
 func (p TUpdate) Init()  {
-	totalCrossRackTraffic = 0
+
 	InitNetworkDistance()
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
@@ -117,8 +117,12 @@ func (p TUpdate) Init()  {
 	CMDList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
+	ClearChannels()
+
 	actualBlocks = 0
 	sid = 0
+	round = 0
+	totalCrossRackTraffic = 0
 }
 
 func (p TUpdate) HandleReq(reqs []*config.ReqData)  {

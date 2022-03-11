@@ -42,7 +42,12 @@ func (M *ReceivedTDs) getTDs() []*config.TD  {
 var curDistinctReq = make([]*config.ReqData, 0, config.MaxBatchSize)
 var curReceivedTDs *ReceivedTDs
 func (p DXR_DU) Init()  {
+
 	totalCrossRackTraffic = 0
+	actualBlocks = 0
+	round = 0
+	sid = 0
+
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
 	}
@@ -54,12 +59,12 @@ func (p DXR_DU) Init()  {
 	}
 	curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
 	curDistinctReq = make([]*config.ReqData, 0, config.MaxBatchSize)
-	actualBlocks = 0
-	round = 0
+
 	curReceivedTDs = &ReceivedTDs{
 		TDs: make([]*config.TD, 0, config.MaxBatchSize),
 	}
-	sid = 0
+
+	ClearChannels()
 }
 func (p DXR_DU) HandleTD(td *config.TD) {
 

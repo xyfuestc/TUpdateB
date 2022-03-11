@@ -11,7 +11,7 @@ type TUpdateDeltaBatch struct {
 }
 
 func (p TUpdateDeltaBatch) Init()  {
-	totalCrossRackTraffic = 0
+
 	InitNetworkDistance()
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
@@ -22,9 +22,13 @@ func (p TUpdateDeltaBatch) Init()  {
 	CMDList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
+
+	totalCrossRackTraffic = 0
 	actualBlocks = 0
 	round = 0
 	sid = 0
+
+	ClearChannels()
 }
 
 func (p TUpdateDeltaBatch) HandleReq(reqs []*config.ReqData)  {

@@ -30,6 +30,7 @@ func (p CAURS) Init()  {
 		TDs: make([]*config.TD, 0, config.MaxRSBatchSize),
 	}
 	sid = 0
+	ClearChannels()
 }
 
 func (p CAURS) HandleTD(td *config.TD) {

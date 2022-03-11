@@ -137,6 +137,7 @@ func (p BaseMulticast) Init()  {
 	totalCrossRackTraffic = 0
 	sid = 0
 	SentMsgLog.Init()
+	ClearChannels()
 }
 
 
