@@ -43,7 +43,7 @@ func setPolicy(conn net.Conn)  {
 		common.GetConnIP(conn), config.Policies[p.Type], config.BlockSize/config.Megabyte, config.RSBlockSize/config.Megabyte, p.Multicast)
 }
 
-//var done = make(chan bool)
+var done = make(chan bool)
 
 //func handleACK(conn net.Conn) {
 //	defer conn.Close()
@@ -336,6 +336,6 @@ func clearAll() {
 }
 
 func finish() {
-	//done <- true
+	done <- true
 	clearAll()
 }
