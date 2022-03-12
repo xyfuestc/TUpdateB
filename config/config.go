@@ -12,11 +12,11 @@ const K int = 8
 const M int = 4
 const W int = 4
 const N  = K + M
-var NumOfMB = 4
+var NumOfMB = 0.25
 const InnerBandWidth int = 200 * Megabyte / 8    //200Mbps
 const OuterBandWidth = InnerBandWidth / 5   //40Mbps
-var BlockSize = Megabyte * NumOfMB //1MB
-var RSBlockSize = Megabyte * NumOfMB * W
+var BlockSize = int(Megabyte * NumOfMB) //1MB
+var RSBlockSize = int(Megabyte * NumOfMB) * W
 const Megabyte = 1024 * 1024      //1MB
 const MaxBatchSize int = 100
 const MaxRSBatchSize int = 100
@@ -73,7 +73,7 @@ type UserRequest struct {
 
 type Policy struct {
 	Type      int32
-	NumOfMB   int
+	NumOfMB   float64
 	TraceName string
 	Multicast bool
 }

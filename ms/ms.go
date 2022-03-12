@@ -18,16 +18,16 @@ import (
 var numOfReq = 0
 //var curPolicy = 6
 var curPolicy int32 = 1
-var NumOfMB = 1 //以这个为准，会同步到各个节点
+var NumOfMB = 0.25 //以这个为准，会同步到各个节点
 var traceName = "hm_0"
-var XOROutFilePath = "../request/"+traceName+"_"+strconv.Itoa(NumOfMB)+"M.csv.txt"
-var RSOutFilePath = "../request/"+traceName+"_"+strconv.Itoa(NumOfMB*config.W)+"M.csv.txt"
+var XOROutFilePath = "../request/"+traceName+"_"+strconv.FormatFloat(NumOfMB, 'E', -1, 64)+"M.csv.txt"
+var RSOutFilePath = "../request/"+traceName+"_"+strconv.Itoa( int(NumOfMB * float64(config.W)) )+"M.csv.txt"
 var OutFilePath = XOROutFilePath
 var actualUpdatedBlocks = 0
 var beginTime time.Time
 var totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 var roundFinished int32 = 0  // 1-本轮结束 ； 0-本轮未结束
-var curNumOfMB = 0
+var curNumOfMB float64 = 0
 //var connections []net.Conn
 //var receivedAckCh = make(chan config.ACK, 10)
 //var wg sync.WaitGroup
@@ -187,8 +187,8 @@ func settingCurrentPolicy(policyType int32)  {
 	}
 
 	config.NumOfMB = NumOfMB
-	config.BlockSize = NumOfMB * config.Megabyte
-	config.RSBlockSize = config.Megabyte * NumOfMB * config.W
+	config.BlockSize = int(NumOfMB * config.Megabyte)
+	config.RSBlockSize = int(config.Megabyte * NumOfMB) * config.W
 
 	log.Printf("初始化共享池...\n")
 	config.InitBufferPool()
@@ -200,7 +200,7 @@ func settingCurrentPolicy(policyType int32)  {
 	time.Sleep(3 * time.Second)
 
 	if config.Policies[curPolicy] == "CAURS" {
-		curNumOfMB = config.W * NumOfMB
+		curNumOfMB = float64(config.W) * NumOfMB
 	}else{
 		curNumOfMB = NumOfMB
 	}

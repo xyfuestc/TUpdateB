@@ -33,8 +33,8 @@ func setPolicy(conn net.Conn)  {
 	}
 
 	schedule.SetPolicy(config.Policies[p.Type])
-	config.BlockSize = p.NumOfMB * config.Megabyte
-	config.RSBlockSize = p.NumOfMB * config.Megabyte * config.W
+	config.BlockSize = int(p.NumOfMB * config.Megabyte)
+	config.RSBlockSize = int(p.NumOfMB * config.Megabyte) * config.W
 
 	log.Printf("初始化共享池...\n")
 	config.InitBufferPool()
@@ -43,7 +43,7 @@ func setPolicy(conn net.Conn)  {
 		common.GetConnIP(conn), config.Policies[p.Type], config.BlockSize/config.Megabyte, config.RSBlockSize/config.Megabyte, p.Multicast)
 }
 
-var done = make(chan bool)
+//var done = make(chan bool)
 
 //func handleACK(conn net.Conn) {
 //	defer conn.Close()
@@ -62,12 +62,12 @@ func main() {
 	registerSafeExit()
 
 
-	for  {
-		select {
-		case <- done:
-			return
-		}
-	}
+	//for  {
+	//	select {
+	//	case <- done:
+	//		return
+	//	}
+	//}
 }
 
 func listenAndReceive(workers int) {

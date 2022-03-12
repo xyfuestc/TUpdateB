@@ -885,7 +885,7 @@ func easyjson6615c02eDecodeECConfig7(in *jlexer.Lexer, out *Policy) {
 		case "Type":
 			out.Type = int32(in.Int32())
 		case "NumOfMB":
-			out.NumOfMB = int(in.Int())
+			out.NumOfMB = float64(in.Float64())
 		case "TraceName":
 			out.TraceName = string(in.String())
 		case "Multicast":
@@ -912,7 +912,7 @@ func easyjson6615c02eEncodeECConfig7(out *jwriter.Writer, in Policy) {
 	{
 		const prefix string = ",\"NumOfMB\":"
 		out.RawString(prefix)
-		out.Int(int(in.NumOfMB))
+		out.Float64(float64(in.NumOfMB))
 	}
 	{
 		const prefix string = ",\"TraceName\":"

@@ -4,7 +4,6 @@ import (
 	"EC/common"
 	"EC/config"
 	"EC/schedule"
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -14,7 +13,7 @@ import (
 )
 //var connections []net.Conn
 
-var done = make(chan bool)
+//var done = make(chan bool)
 var tickerDuration = time.Second * 4
 var ticker = time.NewTicker(tickerDuration)
 
@@ -48,16 +47,18 @@ func setPolicy(conn net.Conn)  {
 	if p.Type == -1 {
 		finish()
 		return
+
 	}else if strings.Contains(config.Policies[p.Type], "Multicast") {
 		//启动超时处理
 		ticker.Reset(tickerDuration)
+
 	}else{
 		ticker.Stop()
 	}
 
 	schedule.SetPolicy(config.Policies[p.Type])
-	config.BlockSize = p.NumOfMB * config.Megabyte
-	config.RSBlockSize = p.NumOfMB * config.Megabyte * config.W
+	config.BlockSize = int(p.NumOfMB * config.Megabyte)
+	config.RSBlockSize = int(p.NumOfMB * config.Megabyte) * config.W
 
 	log.Printf("初始化共享池...\n")
 	config.InitBufferPool()
@@ -116,13 +117,13 @@ func main() {
 	//	}
 	//}()
 
-	for  {
-		select {
-		case <- done:
-			fmt.Printf("收到结束信号...退出\n")
-			return
-		}
-	}
+	//for  {
+	//	select {
+	//	case <- done:
+	//		fmt.Printf("收到结束信号...退出\n")
+	//		return
+	//	}
+	//}
 
 
 	//go listenTD(l3)
@@ -180,11 +181,12 @@ func listenCMD(listen net.Listener) {
 			continue
 		}
 		cmd := common.GetCMD(conn)
+		log.Printf("收到来自 %s 的命令: 将 sid: %d, block: %d 的更新数据发送给 %v.\n", common.GetConnIP(conn), cmd.SID, cmd.BlockID, cmd.ToIPs)
+
 		schedule.GetCurPolicy().RecordSIDAndReceiverIP(cmd.SID, common.GetConnIP(conn))
 		schedule.ReceivedCMDCh <- cmd
 		//config.CMDBufferPool.Put(cmd)
 
-		log.Printf("收到来自 %s 的命令: 将 sid: %d, block: %d 的更新数据发送给 %v.\n", common.GetConnIP(conn), cmd.SID, cmd.BlockID, cmd.ToIPs)
 
 		//connections = append(connections, conn)
 		//if len(connections)%100 == 0 {
