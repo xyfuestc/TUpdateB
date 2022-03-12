@@ -62,12 +62,13 @@ func main() {
 	registerSafeExit()
 
 
-	//for  {
-	//	select {
-	//	case <- done:
-	//		return
-	//	}
-	//}
+	for  {
+		select {
+		case <- done:
+			return
+		}
+	}
+
 }
 
 func listenAndReceive(workers int) {

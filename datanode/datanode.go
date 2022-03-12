@@ -4,6 +4,7 @@ import (
 	"EC/common"
 	"EC/config"
 	"EC/schedule"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -110,6 +111,7 @@ func main() {
 	//当发生意外退出时，安全释放所有资源
 	registerSafeExit()
 
+
 	////清除连接
 	//defer func() {
 	//	for _, conn := range connections {
@@ -117,13 +119,13 @@ func main() {
 	//	}
 	//}()
 
-	//for  {
-	//	select {
-	//	case <- done:
-	//		fmt.Printf("收到结束信号...退出\n")
-	//		return
-	//	}
-	//}
+	for  {
+		select {
+		case <- done:
+			fmt.Printf("收到结束信号...退出\n")
+			return
+		}
+	}
 
 
 	//go listenTD(l3)
