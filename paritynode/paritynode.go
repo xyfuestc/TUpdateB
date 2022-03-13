@@ -21,7 +21,7 @@ import (
 //	schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
 //	schedule.GetCurPolicy().HandleTD(&td)
 //}
-func setPolicy(conn net.Conn)  {
+func setPolicy(conn net.Conn) {
 	defer conn.Close()
 	p := common.GetPolicy(conn)
 
@@ -34,13 +34,13 @@ func setPolicy(conn net.Conn)  {
 
 	schedule.SetPolicy(config.Policies[p.Type])
 	config.BlockSize = int(p.NumOfMB * config.Megabyte)
-	config.RSBlockSize = int(p.NumOfMB * config.Megabyte) * config.W
+	config.RSBlockSize = int(p.NumOfMB*config.Megabyte) * config.W
 
 	log.Printf("初始化共享池...\n")
 	config.InitBufferPool()
 
-	log.Printf("收到来自 %s 的命令，设置当前算法设置为%s, 当前XOR的blockSize=%vMB，RS的blockSize=%vMB, UsingMulticast=%v.\n",
-		common.GetConnIP(conn), config.Policies[p.Type], config.BlockSize/config.Megabyte, config.RSBlockSize/config.Megabyte, p.Multicast)
+	log.Printf("收到来自 %s 的命令，设置当前算法设置为%s, 当前blockSize=%.2fMB.\n",
+		common.GetConnIP(conn), config.Policies[p.Type], p.NumOfMB)
 }
 
 var done = make(chan bool)

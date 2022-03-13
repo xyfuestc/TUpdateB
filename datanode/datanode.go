@@ -64,8 +64,8 @@ func setPolicy(conn net.Conn)  {
 	log.Printf("初始化共享池...\n")
 	config.InitBufferPool()
 
-	log.Printf("收到来自 %s 的命令，设置当前算法设置为%s, 当前blockSize=%vMB.\n",
-		common.GetConnIP(conn), config.Policies[p.Type], config.BlockSize/config.Megabyte)
+	log.Printf("收到来自 %s 的命令，设置当前算法设置为%s, 当前blockSize=%.2fMB.\n",
+		common.GetConnIP(conn), config.Policies[p.Type], p.NumOfMB)
 
 }
 
