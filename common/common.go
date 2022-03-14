@@ -125,6 +125,8 @@ func ReadBlockWithSize(blockID, size int) []byte  {
 
 	defer file.Close()
 
+
+
 	readSize, err := file.ReadAt(buff[:size], int64(index * size))
 	log.Printf("index: %v, size:%v, buff len: %v, readSize:%v", index, size, len, readSize)
 

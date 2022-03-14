@@ -24,11 +24,8 @@ func TestMulticast(t *testing.T)  {
 	//msgLog := map[string]config.MTU{} // key: "sid:fid"
 	config.Init()
 	config.InitBufferPool()
-	randStr := uniuri.NewLen(100)
-	buff := make([]byte, 100000)
-	copy(buff, randStr)
-	buff50 := buff[:10]
-	fmt.Printf("%+v\n", buff50)
+	common.ReadBlockWithSize(3000000, 4 * config.Megabyte)
+
 	//config.BASEMulticast
 	schedule.SetPolicy("BASEMulticast")
 	//go common.ListenACK(schedule.MulticastReceiveAckCh)
