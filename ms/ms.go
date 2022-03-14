@@ -213,7 +213,7 @@ func start()  {
 	time.Sleep(2 * time.Second)
 	beginTime = time.Now()
 	settingCurrentPolicy(curPolicy)
-	log.Printf(" 设置当前算法：[%s], 当前数据集为：%s, blockSize=%vMB, RSBlockSize=%.2fMB.\n", config.Policies[curPolicy], OutFilePath, NumOfMB, curNumOfMB)
+	log.Printf(" 设置当前算法：[%s], 当前数据集为：%s, blockSize=%vMB.\n", config.Policies[curPolicy], OutFilePath, curNumOfMB)
 
 	//重置为本轮未结束：0
 	atomic.StoreInt32(&roundFinished, 0)
