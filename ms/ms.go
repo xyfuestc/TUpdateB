@@ -186,7 +186,7 @@ func settingCurrentPolicy(policyType int32)  {
 		Multicast: UsingMulticast,
 	}
 
-	config.NumOfMB = NumOfMB
+	config.NumOfMB = int(NumOfMB)
 	config.BlockSize = int(NumOfMB * config.Megabyte)
 	config.RSBlockSize = int(config.Megabyte * NumOfMB) * config.W
 
