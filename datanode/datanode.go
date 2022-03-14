@@ -46,7 +46,7 @@ func setPolicy(conn net.Conn)  {
 
 	//检测结束
 	if p.Type == -1 {
-		finish()
+		//finish()
 		return
 
 	}else if strings.Contains(config.Policies[p.Type], "Multicast") {
