@@ -15,7 +15,7 @@ import (
 //var connections []net.Conn
 
 var done = make(chan bool)
-var tickerDuration = time.Millisecond * 1000
+var tickerDuration = time.Millisecond * 500
 var ticker = time.NewTicker(tickerDuration)
 
 //func handleCMD(conn net.Conn)  {
