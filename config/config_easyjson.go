@@ -1499,6 +1499,10 @@ func easyjson6615c02eDecodeECConfig11(in *jlexer.Lexer, out *ACK) {
 			out.BlockID = int(in.Int())
 		case "FragmentID":
 			out.FragmentID = int(in.Int())
+		case "CrossTraffic":
+			out.CrossTraffic = int(in.Int())
+		case "FromIP":
+			out.FromIP = string(in.String())
 		default:
 			in.SkipRecursive()
 		}
@@ -1532,6 +1536,16 @@ func easyjson6615c02eEncodeECConfig11(out *jwriter.Writer, in ACK) {
 		const prefix string = ",\"FragmentID\":"
 		out.RawString(prefix)
 		out.Int(int(in.FragmentID))
+	}
+	{
+		const prefix string = ",\"CrossTraffic\":"
+		out.RawString(prefix)
+		out.Int(int(in.CrossTraffic))
+	}
+	{
+		const prefix string = ",\"FromIP\":"
+		out.RawString(prefix)
+		out.String(string(in.FromIP))
 	}
 	out.RawByte('}')
 }

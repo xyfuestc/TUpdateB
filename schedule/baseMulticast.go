@@ -121,11 +121,12 @@ func (p BaseMulticast) HandleACK(ack *config.ACK)  {
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ack.CrossTraffic = totalCrossRackTraffic
+			ack.FromIP = common.GetLocalIP()
 			ReturnACK(ack)
 		//ms
 		}else {
 			//统计其他节点重发的流量
-			DataNodeResentTraffic[common.GetLocalIP()] = ack.CrossTraffic
+			DataNodeResentTraffic[ack.FromIP] = ack.CrossTraffic
 			if ACKIsEmpty() { //检查是否全部完成，若完成，进入下一轮
 				IsRunning = false
 			}
