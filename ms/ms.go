@@ -197,7 +197,7 @@ func settingCurrentPolicy(policyType int32)  {
 		common.SendData(p, ip, config.NodeSettingsListenPort)
 	}
 	log.Printf("等待设置完成...\n")
-	time.Sleep(3 * time.Second)
+	time.Sleep(2 * time.Second)
 
 	if config.Policies[curPolicy] == "CAURS" {
 		curNumOfMB = float64(config.W) * NumOfMB
@@ -210,7 +210,7 @@ func start()  {
 
 	setCurrentTrace() //专门针对CAURS改变数据源
 
-	time.Sleep(2 * time.Second)
+	//time.Sleep(2 * time.Second)
 	beginTime = time.Now()
 	settingCurrentPolicy(curPolicy)
 	log.Printf(" 设置当前算法：[%s], 当前数据集为：%s, blockSize=%vMB.\n", config.Policies[curPolicy], OutFilePath, curNumOfMB)

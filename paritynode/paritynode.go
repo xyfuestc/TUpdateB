@@ -36,7 +36,7 @@ func setPolicy(conn net.Conn) {
 	config.BlockSize = int(p.NumOfMB * config.Megabyte)
 	config.RSBlockSize = int(p.NumOfMB*config.Megabyte) * config.W
 	config.MaxBlockIndex =  config.TestFileSize / config.RSBlockSize - 1
-	
+
 	log.Printf("初始化共享池...\n")
 	config.InitBufferPool()
 
