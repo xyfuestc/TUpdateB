@@ -105,6 +105,7 @@ func HandleTimeout() int {
 	for sid, msg := range msgLog{
 		count++
 		MulticastSendMTUCh <- msg
+		totalCrossRackTraffic += msg.SendSize
 		log.Printf("重发: sid:%v, blockID:%v", sid, msg.BlockID)
 	}
 	return count

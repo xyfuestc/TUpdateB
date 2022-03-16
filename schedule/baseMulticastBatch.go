@@ -131,7 +131,7 @@ func (p BaseMulticastBatch) handleOneBlock(reqData config.ReqData)  {
 	common.SendData(cmd, fromIP, config.NodeCMDListenPort)
 
 	//跨域流量统计
-	totalCrossRackTraffic += len(toIPs) * (rangeRight - rangeLeft)
+	totalCrossRackTraffic += rangeRight - rangeLeft
 	log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v. SendSize: %v\n", reqData.SID,
 		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, toIPs, cmd.SendSize)
 }
