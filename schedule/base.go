@@ -18,6 +18,8 @@ type Policy interface {
 	RecordSIDAndReceiverIP(sid int, ip string)
 	IsFinished() bool
 	GetActualBlocks() int
+	GetCrossRackTraffic() float32
+
 }
 
 type Base struct {
@@ -311,7 +313,7 @@ func (p Base) GetActualBlocks() int {
 	return actualBlocks
 }
 //数据格式：MB
-func GetCrossRackTraffic() float32 {
+func (p Base) GetCrossRackTraffic() float32 {
 	return  float32(totalCrossRackTraffic) / config.Megabyte
 }
 

@@ -47,7 +47,7 @@ func checkFinish() {
 		throughput :=  float64(numOfReq) * float64(curNumOfMB) / float64(sumTime/time.Second)
 		actualUpdatedBlocks = schedule.GetCurPolicy().GetActualBlocks()
 		averageOneUpdateSpeed := float64(sumTime/time.Millisecond) / float64(actualUpdatedBlocks) / 1000
-		crossTraffic := schedule.GetCrossRackTraffic()
+		crossTraffic := schedule.GetCurPolicy().GetCrossRackTraffic()
 		log.Printf("%s 总耗时: %.2fs, 完成更新任务: %d, 实际处理任务数: %d, 单块更新时间: %0.2fs, 吞吐量: %0.2fMB/s，跨域流量为：%0.2fMB\n",
 			config.Policies[curPolicyVal], sumTime.Seconds(), numOfReq, actualUpdatedBlocks, averageOneUpdateSpeed, throughput, crossTraffic)
 
@@ -229,7 +229,6 @@ func msgSorter(receivedAckCh <-chan config.ACK)  {
 			checkFinish()
 		}
 	}
-
 
 }
 func listenACK(listen net.Listener) {

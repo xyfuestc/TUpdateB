@@ -158,6 +158,7 @@ type ACK struct {
 	AckID       int
 	BlockID     int
 	FragmentID  int
+	CrossTraffic int
 }
 
 type WaitingACKItem struct {

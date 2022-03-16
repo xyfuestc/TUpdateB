@@ -471,3 +471,7 @@ func (p TUpdate) IsFinished() bool {
 func (p TUpdate) GetActualBlocks() int {
 	return actualBlocks
 }
+
+func (p TUpdate) GetCrossRackTraffic() float32 {
+	return  float32(totalCrossRackTraffic) / config.Megabyte
+}

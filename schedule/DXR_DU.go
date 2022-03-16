@@ -618,3 +618,6 @@ func (p DXR_DU) GetActualBlocks() int {
 	return actualBlocks
 }
 
+func (p DXR_DU) GetCrossRackTraffic() float32 {
+	return  float32(totalCrossRackTraffic) / config.Megabyte
+}

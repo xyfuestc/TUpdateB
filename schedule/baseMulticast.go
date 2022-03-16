@@ -66,6 +66,7 @@ var MulticastSendMTUCh = make(chan config.MTU)
 var MulticastReceiveMTUCh = make(chan config.MTU, 100)
 var MulticastReceiveAckCh = make(chan config.ACK)
 var SentMsgLog MsgLogMap
+var DataNodeResentTraffic = map[string]int{}
 func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
 	//重复SID，不处理
 	if _, ok := ackMaps.getACK(cmd.SID); ok {
@@ -119,9 +120,15 @@ func (p BaseMulticast) HandleACK(ack *config.ACK)  {
 		SentMsgLog.popMsg(ack.SID)      //该SID重发数-1
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
+			ack.CrossTraffic = totalCrossRackTraffic
 			ReturnACK(ack)
-		}else if ACKIsEmpty() { //检查是否全部完成，若完成，进入下一轮
-			IsRunning = false
+		//ms
+		}else {
+			//统计其他节点重发的流量
+			DataNodeResentTraffic[common.GetLocalIP()] = ack.CrossTraffic
+			if ACKIsEmpty() { //检查是否全部完成，若完成，进入下一轮
+				IsRunning = false
+			}
 		}
 	}
 }
@@ -133,6 +140,7 @@ func (p BaseMulticast) Init()  {
 	ackIPMaps = &ACKIPMap{
 		ACKReceiverIPs: map[int]string{},
 	}
+	DataNodeResentTraffic = make(map[string]int)
 	actualBlocks = 0
 	round = 0
 	totalCrossRackTraffic = 0
@@ -400,4 +408,11 @@ func SendMessageAndWaitingForACK(message *config.MTU)  {
 			MulticastSendMTUCh <- *message
 		}
 	//}
+}
+func (p BaseMulticast) GetCrossRackTraffic() float32 {
+	for ip, traffic := range DataNodeResentTraffic{
+		totalCrossRackTraffic += traffic
+		log.Printf("%v's resent traffic is: %v", ip, traffic)
+	}
+	return  float32(totalCrossRackTraffic) / config.Megabyte
 }

@@ -226,3 +226,7 @@ func (p TUpdateDeltaBatch) IsFinished() bool {
 func (p TUpdateDeltaBatch) GetActualBlocks() int {
 	return actualBlocks
 }
+
+func (p TUpdateDeltaBatch) GetCrossRackTraffic() float32 {
+	return  float32(totalCrossRackTraffic) / config.Megabyte
+}

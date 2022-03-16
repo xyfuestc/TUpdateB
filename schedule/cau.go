@@ -463,3 +463,6 @@ func (p CAU) GetActualBlocks() int {
 	return actualBlocks
 }
 
+func (p CAU) GetCrossRackTraffic() float32 {
+	return  float32(totalCrossRackTraffic) / config.Megabyte
+}
