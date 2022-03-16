@@ -888,8 +888,6 @@ func easyjson6615c02eDecodeECConfig7(in *jlexer.Lexer, out *Policy) {
 			out.NumOfMB = float64(in.Float64())
 		case "TraceName":
 			out.TraceName = string(in.String())
-		case "Multicast":
-			out.Multicast = bool(in.Bool())
 		default:
 			in.SkipRecursive()
 		}
@@ -918,11 +916,6 @@ func easyjson6615c02eEncodeECConfig7(out *jwriter.Writer, in Policy) {
 		const prefix string = ",\"TraceName\":"
 		out.RawString(prefix)
 		out.String(string(in.TraceName))
-	}
-	{
-		const prefix string = ",\"Multicast\":"
-		out.RawString(prefix)
-		out.Bool(bool(in.Multicast))
 	}
 	out.RawByte('}')
 }

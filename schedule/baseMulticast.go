@@ -196,8 +196,8 @@ func (p BaseMulticast) handleOneReq(reqData config.ReqData)  {
 
 	//跨域流量统计：多播只需要发给网络设备，由网络设备转发给组内节点
 	totalCrossRackTraffic += rangeRight - rangeLeft
-	log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v. SendSize: %v\n", reqData.SID,
-		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, toIPs, cmd.SendSize)
+	log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v. totalCrossRackTraffic: %v\n", reqData.SID,
+		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, toIPs, totalCrossRackTraffic)
 }
 func (p BaseMulticast) RecordSIDAndReceiverIP(sid int, ip string)  {
 	ackIPMaps.recordIP(sid, ip)

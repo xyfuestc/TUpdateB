@@ -18,7 +18,7 @@ import (
 var numOfReq = 0
 //var curPolicy = 6
 var curPolicy int32 = 1
-var NumOfMB float64 = 0.25 //以这个为准，会同步到各个节点
+var NumOfMB float64 = 1 //以这个为准，会同步到各个节点
 var traceName = "hm_0"
 var XOROutFilePath = "../request/"+traceName+"_"+strconv.Itoa(int(NumOfMB))+"M.csv.txt"
 var RSOutFilePath = "../request/"+traceName+"_"+strconv.Itoa( int(NumOfMB * float64(config.W)) )+"M.csv.txt"
@@ -178,12 +178,11 @@ func notifyNodesQuit()  {
 }
 func settingCurrentPolicy(policyType int32)  {
 
-	UsingMulticast := checkMulti(policyType)
+	//UsingMulticast := checkMulti(policyType)
 	p := &config.Policy{
 		Type:      policyType,
 		NumOfMB:   NumOfMB,
 		TraceName: traceName,
-		Multicast: UsingMulticast,
 	}
 
 	config.NumOfMB = int(NumOfMB)
