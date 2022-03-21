@@ -358,7 +358,6 @@ func (p CAURS) GetActualBlocks() int {
 	return actualBlocks
 }
 
-
 func (p CAURS) GetCrossRackTraffic() float32 {
 	return  float32(totalCrossRackTraffic) / config.Megabyte
 }

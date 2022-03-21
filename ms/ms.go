@@ -44,13 +44,12 @@ func checkFinish() {
 		schedule.ClearChannels()
 
 		sumTime := time.Since(beginTime)
-		throughput :=  float64(numOfReq) * float64(curNumOfMB) / float64(sumTime/time.Second)
+		throughput :=  float64(numOfReq) * float64(NumOfMB) / float64(sumTime/time.Second)
 		actualUpdatedBlocks = schedule.GetCurPolicy().GetActualBlocks()
 		averageOneUpdateSpeed := float64(sumTime/time.Millisecond) / float64(actualUpdatedBlocks) / 1000
 		crossTraffic := schedule.GetCurPolicy().GetCrossRackTraffic()
 		log.Printf("%s 总耗时: %.2fs, 完成更新任务: %d, 实际处理任务数: %d, 单块更新时间: %0.2fs, 吞吐量: %0.2fMB/s，跨域流量为：%0.2fMB\n",
 			config.Policies[curPolicyVal], sumTime.Seconds(), numOfReq, actualUpdatedBlocks, averageOneUpdateSpeed, throughput, crossTraffic)
-
 
 		schedule.GetCurPolicy().Clear()
 		clearRound()
@@ -198,11 +197,11 @@ func settingCurrentPolicy(policyType int32)  {
 	log.Printf("等待设置完成...\n")
 	time.Sleep(2 * time.Second)
 
-	if config.Policies[curPolicy] == "CAURS" {
-		curNumOfMB = float64(config.W) * NumOfMB
-	}else{
-		curNumOfMB = NumOfMB
-	}
+	//if config.Policies[curPolicy] == "CAURS" {
+	//	curNumOfMB = float64(config.W) * NumOfMB
+	//}else{
+	//	curNumOfMB = NumOfMB
+	//}
 }
 
 func start()  {
