@@ -64,10 +64,7 @@ func (p TUpdateD) TUpdateD(reqs []*config.ReqData)  {
 	//处理blocks
 	sid = 0
 	for _, req := range reqs {
-		req := &config.ReqData{
-			BlockID: req.BlockID,
-			SID:     sid,
-		}
+		req.SID = sid
 		p.handleOneBlock(req)
 		sid++
 	}
