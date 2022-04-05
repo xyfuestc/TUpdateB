@@ -49,7 +49,7 @@ func setPolicy(conn net.Conn)  {
 		//finish()
 		return
 
-	}else if strings.Contains(config.Policies[p.Type], "Multicast") {
+	}else if strings.Contains(config.Policies[p.Type], "Multi") {
 		//启动超时处理
 		ticker.Reset(tickerDuration)
 
