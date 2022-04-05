@@ -44,7 +44,7 @@ func (p TUpdateDB) HandleReq(reqs []*config.ReqData)  {
 		log.Printf("第%d轮 TUpdateDB：获取%d个请求，实际处理%d个block\n", round, lenOfBatch, len(curDistinctReq))
 
 		//执行reqs
-		p.TUpdateDeltaBatch(curDistinctReq)
+		p.TUpdateDB(curDistinctReq)
 
 		for IsRunning {
 
@@ -56,7 +56,7 @@ func (p TUpdateDB) HandleReq(reqs []*config.ReqData)  {
 	}
 }
 
-func (p TUpdateDB) TUpdateDeltaBatch(reqs []*config.ReqData)   {
+func (p TUpdateDB) TUpdateDB(reqs []*config.ReqData)   {
 
 	//记录ack
 	for _, _ = range reqs {
@@ -87,18 +87,9 @@ func (p TUpdateDB) handleOneReq(reqData * config.ReqData)  {
 		fromIP := common.GetNodeIP(int(task.Start))
 		toIPs := []string{common.GetNodeIP(int(task.End))}
 		SendSize := reqData.RangeRight - reqData.RangeLeft
-		cmd := &config.CMD{
-			SID: task.SID,
-			BlockID: task.BlockID,
-			FromIP: fromIP,
-			ToIPs: toIPs,
-			Helpers: make([]int, 0, 1),
-			Matched: 0,
-			SendSize: SendSize,
-		}
+		helpers := make([]int, 0, 1)
 
-		//发送cmd
-		common.SendData(cmd, fromIP, config.NodeCMDListenPort)
+		common.SendCMDWithSizeAndHelper(fromIP, toIPs, task.SID, task.BlockID, SendSize, helpers)
 
 		//统计跨域流量
 		rack1 := getRackIDFromNodeID(task.Start)
