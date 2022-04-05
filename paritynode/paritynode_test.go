@@ -18,7 +18,7 @@ type Message struct {
 
 func TestMulticast(t *testing.T) {
 	for i := 0; i < 1000; i++ {
-		common.ReadBlockWithSize(0, config.RSBlockSize)
+		//common.ReadBlockWithSize(0, config.RSBlockSize)
 	}
 	//对比2种方式：1）sync.pool  2）make slice 的内存占用情况
 

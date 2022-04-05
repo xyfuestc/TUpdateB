@@ -9,8 +9,8 @@ import (
 	"time"
 )
 
-/*BaseMulticast: delta + handle one block + XOR + star-structured + multicast */
-type BaseMulticast struct {
+/*MultiD: delta + handle one block + XOR + star-structured + multicast */
+type MultiD struct {
 
 }
 type MsgLogMap struct {
@@ -67,7 +67,7 @@ var MulticastReceiveMTUCh = make(chan config.MTU, 100)
 var MulticastReceiveAckCh = make(chan config.ACK)
 var SentMsgLog MsgLogMap
 var DataNodeResentTraffic = map[string]int{}
-func (p BaseMulticast) HandleCMD(cmd *config.CMD) {
+func (p MultiD) HandleCMD(cmd *config.CMD) {
 	//重复SID，不处理
 	if _, ok := ackMaps.getACK(cmd.SID); ok {
 		return
@@ -111,10 +111,10 @@ func HandleTimeout() int {
 	}
 	return count
 }
-func (p BaseMulticast) HandleTD(td *config.TD)  {
+func (p MultiD) HandleTD(td *config.TD)  {
 	handleOneTD(td)
 }
-func (p BaseMulticast) HandleACK(ack *config.ACK)  {
+func (p MultiD) HandleACK(ack *config.ACK)  {
 	restACKs := ackMaps.popACK(ack.SID)
 	if restACKs == 0 {
 		SentMsgLog.popMsg(ack.SID)      //该SID重发数-1
@@ -134,7 +134,7 @@ func (p BaseMulticast) HandleACK(ack *config.ACK)  {
 	}
 }
 
-func (p BaseMulticast) Init()  {
+func (p MultiD) Init()  {
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
 	}
@@ -151,14 +151,14 @@ func (p BaseMulticast) Init()  {
 }
 
 
-func (p BaseMulticast) HandleReq(reqs []*config.ReqData)  {
+func (p MultiD) HandleReq(reqs []*config.ReqData)  {
 	totalReqs = reqs
 
 	for len(totalReqs) > 0 {
 
 		batchReqs := getBatchReqs()
 		actualBlocks += len(batchReqs)
-		log.Printf("第%d轮 BaseMulticast：处理%d个block\n", round, len(batchReqs))
+		log.Printf("第%d轮 MultiD：处理%d个block\n", round, len(batchReqs))
 		//执行base
 		p.baseMulti(batchReqs)
 
@@ -173,7 +173,7 @@ func (p BaseMulticast) HandleReq(reqs []*config.ReqData)  {
 
 
 }
-func (p BaseMulticast) baseMulti(reqs []*config.ReqData)  {
+func (p MultiD) baseMulti(reqs []*config.ReqData)  {
 	oldSIDStart := sid
 	for _, _ = range reqs {
 		ackMaps.pushACK(sid)
@@ -186,7 +186,7 @@ func (p BaseMulticast) baseMulti(reqs []*config.ReqData)  {
 		sid++
 	}
 }
-func (p BaseMulticast) handleOneReq(reqData config.ReqData)  {
+func (p MultiD) handleOneReq(reqData config.ReqData)  {
 	nodeID := common.GetNodeID(reqData.BlockID)
 	fromIP := common.GetNodeIP(nodeID)
 	toIPs := common.GetRelatedParityIPs(reqData.BlockID)
@@ -208,7 +208,7 @@ func (p BaseMulticast) handleOneReq(reqData config.ReqData)  {
 	log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v. totalCrossRackTraffic: %v\n", reqData.SID,
 		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, toIPs, totalCrossRackTraffic)
 }
-func (p BaseMulticast) RecordSIDAndReceiverIP(sid int, ip string)  {
+func (p MultiD) RecordSIDAndReceiverIP(sid int, ip string)  {
 	ackIPMaps.recordIP(sid, ip)
 }
 func ClearChannels()  {
@@ -221,7 +221,7 @@ func ClearChannels()  {
 	}
 }
 
-func (p BaseMulticast) Clear()  {
+func (p MultiD) Clear()  {
 
 	sid = 0
 	ackMaps = &ACKMap{
@@ -239,7 +239,7 @@ func (p BaseMulticast) Clear()  {
 	SentMsgLog.Init()
 
 }
-func (p BaseMulticast) IsFinished() bool {
+func (p MultiD) IsFinished() bool {
 	isFinished :=  len(totalReqs) == 0 && ackMaps.isEmpty()
 	if isFinished {
 		//CloseAllChannels()
@@ -305,7 +305,7 @@ func CloseAllChannels()  {
 
 
 
-func (p BaseMulticast) GetActualBlocks() int {
+func (p MultiD) GetActualBlocks() int {
 	return actualBlocks
 }
 func Hit(sid int) bool {
@@ -410,7 +410,7 @@ func SendMessageAndWaitingForACK(message *config.MTU)  {
 		}
 	//}
 }
-func (p BaseMulticast) GetCrossRackTraffic() float32 {
+func (p MultiD) GetCrossRackTraffic() float32 {
 	for ip, traffic := range DataNodeResentTraffic{
 		totalCrossRackTraffic += traffic
 		log.Printf("%v's resent traffic is: %v", ip, traffic)

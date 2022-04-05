@@ -100,29 +100,27 @@ var ReceivedAckCh = make(chan config.ACK, 10)
 var ReceivedTDCh = make(chan config.TD, 10)
 var ReceivedCMDCh = make(chan config.CMD, 10)
 func SetPolicy(policyType string)  {
+
 	switch policyType {
-	case "Base":
-		CurPolicy = Base{}
-	case "BaseMulticast":
-		CurPolicy = BaseMulticast{}
-	case "BaseMulticastBatch":
-		CurPolicy = BaseMulticastBatch{}
+	case "MultiD":
+		CurPolicy = MultiD{}
+	case "MultiDB":
+		CurPolicy = MultiDB{}
 	case "TUpdate":
 		CurPolicy = TUpdate{}
-	case "TUpdateBatch":
-		CurPolicy = TUpdateBatch{}
-	case "TUpdateDeltaBatch":
-		CurPolicy = TUpdateDeltaBatch{}
-	case "DXR_DU":
-		CurPolicy = DXR_DU{}
+	case "TUpdateD":
+		CurPolicy = TUpdateD{}
+	case "TUpdateDB":
+		CurPolicy = TUpdateDB{}
 	case "CAU":
 		CurPolicy = CAU{}
-	case "CAU1":
-		CurPolicy = CAU1{}
-	case "CAURS":
-		CurPolicy = CAURS{}
+	case "CAU_D":
+		CurPolicy = CAU_D{}
+	case "CAU_DB":
+		CurPolicy = CAU_DB{}
 	}
 	CurPolicy.Init()
+
 }
 func GetCurPolicy() Policy {
 	//if CurPolicy == nil {

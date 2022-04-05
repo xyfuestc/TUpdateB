@@ -7,11 +7,11 @@ import (
 	"sort"
 )
 
-type TUpdateBatch struct {
+type TUpdateB struct {
 
 }
 
-func (p TUpdateBatch) Init()  {
+func (p TUpdateB) Init()  {
 
 	totalCrossRackTraffic = 0
 	InitNetworkDistance()
@@ -30,7 +30,7 @@ func (p TUpdateBatch) Init()  {
 	ClearChannels()
 }
 
-func (p TUpdateBatch) HandleReq(reqs []*config.ReqData)  {
+func (p TUpdateB) HandleReq(reqs []*config.ReqData)  {
 
 	totalReqs = reqs
 	log.Printf("一共接收到%d个请求...\n", len(totalReqs))
@@ -39,7 +39,7 @@ func (p TUpdateBatch) HandleReq(reqs []*config.ReqData)  {
 		//过滤blocks
 		curMatchBlocks := findDistinctBlocks()
 		actualBlocks += len(curDistinctBlocks)
-		log.Printf("第%d轮 TUpdateBatch：获取%d个请求，实际处理%d个block\n", round, len(curMatchBlocks), len(curDistinctBlocks))
+		log.Printf("第%d轮 TUpdateB：获取%d个请求，实际处理%d个block\n", round, len(curMatchBlocks), len(curDistinctBlocks))
 
 		//处理reqs
 		p.TUpdateBatch(curDistinctBlocks)
@@ -55,7 +55,7 @@ func (p TUpdateBatch) HandleReq(reqs []*config.ReqData)  {
 	}
 }
 
-func (p TUpdateBatch) TUpdateBatch(distinctBlocks []int)  {
+func (p TUpdateB) TUpdateBatch(distinctBlocks []int)  {
 	//记录ack
 	for _, _ = range distinctBlocks {
 		ackMaps.pushACK(sid)
@@ -73,7 +73,7 @@ func (p TUpdateBatch) TUpdateBatch(distinctBlocks []int)  {
 	}
 }
 
-func (p TUpdateBatch) handleOneBlock(reqData * config.ReqData)  {
+func (p TUpdateB) handleOneBlock(reqData * config.ReqData)  {
 	tasks := GetBalanceTransmitTasks(reqData)
 	//tasks := GetTransmitTasks(reqData)
 	log.Printf("tasks: %v\n", tasks)
@@ -90,7 +90,7 @@ func (p TUpdateBatch) handleOneBlock(reqData * config.ReqData)  {
 	}
 }
 
-func (p TUpdateBatch) HandleTD(td *config.TD)  {
+func (p TUpdateB) HandleTD(td *config.TD)  {
 
 	//本地数据更新
 	common.WriteDeltaBlock(td.BlockID, td.Buff)
@@ -106,16 +106,6 @@ func (p TUpdateBatch) HandleTD(td *config.TD)  {
 		}
 		for _, cmd := range cmds {
 			for _, toIP := range cmd.ToIPs {
-				//SendTD := &config.TD{
-				//	BlockID: cmd.BlockID,
-				//	Buff: td.Buff,
-				//	FromIP: cmd.FromIP,
-				//	ToIP: toIP,
-				//	SID: cmd.SID,
-				//}
-				//sendSizeRate := float32(SendTD.SendSize * 1.0) / float32(config.BlockSize) * 100.0
-				//log.Printf("发送 block:%d sendSize: %.2f%% -> %s.\n", SendTD.BlockID, sendSizeRate, toIP)
-				//common.SendData(SendTD, toIP, config.NodeTDListenPort, "")
 
 				SendTD := config.TDBufferPool.Get().(*config.TD)
 				SendTD.BlockID = cmd.BlockID
@@ -163,7 +153,7 @@ func  GetBalanceTransmitTasks(reqData *config.ReqData) []Task {
 	})
 	return taskGroup
 }
-func (p TUpdateBatch) HandleCMD(cmd *config.CMD)  {
+func (p TUpdateB) HandleCMD(cmd *config.CMD)  {
 	//该cmd的数据存在
 	if IsCMDDataExist(cmd) {
 
@@ -198,10 +188,9 @@ func (p TUpdateBatch) HandleCMD(cmd *config.CMD)  {
 		CMDList.pushCMD(cmd)
 	}
 }
-func (p TUpdateBatch) HandleACK(ack *config.ACK)  {
+func (p TUpdateB) HandleACK(ack *config.ACK)  {
 	restACKs := ackMaps.popACK(ack.SID)
 	if restACKs == 0 {
-		//SentMsgLog.popMsg(ack.SID)      //该SID不需要重发
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)
@@ -210,7 +199,7 @@ func (p TUpdateBatch) HandleACK(ack *config.ACK)  {
 		}
 	}
 }
-func (p TUpdateBatch) Clear()  {
+func (p TUpdateB) Clear()  {
 	IsRunning = true
 	curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
 	curDistinctReq = make([]*config.ReqData, 0, config.MaxBatchSize)
@@ -220,16 +209,16 @@ func (p TUpdateBatch) Clear()  {
 	}
 	NodeMatrix = make(config.Matrix, (config.N)*(config.N))
 }
-func (p TUpdateBatch) RecordSIDAndReceiverIP(sid int, ip string)()  {
+func (p TUpdateB) RecordSIDAndReceiverIP(sid int, ip string)()  {
 	ackIPMaps.recordIP(sid, ip)
 }
-func (p TUpdateBatch) IsFinished() bool {
+func (p TUpdateB) IsFinished() bool {
 	return len(totalReqs) == 0 && ackMaps.isEmpty()
 }
-func (p TUpdateBatch) GetActualBlocks() int {
+func (p TUpdateB) GetActualBlocks() int {
 	return actualBlocks
 }
 
-func (p TUpdateBatch) GetCrossRackTraffic() float32 {
+func (p TUpdateB) GetCrossRackTraffic() float32 {
 	return  float32(totalCrossRackTraffic) / config.Megabyte
 }

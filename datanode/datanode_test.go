@@ -75,7 +75,7 @@ func testSliceMem(t *testing.T, f func(b, size int) ) {
 	//ans := make([][]byte, 0)
 	config.InitBufferPool()
 	for k := 0; k < 100; k++ {
-		go f(k, config.RSBlockSize)
+		//go f(k, config.RSBlockSize)
 	}
 	time.Sleep(2 * time.Second)
 	printMem(t)

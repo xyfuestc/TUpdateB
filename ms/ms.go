@@ -17,11 +17,11 @@ import (
 )
 var numOfReq = 0
 //var curPolicy = 6
-var curPolicy int32 = 1
-var NumOfMB float64 = 1 //以这个为准，会同步到各个节点
+var curPolicy int32 = 3
+var NumOfMB float64 = 0.25 //以这个为准，会同步到各个节点
 var traceName = "hm_0"
 var XOROutFilePath = "../request/"+traceName+"_"+strconv.Itoa(int(NumOfMB))+"M.csv.txt"
-var RSOutFilePath = "../request/"+traceName+"_"+strconv.Itoa( int(NumOfMB * float64(config.W)) )+"M.csv.txt"
+//var RSOutFilePath = "../request/"+traceName+"_"+strconv.Itoa( int(NumOfMB * float64(config.W)) )+"M.csv.txt"
 var OutFilePath = XOROutFilePath
 var actualUpdatedBlocks = 0
 var beginTime time.Time
@@ -117,10 +117,10 @@ func listenAndReceive(maxWorkers int)  {
 }
 func setCurrentTrace() {
 	//CAURS算法（必须保证CAURS在最后）
-	if config.Policies[curPolicy] == "CAURS" {
-		OutFilePath = RSOutFilePath
-		getReqsFromTrace()
-	}
+	//if config.Policies[curPolicy] == "CAU_D" {
+		//OutFilePath = RSOutFilePath
+		//getReqsFromTrace()
+	//}
 }
 
 func getReqsFromTrace()  {
@@ -186,7 +186,7 @@ func settingCurrentPolicy(policyType int32)  {
 
 	config.NumOfMB = int(NumOfMB)
 	config.BlockSize = int(NumOfMB * config.Megabyte)
-	config.RSBlockSize = int(config.Megabyte * NumOfMB) * config.W
+	//config.RSBlockSize = int(config.Megabyte * NumOfMB) * config.W
 
 	log.Printf("初始化共享池...\n")
 	config.InitBufferPool()
@@ -197,7 +197,7 @@ func settingCurrentPolicy(policyType int32)  {
 	log.Printf("等待设置完成...\n")
 	time.Sleep(2 * time.Second)
 
-	//if config.Policies[curPolicy] == "CAURS" {
+	//if config.Policies[curPolicy] == "CAU_D" {
 	//	curNumOfMB = float64(config.W) * NumOfMB
 	//}else{
 	//	curNumOfMB = NumOfMB
@@ -206,12 +206,12 @@ func settingCurrentPolicy(policyType int32)  {
 
 func start()  {
 
-	setCurrentTrace() //专门针对CAURS改变数据源
+	//setCurrentTrace() //专门针对CAURS改变数据源
 
 	//time.Sleep(2 * time.Second)
 	beginTime = time.Now()
 	settingCurrentPolicy(curPolicy)
-	log.Printf(" 设置当前算法：[%s], 当前数据集为：%s, blockSize=%vMB.\n", config.Policies[curPolicy], OutFilePath, curNumOfMB)
+	log.Printf(" 设置当前算法：[%s], 当前数据集为：%s, blockSize=%vMB.\n", config.Policies[curPolicy], OutFilePath, NumOfMB)
 
 	//重置为本轮未结束：0
 	atomic.StoreInt32(&roundFinished, 0)

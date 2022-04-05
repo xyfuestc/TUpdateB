@@ -6,12 +6,12 @@ import (
 	"log"
 )
 
-/*BaseMulticastBatch: delta + handle one block + XOR + star-structured + multicast + batch */
-type BaseMulticastBatch struct {
+/*MultiDB: delta + handle one block + XOR + star-structured + multicast + batch */
+type MultiDB struct {
 
 }
 
-func (p BaseMulticastBatch) HandleCMD(cmd *config.CMD) {
+func (p MultiDB) HandleCMD(cmd *config.CMD) {
 	//重复SID，不处理
 	if _, ok := ackMaps.getACK(cmd.SID); ok {
 		return
@@ -45,10 +45,10 @@ func (p BaseMulticastBatch) HandleCMD(cmd *config.CMD) {
 
 }
 
-func (p BaseMulticastBatch) HandleTD(td *config.TD)  {
+func (p MultiDB) HandleTD(td *config.TD)  {
 	handleOneTD(td)
 }
-func (p BaseMulticastBatch) HandleACK(ack *config.ACK)  {
+func (p MultiDB) HandleACK(ack *config.ACK)  {
 	restACKs := ackMaps.popACK(ack.SID)
 	if restACKs == 0 {
 		SentMsgLog.popMsg(ack.SID)      //该SID重发数量-1
@@ -68,7 +68,7 @@ func (p BaseMulticastBatch) HandleACK(ack *config.ACK)  {
 	}
 }
 
-func (p BaseMulticastBatch) Init()  {
+func (p MultiDB) Init()  {
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
 	}
@@ -85,14 +85,14 @@ func (p BaseMulticastBatch) Init()  {
 }
 
 
-func (p BaseMulticastBatch) HandleReq(reqs []*config.ReqData)  {
+func (p MultiDB) HandleReq(reqs []*config.ReqData)  {
 
 	totalReqs = reqs
 
 	for len(totalReqs) > 0 {
 		lenOfBatch := findDistinctReqs()
 		actualBlocks += len(curDistinctReq)
-		log.Printf("第%d轮 BaseMulticastBatch：获取%d个请求，实际处理%d个block，剩余%v个block待处理。\n", round, lenOfBatch, len(curDistinctReq), len(totalReqs))
+		log.Printf("第%d轮 MultiDB：获取%d个请求，实际处理%d个block，剩余%v个block待处理。\n", round, lenOfBatch, len(curDistinctReq), len(totalReqs))
 
 		//处理reqs
 		p.baseMulti(curDistinctReq)
@@ -106,7 +106,7 @@ func (p BaseMulticastBatch) HandleReq(reqs []*config.ReqData)  {
 		p.Clear()
 	}
 }
-func (p BaseMulticastBatch) baseMulti(reqs []*config.ReqData)  {
+func (p MultiDB) baseMulti(reqs []*config.ReqData)  {
 	oldSIDStart := sid
 	for _, _ = range reqs {
 		ackMaps.pushACK(sid)
@@ -119,7 +119,7 @@ func (p BaseMulticastBatch) baseMulti(reqs []*config.ReqData)  {
 		sid++
 	}
 }
-func (p BaseMulticastBatch) handleOneBlock(reqData config.ReqData)  {
+func (p MultiDB) handleOneBlock(reqData config.ReqData)  {
 	nodeID := common.GetNodeID(reqData.BlockID)
 	fromIP := common.GetNodeIP(nodeID)
 	toIPs := common.GetRelatedParityIPs(reqData.BlockID)
@@ -143,10 +143,10 @@ func (p BaseMulticastBatch) handleOneBlock(reqData config.ReqData)  {
 	log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v. totalCrossRackTraffic: %v\n", reqData.SID,
 		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, toIPs, totalCrossRackTraffic)
 }
-func (p BaseMulticastBatch) RecordSIDAndReceiverIP(sid int, ip string)  {
+func (p MultiDB) RecordSIDAndReceiverIP(sid int, ip string)  {
 	ackIPMaps.recordIP(sid, ip)
 }
-func (p BaseMulticastBatch) Clear()  {
+func (p MultiDB) Clear()  {
 
 	sid = 0
 	ackMaps = &ACKMap{
@@ -163,7 +163,7 @@ func (p BaseMulticastBatch) Clear()  {
 	SentMsgLog.Init()
 
 }
-func (p BaseMulticastBatch) IsFinished() bool {
+func (p MultiDB) IsFinished() bool {
 	isFinished :=  len(totalReqs) == 0 && ackMaps.isEmpty()
 	if isFinished {
 		//CloseAllChannels()
@@ -171,10 +171,10 @@ func (p BaseMulticastBatch) IsFinished() bool {
 	return isFinished
 }
 
-func (p BaseMulticastBatch) GetActualBlocks() int {
+func (p MultiDB) GetActualBlocks() int {
 	return actualBlocks
 }
-func (p BaseMulticastBatch) GetCrossRackTraffic() float32 {
+func (p MultiDB) GetCrossRackTraffic() float32 {
 	for ip, traffic := range DataNodeResentTraffic{
 		totalCrossRackTraffic += traffic
 		log.Printf("%v's resent traffic is: %v", ip, traffic)

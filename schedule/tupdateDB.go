@@ -5,12 +5,13 @@ import (
 	"EC/config"
 	"log"
 )
+/*TUpdate:  delta + handle one block + XOR + tree-structured path + batch */
 
-type TUpdateDeltaBatch struct {
+type TUpdateDB struct {
 
 }
 
-func (p TUpdateDeltaBatch) Init()  {
+func (p TUpdateDB) Init()  {
 
 	InitNetworkDistance()
 	ackMaps = &ACKMap{
@@ -31,7 +32,7 @@ func (p TUpdateDeltaBatch) Init()  {
 	ClearChannels()
 }
 
-func (p TUpdateDeltaBatch) HandleReq(reqs []*config.ReqData)  {
+func (p TUpdateDB) HandleReq(reqs []*config.ReqData)  {
 
 	totalReqs = reqs
 	log.Printf("一共接收到%d个请求...\n", len(totalReqs))
@@ -40,7 +41,7 @@ func (p TUpdateDeltaBatch) HandleReq(reqs []*config.ReqData)  {
 		//过滤blocks
 		lenOfBatch := findDistinctReqs()
 		actualBlocks += len(curDistinctReq)
-		log.Printf("第%d轮 TUpdateDeltaBatch：获取%d个请求，实际处理%d个block\n", round, lenOfBatch, len(curDistinctReq))
+		log.Printf("第%d轮 TUpdateDB：获取%d个请求，实际处理%d个block\n", round, lenOfBatch, len(curDistinctReq))
 
 		//执行reqs
 		p.TUpdateDeltaBatch(curDistinctReq)
@@ -55,7 +56,7 @@ func (p TUpdateDeltaBatch) HandleReq(reqs []*config.ReqData)  {
 	}
 }
 
-func (p TUpdateDeltaBatch) TUpdateDeltaBatch(reqs []*config.ReqData)   {
+func (p TUpdateDB) TUpdateDeltaBatch(reqs []*config.ReqData)   {
 
 	//记录ack
 	for _, _ = range reqs {
@@ -72,7 +73,11 @@ func (p TUpdateDeltaBatch) TUpdateDeltaBatch(reqs []*config.ReqData)   {
 	}
 }
 
-func (p TUpdateDeltaBatch) handleOneReq(reqData * config.ReqData)  {
+
+
+
+
+func (p TUpdateDB) handleOneReq(reqData * config.ReqData)  {
 	tasks := GetBalanceTransmitTasks(reqData)
 	//tasks := GetTransmitTasks(reqData)
 	log.Printf("tasks: %v\n", tasks)
@@ -104,7 +109,7 @@ func (p TUpdateDeltaBatch) handleOneReq(reqData * config.ReqData)  {
 	}
 }
 
-func (p TUpdateDeltaBatch) HandleTD(td *config.TD)  {
+func (p TUpdateDB) HandleTD(td *config.TD)  {
 
 	//本地数据更新
 	common.WriteDeltaBlock(td.BlockID, td.Buff)
@@ -158,7 +163,7 @@ func (p TUpdateDeltaBatch) HandleTD(td *config.TD)  {
 	}
 }
 
-func (p TUpdateDeltaBatch) HandleCMD(cmd *config.CMD)  {
+func (p TUpdateDB) HandleCMD(cmd *config.CMD)  {
 
 	//helpers已到位
 	if IsCMDDataExist(cmd) {
@@ -195,7 +200,7 @@ func (p TUpdateDeltaBatch) HandleCMD(cmd *config.CMD)  {
 		CMDList.pushCMD(cmd)
 	}
 }
-func (p TUpdateDeltaBatch) HandleACK(ack *config.ACK)  {
+func (p TUpdateDB) HandleACK(ack *config.ACK)  {
 	restACKs := ackMaps.popACK(ack.SID)
 	if restACKs == 0 {
 		//ms不需要反馈ack
@@ -207,7 +212,7 @@ func (p TUpdateDeltaBatch) HandleACK(ack *config.ACK)  {
 		}
 	}
 }
-func (p TUpdateDeltaBatch) Clear()  {
+func (p TUpdateDB) Clear()  {
 	IsRunning = true
 	curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
 	curDistinctReq = make([]*config.ReqData, 0, config.MaxBatchSize)
@@ -217,16 +222,16 @@ func (p TUpdateDeltaBatch) Clear()  {
 	}
 	NodeMatrix = make(config.Matrix, (config.N)*(config.N))
 }
-func (p TUpdateDeltaBatch) RecordSIDAndReceiverIP(sid int, ip string)()  {
+func (p TUpdateDB) RecordSIDAndReceiverIP(sid int, ip string)()  {
 	ackIPMaps.recordIP(sid, ip)
 }
-func (p TUpdateDeltaBatch) IsFinished() bool {
+func (p TUpdateDB) IsFinished() bool {
 	return len(totalReqs) == 0 && ackMaps.isEmpty()
 }
-func (p TUpdateDeltaBatch) GetActualBlocks() int {
+func (p TUpdateDB) GetActualBlocks() int {
 	return actualBlocks
 }
 
-func (p TUpdateDeltaBatch) GetCrossRackTraffic() float32 {
+func (p TUpdateDB) GetCrossRackTraffic() float32 {
 	return  float32(totalCrossRackTraffic) / config.Megabyte
 }

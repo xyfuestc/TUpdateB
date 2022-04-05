@@ -10,24 +10,22 @@ import (
 
 const K int = 8
 const M int = 4
-const W int = 4
+const W int = 8
 const N  = K + M
 var NumOfMB = 1
 const InnerBandWidth int = 200 * Megabyte / 8    //200Mbps
 const OuterBandWidth = InnerBandWidth / 5   //40Mbps
 var BlockSize = int(Megabyte * NumOfMB) //1MB
-var RSBlockSize = int(Megabyte * NumOfMB) * W
+//var RSBlockSize = int(Megabyte * NumOfMB) * W
 const Megabyte = 1024 * 1024      //1MB
 const MaxBatchSize int = 100
 const MaxRSBatchSize int = 100
 const MaxBaseBatchSize int = 100
 const MaxBlockSize int = 1000
 const TestFileSize = 10 * 1024 * Megabyte
-var MaxBlockIndex = TestFileSize / RSBlockSize - 1
-const NumOfAlgorithm int32 = 10 //采用3种算法执行相同任务
-var Policies = []string{"Base", "BaseMulticast", "BaseMulticastBatch", "TUpdate",
-						"TUpdateBatch", "TUpdateDeltaBatch",
-						"DXR_DU", "CAU", "CAU1", "CAURS" }
+var MaxBlockIndex = TestFileSize / BlockSize - 1
+const NumOfAlgorithm int32 = 7 //采用3种算法执行相同任务
+var Policies = []string{"MultiD", "MultiDB", "TUpdate", "TUpdateD", "TUpdateDB", "CAU", "CAU_D", "CAU_DB" }
 var BitMatrix = make([]byte, K*M*W*W)
 const RackSize = M
 const NumOfRacks = N / RackSize
@@ -36,7 +34,7 @@ var RS *reedsolomon.RS
 type Matrix []byte
 const MulticastAddrWithPort = "224.0.0.250:9981"
 const MulticastAddrListenACK  = ":9981"
-const MTUSize =  6 * 1024 // 60K
+const MTUSize =  6 * 1024 // 6K
 // UDPDuration 发送一个UDP包时间（单位：us），由于考虑ack，✖️2
 const UDPDuration  = time.Duration(2 * MTUSize * 1000000 / OuterBandWidth) * time.Microsecond
 const MaxDatagramSize = 20 * 1024 // 8 * 1024 = 64KB

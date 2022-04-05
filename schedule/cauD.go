@@ -6,11 +6,12 @@ import (
 	"github.com/wxnacy/wgo/arrays"
 	"log"
 )
-type CAURS struct {
+/*TUpdate:  delta + XOR + cau path + batch */
+type CAU_D struct {
 	Base
 }
-
-func (p CAURS) Init()  {
+var curMatchReqs = make([]*config.ReqData, 0, config.MaxBatchSize)
+func (p CAU_D) Init()  {
 	totalCrossRackTraffic = 0
 	ackMaps = &ACKMap{
 		RequireACKs: make(map[int]int),
@@ -21,19 +22,19 @@ func (p CAURS) Init()  {
 	}
 
 	CMDList = &CMDWaitingList{
-		Queue: make([]*config.CMD, 0, config.MaxRSBatchSize),
+		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
-	curDistinctBlocks = make([]int, 0, config.MaxRSBatchSize)
+	curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
 	actualBlocks = 0
 	round = 0
 	curReceivedTDs = &ReceivedTDs{
-		TDs: make([]*config.TD, 0, config.MaxRSBatchSize),
+		TDs: make([]*config.TD, 0, config.MaxBatchSize),
 	}
 	sid = 0
 	ClearChannels()
 }
 
-func (p CAURS) HandleTD(td *config.TD) {
+func (p CAU_D) HandleTD(td *config.TD) {
 
 	curReceivedTDs.pushTD(td)
 	
@@ -137,19 +138,20 @@ func findRSDistinctBlocks() {
 	}
 }
 
-func (p CAURS) HandleReq(reqs []*config.ReqData)  {
+func (p CAU_D) HandleReq(reqs []*config.ReqData)  {
 
 	totalReqs = reqs
 	log.Printf("一共接收到%d个请求...\n", len(totalReqs))
 
 	for len(totalReqs) > 0 {
 		//过滤blocks
-		findRSDistinctBlocks()
+		//findRSDistinctBlocks()
 		//执行cau
-		actualBlocks += len(curDistinctBlocks)
-		log.Printf("第%d轮 CAURS：处理%d个block\n", round, len(curDistinctBlocks))
+		curMatchReqs = findDistinctBlocks()
+		actualBlocks += len(curMatchReqs)
+		log.Printf("第%d轮 CAU_D：处理%d个block\n", round, len(curDistinctBlocks))
 
-		cau_rs()
+		cau_d()
 
 		for IsRunning {
 			
@@ -161,7 +163,7 @@ func (p CAURS) HandleReq(reqs []*config.ReqData)  {
 	}
 }
 
-func cau_rs() {
+func cau_d() {
 	stripes := turnBlocksToStripes()
 	for _, stripe := range stripes{
 		for i := 0; i < config.NumOfRacks; i++ {
@@ -210,7 +212,7 @@ func dataUpdateRS(rackID int, stripe []int)  {
 
 		parityID := rootP + i
 		for _, b := range parities[i]{
-
+			_, rangeLeft, rangeRight := getBlockRangeFromDistinctReqs(b, curMatchReqs)
 			log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
 				rootP, common.GetNodeIP(rootP), b, common.GetNodeIP(parityID))
 
@@ -222,7 +224,7 @@ func dataUpdateRS(rackID int, stripe []int)  {
 			cmd.FromIP = common.GetNodeIP(rootP)
 			cmd.Helpers = parities[i]
 			cmd.Matched = 0
-			cmd.SendSize = config.RSBlockSize
+			cmd.SendSize = rangeRight - rangeLeft
 
 			common.SendData(cmd, common.GetNodeIP(rootP), config.NodeCMDListenPort)
 			config.CMDBufferPool.Put(cmd)
@@ -245,19 +247,10 @@ func dataUpdateRS(rackID int, stripe []int)  {
 		nodeID := common.GetDataNodeIDFromIndex(rackID, i)
 		//传输blocks到rootP
 		for _, b := range blocks{
+			_, rangeLeft, rangeRight := getBlockRangeFromDistinctReqs(b, curMatchReqs)
 
 			log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
 				nodeID, common.GetNodeIP(nodeID), b, common.GetNodeIP(rootP))
-			//cmd := &config.CMD{
-			//	SID: sid,
-			//	BlockID: b,
-			//	ToIPs: []string{common.GetNodeIP(rootP)},
-			//	FromIP: common.GetNodeIP(nodeID),
-			//	Helpers: make([]int, 0, 1),
-			//	Matched: 0,
-			//	SendSize: config.RSBlockSize,
-			//}
-			//common.SendData(cmd, common.GetNodeIP(nodeID), config.NodeCMDListenPort, "")
 
 			cmd := config.CMDBufferPool.Get().(*config.CMD)
 			cmd.SID = sid
@@ -266,7 +259,7 @@ func dataUpdateRS(rackID int, stripe []int)  {
 			cmd.FromIP = common.GetNodeIP(nodeID)
 			cmd.Helpers = make([]int, 0, 1)
 			cmd.Matched = 0
-			cmd.SendSize = config.RSBlockSize
+			cmd.SendSize = rangeRight - rangeLeft
 
 			common.SendData(cmd, common.GetNodeIP(nodeID), config.NodeCMDListenPort)
 
@@ -274,14 +267,14 @@ func dataUpdateRS(rackID int, stripe []int)  {
 
 			sid++
 			//统计跨域流量
-			totalCrossRackTraffic += config.RSBlockSize
+			totalCrossRackTraffic += rangeRight - rangeLeft
 		}
 	}
 	log.Printf("DataUpdate: stripe: %v, parities: %v, curRackNodes: %v\n",
 		stripe, parities, curRackNodes)
 }
 
-func (p CAURS) HandleCMD(cmd *config.CMD)  {
+func (p CAU_D) HandleCMD(cmd *config.CMD)  {
 	//helpers已到位
 	if len(cmd.Helpers) == 0 {
 
@@ -315,7 +308,7 @@ func (p CAURS) HandleCMD(cmd *config.CMD)  {
 
 }
 
-func (p CAURS) HandleACK(ack *config.ACK)  {
+func (p CAU_D) HandleACK(ack *config.ACK)  {
 	restACKs := ackMaps.popACK(ack.SID)
 	if restACKs == 0 {
 		//ms不需要反馈ack
@@ -327,7 +320,7 @@ func (p CAURS) HandleACK(ack *config.ACK)  {
 		}
 	}
 }
-func (p CAURS) Clear()  {
+func (p CAU_D) Clear()  {
 	IsRunning = true
 	curDistinctBlocks = make([]int, 0, config.MaxRSBatchSize)
 	curDistinctReq = make([]*config.ReqData, 0, config.MaxRSBatchSize)
@@ -346,18 +339,18 @@ func (p CAURS) Clear()  {
 	}
 }
 
-func (p CAURS) RecordSIDAndReceiverIP(sid int, ip string)()  {
+func (p CAU_D) RecordSIDAndReceiverIP(sid int, ip string)()  {
 	ackIPMaps.recordIP(sid, ip)
 }
 
-func (p CAURS) IsFinished() bool {
+func (p CAU_D) IsFinished() bool {
 	return len(totalReqs) == 0 && ackMaps.isEmpty()
 }
 
-func (p CAURS) GetActualBlocks() int {
+func (p CAU_D) GetActualBlocks() int {
 	return actualBlocks
 }
 
-func (p CAURS) GetCrossRackTraffic() float32 {
+func (p CAU_D) GetCrossRackTraffic() float32 {
 	return  float32(totalCrossRackTraffic) / config.Megabyte
 }

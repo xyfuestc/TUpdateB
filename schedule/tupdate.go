@@ -9,6 +9,17 @@ import (
 	"sync"
 	"time"
 )
+
+
+/*TUpdate:  handle one block + XOR + tree-structured path + batch */
+type TUpdate struct {
+
+}
+type CMDWaitingList struct {
+	sync.RWMutex
+	Queue []*config.CMD
+}
+
 type Graph struct {
 	N   int //顶点数
 	M   int //边数
@@ -19,14 +30,6 @@ type Task struct {
 	End   byte
 	SID   int
 	BlockID int
-}
-
-type TUpdate struct {
-
-}
-type CMDWaitingList struct {
-	sync.RWMutex
-	Queue []*config.CMD
 }
 
 func (M *CMDWaitingList) pushCMD(cmd *config.CMD)  {
@@ -441,7 +444,6 @@ func IsCMDDataExist(cmd *config.CMD) bool {
 func (p TUpdate) HandleACK(ack *config.ACK)  {
 	restACKs := ackMaps.popACK(ack.SID)
 	if restACKs == 0 {
-		//SentMsgLog.popMsg(ack.SID)      //该SID不需要重发
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)

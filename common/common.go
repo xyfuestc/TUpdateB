@@ -195,7 +195,6 @@ func WriteDeltaBlock(blockID int, deltaBuff []byte)   {
 	newBuff := config.BlockBufferPool.Get().([]byte)
 
 	for i := 0; i < size; i++ {
-		//newBuff[i] =
 		newBuff = append(newBuff, deltaBuff[i] ^ oldBuff[i])
 	}
 	/*****write new data*******/
@@ -223,6 +222,7 @@ func GetCMD(conn net.Conn) config.CMD  {
 	}
 	return cmd
 }
+
 func SendCMD(fromIP string, toIPs []string, sid, blockID int)  {
 
 	cmd := config.CMDBufferPool.Get().(*config.CMD)
@@ -238,6 +238,24 @@ func SendCMD(fromIP string, toIPs []string, sid, blockID int)  {
 
 	config.CMDBufferPool.Put(cmd)
 }
+
+func SendCMDWithSizeAndHelper(fromIP string, toIPs []string, sid, blockID, sendSize  int, helpers []int)  {
+	cmd := config.CMDBufferPool.Get().(*config.CMD)
+	cmd.SID = sid
+	cmd.BlockID = blockID
+	cmd.SendSize = config.BlockSize
+	cmd.Helpers = helpers
+	cmd.Matched = 0
+	cmd.ToIPs = toIPs
+	cmd.FromIP = fromIP
+	cmd.SendSize = sendSize
+
+	SendData(cmd, fromIP, config.NodeCMDListenPort)
+
+	config.CMDBufferPool.Put(cmd)
+}
+
+
 
 func SendCMDWithHelpers(fromIP string, toIPs []string, sid, blockID int, helpers []int)  {
 

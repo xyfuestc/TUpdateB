@@ -59,14 +59,14 @@ func setPolicy(conn net.Conn)  {
 
 	schedule.SetPolicy(config.Policies[p.Type])
 	config.BlockSize = int(p.NumOfMB * config.Megabyte)
-	config.RSBlockSize = int(p.NumOfMB * config.Megabyte) * config.W
-	config.MaxBlockIndex =  config.TestFileSize / config.RSBlockSize - 1
+	//config.RSBlockSize = int(p.NumOfMB * config.Megabyte) * config.W
+	config.MaxBlockIndex =  config.TestFileSize / config.BlockSize - 1
 
 	log.Printf("初始化共享池...\n")
 	config.InitBufferPool()
 
-	log.Printf("收到来自 %s 的命令，设置当前算法设置为%s, 当前blockSize=%.2fMB，RSBlockSize=%dMB.\n",
-		common.GetConnIP(conn), config.Policies[p.Type], p.NumOfMB, config.RSBlockSize/config.Megabyte)
+	log.Printf("收到来自 %s 的命令，设置当前算法设置为%s, 当前blockSize=%.2fMB.\n",
+		common.GetConnIP(conn), config.Policies[p.Type], p.NumOfMB)
 
 }
 
@@ -128,14 +128,6 @@ func main() {
 		}
 	}
 
-
-	//go listenTD(l3)
-	//go listenACK(l2)
-	//go listenSettings(l4)
-	//go timeout()
-	//go common.ListenACK(schedule.MulticastReceiveAckCh)
-
-	//listenCMD(l1)
 }
 
 func listenAndReceive(maxWorkers int) {
