@@ -17,7 +17,7 @@ import (
 )
 var numOfReq = 0
 //var curPolicy = 6
-var curPolicy int32 = 3
+var curPolicy int32 = 0
 var NumOfMB float64 = 0.25 //以这个为准，会同步到各个节点
 var traceName = "hm_0"
 var XOROutFilePath = "../request/"+traceName+"_"+strconv.Itoa(int(NumOfMB))+"M.csv.txt"
@@ -27,10 +27,7 @@ var actualUpdatedBlocks = 0
 var beginTime time.Time
 var totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 var roundFinished int32 = 0  // 1-本轮结束 ； 0-本轮未结束
-var curNumOfMB float64 = 0
-//var connections []net.Conn
-//var receivedAckCh = make(chan config.ACK, 10)
-//var wg sync.WaitGroup
+
 func checkFinish() {
 
 	isRoundFinished := atomic.LoadInt32(&roundFinished)
@@ -44,6 +41,7 @@ func checkFinish() {
 		schedule.ClearChannels()
 
 		sumTime := time.Since(beginTime)
+		log.Printf("%+v, %+v, %+v", numOfReq, NumOfMB, float64(sumTime/time.Second))
 		throughput :=  float64(numOfReq) * float64(NumOfMB) / float64(sumTime/time.Second)
 		actualUpdatedBlocks = schedule.GetCurPolicy().GetActualBlocks()
 		averageOneUpdateSpeed := float64(sumTime/time.Millisecond) / float64(actualUpdatedBlocks) / 1000
