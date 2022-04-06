@@ -41,8 +41,8 @@ func checkFinish() {
 		schedule.ClearChannels()
 
 		sumTime := time.Since(beginTime)
-		log.Printf("%+v, %+v, %+v", numOfReq, NumOfMB, float64(sumTime/time.Second))
-		throughput :=  float64(numOfReq) * float64(NumOfMB) / float64(sumTime/time.Second)
+		//log.Printf("%+v, %+v, %+v", numOfReq, NumOfMB, float64(sumTime/time.Second))
+		throughput :=  float64(numOfReq) * float64(NumOfMB) / sumTime.Seconds()
 		actualUpdatedBlocks = schedule.GetCurPolicy().GetActualBlocks()
 		averageOneUpdateSpeed := float64(sumTime/time.Millisecond) / float64(actualUpdatedBlocks) / 1000
 		crossTraffic := schedule.GetCurPolicy().GetCrossRackTraffic()
