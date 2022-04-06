@@ -177,6 +177,7 @@ func (p TUpdateD) HandleACK(ack *config.ACK)  {
 			ReturnACK(ack)
 		}else if ACKIsEmpty() { //检查是否全部完成，若完成，进入下一轮
 			IsRunning = false
+			p.Clear()
 		}
 	}
 }

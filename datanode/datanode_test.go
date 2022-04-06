@@ -4,7 +4,6 @@ import (
 	"EC/common"
 	"EC/config"
 	"EC/schedule"
-	"fmt"
 	"github.com/dchest/uniuri"
 	"log"
 	"math/rand"
@@ -172,14 +171,25 @@ func BenchmarkBuilderConcat(b *testing.B)    { benchmark(b, builderConcat) }
 
 func TestSendingQuitSignal(t *testing.T) {
 
-	var SendTD config.TD
-	config.InitBufferPool()
-	SendTD.Buff = common.ReadBlockWithSize(0, config.BlockSize)
-	fmt.Println(SendTD)
-	p := &config.Policy{
-		Type: -1,
-	}
-	common.SendData(p, common.GetLocalIP(), config.NodeSettingsListenPort)
+	numOfReq := 217
+	NumOfMB := 0.25
+	startTime := time.Now()
+	time.Sleep(3* time.Second)
+	sumTime := time.Since(startTime)
+	log.Printf("%+v, %+v, %+v", numOfReq, NumOfMB, float64(sumTime/time.Second))
+
+	throughput :=  float64(numOfReq) * float64(NumOfMB) / float64(sumTime/time.Second)
+	log.Printf("%+v", throughput)
+
+
+	//var SendTD config.TD
+	//config.InitBufferPool()
+	//SendTD.Buff = common.ReadBlockWithSize(0, config.BlockSize)
+	//fmt.Println(SendTD)
+	//p := &config.Policy{
+	//	Type: -1,
+	//}
+	//common.SendData(p, common.GetLocalIP(), config.NodeSettingsListenPort)
 }
 
 func TestListenTD(t *testing.T) {
