@@ -189,9 +189,9 @@ func findBlockIndexInReqs(reqs []*config.ReqData, blockID int) int {
 	}
 	return -1
 }
-func turnReqsToStripes() map[int][]int {
+func turnReqsToStripes(reqs []*config.ReqData) map[int][]int {
 	stripes := map[int][]int{}
-	for _, req := range curDistinctReq {
+	for _, req := range reqs {
 		stripeID := common.GetStripeIDFromBlockID(req.BlockID)
 		stripes[stripeID] = append(stripes[stripeID], req.BlockID)
 	}
@@ -199,7 +199,7 @@ func turnReqsToStripes() map[int][]int {
 }
 
 func cau_db() {
-	stripes := turnReqsToStripes()
+	stripes := turnReqsToStripes(curDistinctReq)
 	for _, stripe := range stripes{
 
 		for i := 0; i < config.NumOfRacks; i++ {

@@ -31,6 +31,7 @@ func (p CAU_D) Init()  {
 		TDs: make([]*config.TD, 0, config.MaxBatchSize),
 	}
 	sid = 0
+	curMatchReqs = make([]*config.ReqData, 0, config.MaxBatchSize)
 	ClearChannels()
 }
 
@@ -144,9 +145,6 @@ func (p CAU_D) HandleReq(reqs []*config.ReqData)  {
 	log.Printf("一共接收到%d个请求...\n", len(totalReqs))
 
 	for len(totalReqs) > 0 {
-		//过滤blocks
-		//findRSDistinctBlocks()
-		//执行cau
 		curMatchReqs = findDistinctBlocks()
 		actualBlocks += len(curMatchReqs)
 		log.Printf("第%d轮 CAU_D：处理%d个block\n", round, len(curDistinctBlocks))
@@ -164,11 +162,16 @@ func (p CAU_D) HandleReq(reqs []*config.ReqData)  {
 }
 
 func cau_d() {
-	stripes := turnBlocksToStripes()
+	stripes := turnReqsToStripes(curMatchReqs)
 	for _, stripe := range stripes{
+
 		for i := 0; i < config.NumOfRacks; i++ {
 			if i != ParityRackIndex {
-					dataUpdateRS(i, stripe)
+				if compareRacks(i, ParityRackIndex, stripe) {
+					dxr_parityUpdate(i, stripe)
+				}else{
+					dxr_dataUpdate(i, stripe)
+				}
 			}
 		}
 	}
@@ -215,19 +218,8 @@ func dataUpdateRS(rackID int, stripe []int)  {
 			_, rangeLeft, rangeRight := getBlockRangeFromDistinctReqs(b, curMatchReqs)
 			log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
 				rootP, common.GetNodeIP(rootP), b, common.GetNodeIP(parityID))
-
-			cmd := config.CMDBufferPool.Get().(*config.CMD)
-
-			cmd.SID = sid
-			cmd.BlockID = b
-			cmd.ToIPs = []string{common.GetNodeIP(parityID)}
-			cmd.FromIP = common.GetNodeIP(rootP)
-			cmd.Helpers = parities[i]
-			cmd.Matched = 0
-			cmd.SendSize = rangeRight - rangeLeft
-
-			common.SendData(cmd, common.GetNodeIP(rootP), config.NodeCMDListenPort)
-			config.CMDBufferPool.Put(cmd)
+			common.SendCMDWithSizeAndHelper(common.GetNodeIP(rootP), []string{common.GetNodeIP(parityID)},
+												sid, b, rangeRight - rangeLeft, parities[i])
 
 			sid++
 			break
@@ -252,18 +244,21 @@ func dataUpdateRS(rackID int, stripe []int)  {
 			log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", sid,
 				nodeID, common.GetNodeIP(nodeID), b, common.GetNodeIP(rootP))
 
-			cmd := config.CMDBufferPool.Get().(*config.CMD)
-			cmd.SID = sid
-			cmd.BlockID = b
-			cmd.ToIPs = []string{common.GetNodeIP(rootP)}
-			cmd.FromIP = common.GetNodeIP(nodeID)
-			cmd.Helpers = make([]int, 0, 1)
-			cmd.Matched = 0
-			cmd.SendSize = rangeRight - rangeLeft
+			//cmd := config.CMDBufferPool.Get().(*config.CMD)
+			//cmd.SID = sid
+			//cmd.BlockID = b
+			//cmd.ToIPs = []string{common.GetNodeIP(rootP)}
+			//cmd.FromIP = common.GetNodeIP(nodeID)
+			//cmd.Helpers = make([]int, 0, 1)
+			//cmd.Matched = 0
+			//cmd.SendSize = rangeRight - rangeLeft
+			//
+			//common.SendData(cmd, common.GetNodeIP(nodeID), config.NodeCMDListenPort)
 
-			common.SendData(cmd, common.GetNodeIP(nodeID), config.NodeCMDListenPort)
-
-			config.CMDBufferPool.Put(cmd)
+			//config.CMDBufferPool.Put(cmd)
+			helpers := make([]int, 0, 1)
+			common.SendCMDWithSizeAndHelper(common.GetNodeIP(nodeID), []string{common.GetNodeIP(rootP)},
+				sid, b, rangeRight - rangeLeft, helpers)
 
 			sid++
 			//统计跨域流量
@@ -337,6 +332,7 @@ func (p CAU_D) Clear()  {
 	curReceivedTDs = &ReceivedTDs{
 		TDs: make([]*config.TD, 0, config.MaxRSBatchSize),
 	}
+	curMatchReqs = make([]*config.ReqData, 0, config.MaxBatchSize)
 }
 
 func (p CAU_D) RecordSIDAndReceiverIP(sid int, ip string)()  {
