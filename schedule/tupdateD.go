@@ -107,19 +107,28 @@ func (p TUpdateD) HandleTD(td *config.TD)  {
 		for _, cmd := range cmds {
 			for _, toIP := range cmd.ToIPs {
 
-				SendTD := config.TDBufferPool.Get().(*config.TD)
-				SendTD.BlockID = cmd.BlockID
-				SendTD.Buff = td.Buff[:cmd.SendSize]
-				SendTD.FromIP = cmd.FromIP
-				SendTD.ToIP = toIP
-				SendTD.SID = cmd.SID
-				SendTD.SendSize = cmd.SendSize
+				SendTD := &config.TD{
+					BlockID: cmd.BlockID,
+					Buff: td.Buff[:cmd.SendSize],
+					FromIP: cmd.FromIP,
+					ToIP: toIP,
+					SID: cmd.SID,
+					SendSize: cmd.SendSize,
+				}
+				//
+				//SendTD := config.TDBufferPool.Get().(*config.TD)
+				//SendTD.BlockID = cmd.BlockID
+				//SendTD.Buff = td.Buff[:cmd.SendSize]
+				//SendTD.FromIP = cmd.FromIP
+				//SendTD.ToIP = toIP
+				//SendTD.SID = cmd.SID
+				//SendTD.SendSize = cmd.SendSize
 				sendSizeRate := float32(SendTD.SendSize * 1.0) / float32(config.BlockSize) * 100.0
 				log.Printf("发送 block:%d sendSize: %.2f%% -> %s.\n", SendTD.BlockID, sendSizeRate, toIP)
 				common.SendData(SendTD, toIP, config.NodeTDListenPort)
 
 
-				config.TDBufferPool.Put(SendTD)
+				//config.TDBufferPool.Put(SendTD)
 			}
 		}
 		//叶子节点
