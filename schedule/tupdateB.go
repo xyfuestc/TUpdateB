@@ -43,6 +43,7 @@ func (p TUpdateB) HandleReq(reqs []*config.ReqData)  {
 		//过滤blocks
 		curMatchReqs := FindDistinctBlocks()
 		mergeReqs := BlockMerge(curMatchReqs)
+		actualBlocks += len(mergeReqs)
 
 		log.Printf("第%d轮 TUpdateB：获取%d个请求，实际处理%d个block\n", round, len(curMatchReqs), len(mergeReqs))
 
