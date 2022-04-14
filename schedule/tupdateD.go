@@ -37,7 +37,7 @@ func (p TUpdateD) HandleReq(reqs []*config.ReqData)  {
 
 	for len(totalReqs) > 0 {
 		//过滤blocks
-		curMatchBlocks := findDistinctBlocks()
+		curMatchBlocks := FindDistinctBlocks()
 		actualBlocks += len(curMatchBlocks)
 		log.Printf("第%d轮 TUpdateD：获取%d个请求，实际处理%d个block\n", round, len(curMatchBlocks), len(curMatchBlocks))
 

@@ -3,10 +3,17 @@ package main
 import (
 	"EC/common"
 	"EC/config"
+	"EC/schedule"
+	"bufio"
 	"encoding/json"
 	"github.com/wxnacy/wgo/arrays"
+	"io"
 	"log"
 	"net"
+	"os"
+	"strconv"
+	"strings"
+
 	//"strconv"
 	"testing"
 )
@@ -16,10 +23,61 @@ type Message struct {
 	MultiTargetIPs []string `json:"multiTargetIPs"`
 }
 
+
 func TestMulticast(t *testing.T) {
-	for i := 0; i < 1000; i++ {
-		//common.ReadBlockWithSize(0, config.RSBlockSize)
+
+	policy := schedule.TUpdateB{}
+	policy.Init()
+
+	totalReqs := make([]*config.ReqData, 0, config.MaxBlockSize)
+	OutFilePath := "../request/"+"hm_0"+"_"+"2.5E-01M.csv.txt"
+	blockFile, err := os.Open(OutFilePath)
+	defer blockFile.Close()
+	//处理block请求
+	if err != nil {
+		log.Fatalln("Error: ", err)
 	}
+
+	bufferReader := bufio.NewReader(blockFile)
+	for {
+		lineData, _, err := bufferReader.ReadLine()
+		if err == io.EOF {
+			break
+		}else if err != nil {
+			log.Fatalln("handleReqFile error: ",err)
+		}
+		userRequestStr := strings.Split(string(lineData), ",")
+		blockID, rangeLeft, rangeRight := 0, 0, config.BlockSize
+		if len(userRequestStr) == 1 {
+			blockID, _ = strconv.Atoi(userRequestStr[0])
+		}else{
+			blockID, _ = strconv.Atoi(userRequestStr[0])
+			rangeLeft, _ = strconv.Atoi(userRequestStr[1])
+			rangeRight, _ = strconv.Atoi(userRequestStr[2])
+		}
+
+		req := &config.ReqData{
+			BlockID: blockID,
+			RangeLeft: rangeLeft,
+			RangeRight: rangeRight,
+		}
+		totalReqs = append(totalReqs, req)
+
+	}
+
+	schedule.BlockMerge(totalReqs)
+		//sum := 0
+		//
+		//for i := 0; i < len(blockMap) - 1; i++ {
+		//	sum += blockMap[i+1].RangeLeft - blockMap[i].RangeRight
+		//}
+		//if sum < 0 {
+		//	fmt.Println( blockID, " 可以合并: ", sum)
+		//}else {
+		//	fmt.Println( blockID, " 建议不合并: ", sum)
+		//}
+
+
 	//对比2种方式：1）sync.pool  2）make slice 的内存占用情况
 
 

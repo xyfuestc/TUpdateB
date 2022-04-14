@@ -145,7 +145,7 @@ func (p CAU_D) HandleReq(reqs []*config.ReqData)  {
 	log.Printf("一共接收到%d个请求...\n", len(totalReqs))
 
 	for len(totalReqs) > 0 {
-		curMatchReqs = findDistinctBlocks()
+		curMatchReqs = FindDistinctBlocks()
 		actualBlocks += len(curMatchReqs)
 		log.Printf("第%d轮 CAU_D：处理%d个block\n", round, len(curDistinctBlocks))
 

@@ -49,7 +49,7 @@ func (p CAU) HandleTD(td *config.TD) {
 	handleWaitingCMDs(td)
 }
 
-func findDistinctBlocks() []*config.ReqData {
+func FindDistinctBlocks() []*config.ReqData {
 	curMatchReqs := make([]*config.ReqData, 0, config.MaxBatchSize)
 	if len(totalReqs) > config.MaxBatchSize {
 		curMatchReqs = totalReqs[:config.MaxBatchSize]
@@ -77,7 +77,7 @@ func (p CAU) HandleReq(reqs []*config.ReqData)  {
 
 	for len(totalReqs) > 0 {
 		//过滤blocks
-		curMatchBlocks := findDistinctBlocks()
+		curMatchBlocks := FindDistinctBlocks()
 		//执行cau
 		actualBlocks += len(curDistinctBlocks)
 		log.Printf("第%d轮 CAU：获取%d个请求，实际处理%d个block\n", round, len(curMatchBlocks), len(curDistinctBlocks))

@@ -477,3 +477,24 @@ func (p TUpdate) GetActualBlocks() int {
 func (p TUpdate) GetCrossRackTraffic() float32 {
 	return  float32(totalCrossRackTraffic) / config.Megabyte
 }
+
+func  GetBalanceTransmitTasks(reqData *config.ReqData) []Task {
+	parities :=	common.RelatedParities(reqData.BlockID)
+	parityNodes := common.RelatedParityNodes(parities)
+	nodeID := common.GetNodeID(reqData.BlockID)
+	relatedParityMatrix, nodeIndexs := getAdjacentMatrix(parityNodes, nodeID, NodeMatrix)
+	path := GetMSTPath(relatedParityMatrix, nodeIndexs)
+
+	bPath := getBalancePath(path, nodeIndexs)
+	log.Printf("bPath : %v\n", bPath)
+
+	taskGroup := make([]Task, 0, len(nodeIndexs)-1)
+	for i := 1; i < len(nodeIndexs); i++ {
+		taskGroup = append(taskGroup, Task{Start: nodeIndexs[path[i]], SID: reqData.SID, BlockID: reqData.BlockID, End:nodeIndexs[i]})
+	}
+	TaskAdjust(taskGroup)
+	sort.SliceStable(taskGroup, func(i, j int) bool {
+		return taskGroup[i].Start < taskGroup[j].Start
+	})
+	return taskGroup
+}

@@ -50,7 +50,7 @@ func (p CAU1) HandleReq(reqs []*config.ReqData)  {
 	log.Printf("一共接收到%d个请求...\n", len(totalReqs))
 	for len(totalReqs) > 0 {
 		//获取curDistinctBlocks
-		curMatchBlocks := findDistinctBlocks()
+		curMatchBlocks := FindDistinctBlocks()
 		//执行cau
 		actualBlocks += len(curDistinctBlocks)
 		log.Printf("第%d轮 CAU1：获取%d个请求，实际处理%d个block\n", round, len(curMatchBlocks), len(curDistinctBlocks))

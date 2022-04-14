@@ -78,7 +78,7 @@ func main() {
 	//监听并接收ack，检测程序结束
 	listenAndReceive(config.NumOfWorkers)
 
-	getReqsFromTrace()
+	GetReqsFromTrace()
 	curPolicyVal := atomic.LoadInt32(&curPolicy)
 	for curPolicyVal < config.NumOfAlgorithm {
 		start()
@@ -117,11 +117,11 @@ func setCurrentTrace() {
 	//CAURS算法（必须保证CAURS在最后）
 	//if config.Policies[curPolicy] == "CAU_D" {
 		//OutFilePath = RSOutFilePath
-		//getReqsFromTrace()
+		//GetReqsFromTrace()
 	//}
 }
 
-func getReqsFromTrace()  {
+func GetReqsFromTrace() []*config.ReqData {
 
 	totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 
@@ -159,6 +159,8 @@ func getReqsFromTrace()  {
 
 	}
 	numOfReq = len(totalReqs)
+
+	return  totalReqs
 }
 func notifyNodesQuit()  {
 	log.Printf("通知各个节点结束任务...\n")
