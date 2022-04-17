@@ -49,9 +49,7 @@ func recordSpaceAndTime(space int, spendTime time.Duration)  {
 	write := bufio.NewWriter(blockFile)
 
 	strTime := time.Unix(time.Now().Unix(), 0).Format("2006-01-02 15:04:05")
-	localTime,_ := parseWithLocation("Asia/Shanghai", strTime)
-	localTimeStr := time.Unix(localTime.Unix(), 0).Format("2006-01-02 15:04:05")
-	var str = localTimeStr + " : " + strconv.Itoa(space) + ", "  + spendTime.String()  + "\n"
+	var str = strTime + " : " + strconv.Itoa(space) + ", "  + spendTime.String()  + "\n"
 	write.WriteString(str)
 	write.Flush()
 	defer blockFile.Close()
