@@ -76,7 +76,7 @@ func TestMulticast(t *testing.T) {
 	space := 0
 
 	for space != -1 {
-		_, space = schedule.BlockMergeWithSpace(totalReqs, space)
+
 		fmt.Println("当前步长：", space)
 		schedule.Space = space
 		start(totalReqs)
@@ -90,6 +90,7 @@ func TestMulticast(t *testing.T) {
 				break
 			}
 		}
+		_, space = schedule.BlockMergeWithSpace(totalReqs, space)
 		//curPolicyVal = atomic.LoadInt32(&curPolicy)
 		//curPolicy++
 
