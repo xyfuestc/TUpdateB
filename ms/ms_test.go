@@ -28,7 +28,7 @@ type Message struct {
 func recordSpaceAndTime(space int, spendTime time.Duration)  {
 	var blockFile *os.File
 	if client.CheckFileIsExist(SpaceFilePath) { //如果文件存在
-		blockFile, _ = os.OpenFile(SpaceFilePath, os.O_TRUNC|os.O_WRONLY, 0666)
+		blockFile, _ = os.OpenFile(SpaceFilePath, os.O_APPEND|os.O_WRONLY, 0666)
 		fmt.Println("文件存在")
 	} else {
 		blockFile, _ = os.Create(SpaceFilePath) //创建文件
@@ -36,7 +36,8 @@ func recordSpaceAndTime(space int, spendTime time.Duration)  {
 	}
 	write := bufio.NewWriter(blockFile)
 
-	var str = time.Now().String() + ": " + strconv.Itoa(space) + ","  + spendTime.String()  + "\n"
+	strTime := time.Unix(time.Now().Unix(), 0).Format("2006-01-02 15:04:05")
+	var str = strTime + " : " + strconv.Itoa(space) + ", "  + spendTime.String()  + "\n"
 	write.WriteString(str)
 	write.Flush()
 	defer blockFile.Close()
