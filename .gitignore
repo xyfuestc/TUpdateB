@@ -16,7 +16,7 @@ test
 # vendor/
 
 data/*
-
+log/*
 paritynode/*_test.go
 paritynode/parity
 paritynode/*.pprof
