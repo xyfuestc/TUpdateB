@@ -5,10 +5,12 @@ import (
 	"EC/config"
 	"fmt"
 	"log"
+	"math"
 	"sort"
 )
 /*TUpdate:  delta + handle one block + XOR + tree-structured path + batch */
 
+var Space = 0
 type TUpdateB struct {
 
 }
@@ -42,7 +44,7 @@ func (p TUpdateB) HandleReq(reqs []*config.ReqData)  {
 	for len(totalReqs) > 0 {
 		//过滤blocks
 		curMatchReqs := FindDistinctBlocks()
-		mergeReqs := BlockMerge(curMatchReqs)
+		mergeReqs,_ := BlockMergeWithSpace(curMatchReqs, Space)
 		actualBlocks += len(mergeReqs)
 
 		log.Printf("第%d轮 TUpdateB：获取%d个请求，实际处理%d个block\n", round, len(curMatchReqs), len(mergeReqs))
@@ -249,7 +251,7 @@ func BlockMerge(reqs []*config.ReqData) []*config.ReqData {
 		for i := 0; i < len(blockMap) - 1; i++ {
 			sum += blockMap[i+1].RangeLeft - blockMap[i].RangeRight
 		}
-		if sum < 0 {
+		if sum <= 0 && len(blockMap) > 1 {
 			fmt.Println( blockID, " 可以合并: ", sum)
 
 			newMergeBlock := &config.ReqData{
@@ -272,3 +274,57 @@ func BlockMerge(reqs []*config.ReqData) []*config.ReqData {
 	return mergeReqs
 }
 
+func BlockMergeWithSpace(reqs []*config.ReqData, space int) ([]*config.ReqData, int) {
+
+	nextSpace := math.MaxInt32
+	mergeReqs := make([]*config.ReqData, 0, len(reqs))
+	blockMaps := make(map[int][]*config.ReqData, 1000)
+
+	for _,req := range reqs {
+		//if _, ok := blockMaps[req.BlockID]; !ok  {
+		//	blockMaps[req.BlockID] = make([]*config.ReqData, 0, 100)
+		//}
+		blockMaps[req.BlockID] = append(blockMaps[req.BlockID], req)
+	}
+
+	for blockID, blockMap := range blockMaps {
+		//按照rangeL从小到大排序
+		sort.SliceStable(blockMap, func(i, j int) bool {
+			return blockMap[i].RangeLeft < blockMap[j].RangeLeft
+		})
+		sum := 0
+
+		for i := 0; i < len(blockMap) - 1; i++ {
+			sum += blockMap[i+1].RangeLeft - blockMap[i].RangeRight
+		}
+		//至少有2个blocks
+		if sum <= space && len(blockMap) > 1 {
+			//fmt.Println( blockID, " 可以合并: ", sum)
+
+			newMergeBlock := &config.ReqData{
+				BlockID: blockID,
+				RangeLeft: blockMap[0].RangeLeft,
+				RangeRight: blockMap[len(blockMap)-1].RangeRight,
+			}
+			mergeReqs = append(mergeReqs, newMergeBlock)
+		//sum > space
+		}else {
+			//fmt.Println( blockID, " 建议不合并: ", sum)
+			mergeReqs = append(mergeReqs, blockMap...)
+			//取下一次最小的步长
+			if nextSpace > sum && space < sum {
+				nextSpace = sum
+			}
+		}
+	}
+
+	//for _, req := range mergeReqs {
+	//	fmt.Printf( "%d [%d, %d]\n", req.BlockID, req.RangeLeft, req.RangeRight)
+	//}
+	//完全批处理
+	if nextSpace == math.MaxInt32 {
+		nextSpace = -1
+	}
+
+	return mergeReqs,nextSpace
+}

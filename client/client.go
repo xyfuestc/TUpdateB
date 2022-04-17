@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	common "EC/common"
@@ -54,7 +54,7 @@ func openFile(fileName string) (*os.File, error) {
 	}
 	return updateStreamFile, err
 }
-func checkFileIsExist(filename string) bool {
+func CheckFileIsExist(filename string) bool {
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		return false
 	}
@@ -64,7 +64,7 @@ func handleReqFile(file *os.File) {
 	bufferReader := bufio.NewReader(file)
 	OutFilePath := outFilePre + filepath.Base(RequestFileName) + outFileSuffix
 	var blockFile *os.File
-	if checkFileIsExist(OutFilePath) { //如果文件存在
+	if CheckFileIsExist(OutFilePath) { //如果文件存在
 		//blockFile, _ = os.OpenFile(FileName, os.O_TRUNC|os.O_WRONLY|os.O_APPEND, 0666)
 		blockFile, _ = os.OpenFile(OutFilePath, os.O_TRUNC|os.O_WRONLY, 0666)
 		fmt.Println("文件存在")
