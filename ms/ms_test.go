@@ -24,7 +24,19 @@ type Message struct {
 	Data []byte `json:"data"`
 	MultiTargetIPs []string `json:"multiTargetIPs"`
 }
+const TIME_LAYOUT = "2006-01-02 15:04:05"
 
+func parseWithLocation(name string, timeStr string) (time.Time, error) {
+	locationName := name
+	if l, err := time.LoadLocation(locationName); err != nil {
+		println(err.Error())
+		return time.Time{}, err
+	} else {
+		lt, _ := time.ParseInLocation(TIME_LAYOUT, timeStr, l)
+		fmt.Println(locationName, lt)
+		return lt, nil
+	}
+}
 func recordSpaceAndTime(space int, spendTime time.Duration)  {
 	var blockFile *os.File
 	if client.CheckFileIsExist(SpaceFilePath) { //如果文件存在
@@ -37,7 +49,9 @@ func recordSpaceAndTime(space int, spendTime time.Duration)  {
 	write := bufio.NewWriter(blockFile)
 
 	strTime := time.Unix(time.Now().Unix(), 0).Format("2006-01-02 15:04:05")
-	var str = strTime + " : " + strconv.Itoa(space) + ", "  + spendTime.String()  + "\n"
+	localTime,_ := parseWithLocation("Asia/Shanghai", strTime)
+	localTimeStr := time.Unix(localTime.Unix(), 0).Format("2006-01-02 15:04:05")
+	var str = localTimeStr + " : " + strconv.Itoa(space) + ", "  + spendTime.String()  + "\n"
 	write.WriteString(str)
 	write.Flush()
 	defer blockFile.Close()
