@@ -37,7 +37,7 @@ func parseWithLocation(name string, timeStr string) (time.Time, error) {
 		return lt, nil
 	}
 }
-func recordSpaceAndTime(space int, spendTime time.Duration)  {
+func recordSpaceAndTime(space int, spendTime time.Duration, averageSpace float64)  {
 	var blockFile *os.File
 	if client.CheckFileIsExist(SpaceFilePath) { //如果文件存在
 		blockFile, _ = os.OpenFile(SpaceFilePath, os.O_APPEND|os.O_WRONLY, 0666)
@@ -49,10 +49,65 @@ func recordSpaceAndTime(space int, spendTime time.Duration)  {
 	write := bufio.NewWriter(blockFile)
 
 	strTime := time.Unix(time.Now().Unix(), 0).Format("2006-01-02 15:04:05")
-	var str = strTime + " : " + strconv.Itoa(space) + ", "  + spendTime.String()  + "\n"
+	averageSpaceStr := fmt.Sprintf("%f", averageSpace)
+	var str = strTime + " : " + strconv.Itoa(space) + ", " + averageSpaceStr + ", " + spendTime.String()  + "\n"
 	write.WriteString(str)
 	write.Flush()
 	defer blockFile.Close()
+}
+
+func TestSpace(t *testing.T)  {
+	config.Init()
+
+	//监听ack
+	log.Printf("ms启动...")
+	log.Printf("监听ack: %s:%s\n", common.GetLocalIP(), config.NodeACKListenPort)
+
+	//当发生意外退出时，释放所有资源
+	registerSafeExit()
+	//监听并接收ack，检测程序结束
+	listenAndReceive(config.NumOfWorkers)
+
+	curPolicy = 3
+	//GetReqsFromTrace()
+	//curPolicyVal := atomic.LoadInt32(&curPolicy)
+	//traceName = "hm_0_2.5E-0"
+	totalReqs = GetReqsFromTrace()
+	//space := 0.0
+	averageSpace := 0.0
+	for averageSpace != -1 {
+
+		fmt.Println("当前步长：", averageSpace)
+		schedule.AverageSpace = averageSpace
+		start(totalReqs)
+		//保证主线程运行
+		for  {
+			isRoundFinished := atomic.LoadInt32(&roundFinished)
+			if isRoundFinished == 1 {
+				recordSpaceAndTime(0, sumTime, averageSpace)
+				//进入下一轮
+				//atomic.AddInt32(&curPolicy, 1)
+				break
+			}
+		}
+		_, averageSpace = schedule.BlockMergeWithAverageSpace(totalReqs, averageSpace)
+		//curPolicyVal = atomic.LoadInt32(&curPolicy)
+		//curPolicy++
+
+	}
+	//清空
+	clearAll()
+
+	//totalReqs = GetReqsFromTrace()
+	//space := 0.0
+	//for space != -1 {
+	//	fmt.Printf("%+v\n", space)
+	//	_,nextSpace,_ := schedule.BlockMergeWithAverageSpace(totalReqs, space)
+	//	//for _, req := range mergeReqs{
+	//	//	fmt.Printf("%+v\n", req)
+	//	//}
+	//	space = nextSpace
+	//}
 }
 
 func TestMulticast(t *testing.T) {
@@ -74,7 +129,7 @@ func TestMulticast(t *testing.T) {
 	//traceName = "hm_0_2.5E-0"
 	totalReqs = GetReqsFromTrace()
 	space := 0
-
+	averageSpaceIncrement := 0.0
 	for space != -1 {
 
 		fmt.Println("当前步长：", space)
@@ -84,13 +139,13 @@ func TestMulticast(t *testing.T) {
 		for  {
 			isRoundFinished := atomic.LoadInt32(&roundFinished)
 			if isRoundFinished == 1 {
-				recordSpaceAndTime(space, sumTime)
+				recordSpaceAndTime(space, sumTime, averageSpaceIncrement)
 				//进入下一轮
 				//atomic.AddInt32(&curPolicy, 1)
 				break
 			}
 		}
-		_, space = schedule.BlockMergeWithSpace(totalReqs, space)
+		_, space, averageSpaceIncrement = schedule.BlockMergeWithSpace(totalReqs, space)
 		//curPolicyVal = atomic.LoadInt32(&curPolicy)
 		//curPolicy++
 

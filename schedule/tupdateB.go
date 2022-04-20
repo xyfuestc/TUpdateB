@@ -11,8 +11,15 @@ import (
 /*TUpdate:  delta + handle one block + XOR + tree-structured path + batch */
 
 var Space = 0
+var AverageSpace = 0.0
 type TUpdateB struct {
 
+}
+
+type MergeBlockCandidate struct {
+	BlockID int
+	averageSpace float64
+	Reqs    []*config.ReqData
 }
 
 func (p TUpdateB) Init()  {
@@ -44,7 +51,7 @@ func (p TUpdateB) HandleReq(reqs []*config.ReqData)  {
 	for len(totalReqs) > 0 {
 		//过滤blocks
 		curMatchReqs := FindDistinctBlocks()
-		mergeReqs,_ := BlockMergeWithSpace(curMatchReqs, Space)
+		mergeReqs,_,_ := BlockMergeWithSpace(curMatchReqs, Space)
 		actualBlocks += len(mergeReqs)
 
 		log.Printf("第%d轮 TUpdateB：获取%d个请求，实际处理%d个block\n", round, len(curMatchReqs), len(mergeReqs))
@@ -274,11 +281,12 @@ func BlockMerge(reqs []*config.ReqData) []*config.ReqData {
 	return mergeReqs
 }
 
-func BlockMergeWithSpace(reqs []*config.ReqData, space int) ([]*config.ReqData, int) {
+func BlockMergeWithSpace(reqs []*config.ReqData, space int) ([]*config.ReqData, int, float64) {
 
 	nextSpace := math.MaxInt32
 	mergeReqs := make([]*config.ReqData, 0, len(reqs))
 	blockMaps := make(map[int][]*config.ReqData, 1000)
+	averageSpaceIncrement := 0.0
 
 	for _,req := range reqs {
 		//if _, ok := blockMaps[req.BlockID]; !ok  {
@@ -307,6 +315,8 @@ func BlockMergeWithSpace(reqs []*config.ReqData, space int) ([]*config.ReqData, 
 				RangeRight: blockMap[len(blockMap)-1].RangeRight,
 			}
 			mergeReqs = append(mergeReqs, newMergeBlock)
+
+			averageSpaceIncrement +=  float64(sum) / float64(len(blockMap))
 		//sum > space
 		}else {
 			//fmt.Println( blockID, " 建议不合并: ", sum)
@@ -326,5 +336,78 @@ func BlockMergeWithSpace(reqs []*config.ReqData, space int) ([]*config.ReqData, 
 		nextSpace = -1
 	}
 
-	return mergeReqs,nextSpace
+	return mergeReqs, nextSpace, averageSpaceIncrement
+}
+
+func BlockMergeWithAverageSpace(reqs []*config.ReqData, space float64) ([]*config.ReqData, float64) {
+
+	nextSpace := space
+	mergeReqs := make([]*config.ReqData, 0, len(reqs))
+	blockMaps := make(map[int][]*config.ReqData, 1000)
+	averageSpaceIncrement := 0.0
+	//singleBlocks := make([]*config.ReqData, 0, len(reqs))
+	Blocks := make([]*MergeBlockCandidate, 0, len(reqs))
+
+	//按照blockID分组，放到blockMaps[blockID]
+	for _,req := range reqs {
+		blockMaps[req.BlockID] = append(blockMaps[req.BlockID], req)
+	}
+
+
+	for blockID, blockMap := range blockMaps {
+
+		//发现该组只有一个块，不需要合并，直接放入mergeReqs
+		if len(blockMap) == 1 {
+			mergeReqs = append(mergeReqs, blockMap[0])
+			continue
+		}
+
+		//将blockMap按照rangeL从小到大排序
+		sort.SliceStable(blockMap, func(i, j int) bool {
+			return blockMap[i].RangeLeft < blockMap[j].RangeLeft
+		})
+		//求和
+		sum := 0
+		for i := 0; i < len(blockMap) - 1; i++ {
+			sum += blockMap[i+1].RangeLeft - blockMap[i].RangeRight
+		}
+		//求平均增长值
+		averageSpaceIncrement = float64(sum) / float64(len(blockMap))
+		//将blockID-averageSpaceIncrement-blockMap放入临时变量Blocks数组
+		Blocks = append(Blocks, &MergeBlockCandidate{BlockID: blockID, averageSpace: averageSpaceIncrement, Reqs: blockMap})
+
+	}
+	//按照rangeL从小到大排序
+	sort.SliceStable(Blocks, func(i, j int) bool {
+		return Blocks[i].averageSpace < Blocks[j].averageSpace
+	})
+
+	//根据给定space找出应该合并的最大索引i
+	curAverageSpace := 0.0
+	i := 0
+	for ; i < len(Blocks); i++ {
+		curAverageSpace += Blocks[i].averageSpace
+		if curAverageSpace / float64(i+1) > space {
+			nextSpace = curAverageSpace / float64(i+1)
+			break
+		}
+	}
+	for j := 0; j < i-1; j++ {
+		newMergeBlock := &config.ReqData{
+			BlockID: Blocks[j].BlockID,
+			RangeLeft: Blocks[j].Reqs[0].RangeLeft,
+			RangeRight: Blocks[j].Reqs[len(Blocks[j].Reqs)-1].RangeRight,
+		}
+		mergeReqs = append(mergeReqs, newMergeBlock)
+	}
+	//单独处理，不合并
+	for k := i-1; k < len(Blocks); k++ {
+		mergeReqs = append(mergeReqs, Blocks[k].Reqs...)
+
+	}
+	if nextSpace == space {
+		 nextSpace = -1
+	}
+
+	return mergeReqs, nextSpace
 }
