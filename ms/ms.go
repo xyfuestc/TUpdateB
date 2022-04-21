@@ -1,4 +1,4 @@
-package ms
+package main
 
 import (
 	"EC/common"
@@ -15,6 +15,7 @@ import (
 	"sync/atomic"
 	"time"
 )
+
 var numOfReq = 0
 //var curPolicy = 6
 var curPolicy int32 = 0

@@ -10,7 +10,7 @@ import (
 )
 /*TUpdate:  delta + handle one block + XOR + tree-structured path + batch */
 
-var Space = 0
+var Space = 10000
 var AverageSpace = 0.0
 type TUpdateB struct {
 
