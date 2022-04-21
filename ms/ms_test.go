@@ -110,7 +110,7 @@ func TestSpace(t *testing.T)  {
 	//}
 }
 
-func TestMulticast(t *testing.T) {
+func TestAverageSpace(t *testing.T) {
 
 	config.Init()
 
@@ -145,7 +145,7 @@ func TestMulticast(t *testing.T) {
 				break
 			}
 		}
-		_, space, averageSpaceIncrement = schedule.BlockMergeWithSpace(totalReqs, space)
+		_, space = schedule.BlockMergeWithSpace(totalReqs, space)
 		//curPolicyVal = atomic.LoadInt32(&curPolicy)
 		//curPolicy++
 

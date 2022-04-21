@@ -281,17 +281,14 @@ func BlockMerge(reqs []*config.ReqData) []*config.ReqData {
 	return mergeReqs
 }
 
-func BlockMergeWithSpace(reqs []*config.ReqData, space int) ([]*config.ReqData, int, float64) {
+func BlockMergeWithSpace(reqs []*config.ReqData, space int) ([]*config.ReqData, int) {
 
 	nextSpace := math.MaxInt32
 	mergeReqs := make([]*config.ReqData, 0, len(reqs))
 	blockMaps := make(map[int][]*config.ReqData, 1000)
-	averageSpaceIncrement := 0.0
+	averageSpaceIncrement := 0
 
 	for _,req := range reqs {
-		//if _, ok := blockMaps[req.BlockID]; !ok  {
-		//	blockMaps[req.BlockID] = make([]*config.ReqData, 0, 100)
-		//}
 		blockMaps[req.BlockID] = append(blockMaps[req.BlockID], req)
 	}
 
@@ -306,7 +303,8 @@ func BlockMergeWithSpace(reqs []*config.ReqData, space int) ([]*config.ReqData, 
 			sum += blockMap[i+1].RangeLeft - blockMap[i].RangeRight
 		}
 		//至少有2个blocks
-		if sum <= space && len(blockMap) > 1 {
+		averageSpaceIncrement = sum / len(blockMap) + 1
+		if averageSpaceIncrement < space && len(blockMap) > 1 {
 			//fmt.Println( blockID, " 可以合并: ", sum)
 
 			newMergeBlock := &config.ReqData{
@@ -315,15 +313,13 @@ func BlockMergeWithSpace(reqs []*config.ReqData, space int) ([]*config.ReqData, 
 				RangeRight: blockMap[len(blockMap)-1].RangeRight,
 			}
 			mergeReqs = append(mergeReqs, newMergeBlock)
-
-			averageSpaceIncrement +=  float64(sum) / float64(len(blockMap))
 		//sum > space
 		}else {
 			//fmt.Println( blockID, " 建议不合并: ", sum)
 			mergeReqs = append(mergeReqs, blockMap...)
 			//取下一次最小的步长
-			if nextSpace > sum && space < sum {
-				nextSpace = sum
+			if nextSpace > averageSpaceIncrement && space < averageSpaceIncrement {
+				nextSpace = averageSpaceIncrement
 			}
 		}
 	}
@@ -336,7 +332,7 @@ func BlockMergeWithSpace(reqs []*config.ReqData, space int) ([]*config.ReqData, 
 		nextSpace = -1
 	}
 
-	return mergeReqs, nextSpace, averageSpaceIncrement
+	return mergeReqs, nextSpace
 }
 
 func BlockMergeWithAverageSpace(reqs []*config.ReqData, space float64) ([]*config.ReqData, float64) {
