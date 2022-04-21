@@ -58,14 +58,13 @@ func (p TUpdateDB) HandleReq(reqs []*config.ReqData)  {
 
 func (p TUpdateDB) TUpdateDB(reqs []*config.ReqData)   {
 
+	oldSid := sid
 	//记录ack
 	for _, _ = range reqs {
 		ackMaps.pushACK(sid)
 		sid++
 	}
-
-	//处理reqs
-	sid = 0
+	sid = oldSid
 	for _, req := range reqs {
 		req.SID = sid
 		p.handleOneReq(req)

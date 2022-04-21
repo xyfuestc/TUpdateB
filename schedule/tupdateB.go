@@ -72,14 +72,14 @@ func (p TUpdateB) HandleReq(reqs []*config.ReqData)  {
 
 func (p TUpdateB) TUpdateB(reqs []*config.ReqData)   {
 
+	oldSid := sid
 	//记录ack
 	for _, _ = range reqs {
 		ackMaps.pushACK(sid)
 		sid++
 	}
-
+	sid = oldSid
 	//处理reqs
-	sid = 0
 	for _, req := range reqs {
 		req.SID = sid
 		p.handleOneReq(req)
@@ -219,7 +219,7 @@ func (p TUpdateB) Clear()  {
 	IsRunning = true
 	curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
 	curDistinctReq = make([]*config.ReqData, 0, config.MaxBatchSize)
-	sid = 0
+	//sid = 0
 	CMDList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}
