@@ -50,10 +50,10 @@ func (M *ACKMap) popACK(sid int) (restACKs int)  {
 	M.Lock()
 	if _, ok := M.RequireACKs[sid]; ok {
 		M.RequireACKs[sid]--
+		restACKs = M.RequireACKs[sid]
 		if M.RequireACKs[sid] == 0 {
 			delete(M.RequireACKs, sid)
 		}
-		restACKs = M.RequireACKs[sid]
 	}else{
 		restACKs = -1
 	}

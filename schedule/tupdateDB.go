@@ -88,6 +88,8 @@ func (p TUpdateDB) handleOneReq(reqData * config.ReqData)  {
 		toIPs := []string{common.GetNodeIP(int(task.End))}
 		SendSize := reqData.RangeRight - reqData.RangeLeft
 		helpers := make([]int, 0, 1)
+		sendSizeKB := float32(SendSize) / 1024.0 //转为KB
+		log.Printf("task %d: send block %d with size %fKB from %s to %v.\n", task.SID, task.BlockID, sendSizeKB, fromIP, toIPs)
 
 		common.SendCMDWithSizeAndHelper(fromIP, toIPs, task.SID, task.BlockID, SendSize, helpers)
 

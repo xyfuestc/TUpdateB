@@ -57,12 +57,13 @@ func (p TUpdateD) HandleReq(reqs []*config.ReqData)  {
 
 func (p TUpdateD) TUpdateD(reqs []*config.ReqData)  {
 	//记录ack
+	oldSID := sid
 	for _, _ = range reqs {
 		ackMaps.pushACK(sid)
 		sid++
 	}
 	//处理blocks
-	sid = 0
+	sid = oldSID
 	for _, req := range reqs {
 		req.SID = sid
 		p.handleOneBlock(req)
@@ -80,7 +81,8 @@ func (p TUpdateD) handleOneBlock(reqData * config.ReqData)  {
 		sendSize := reqData.RangeRight - reqData.RangeLeft
 		helpers := make([]int, 0, 1)
 		common.SendCMDWithSizeAndHelper(fromIP, toIPs, task.SID, task.BlockID, sendSize, helpers)
-
+		sendSizeKB := float32(sendSize) / 1024.0 //转为KB
+		log.Printf("task %d: send block %d with size %fKB from %s to %v.\n", task.SID, task.BlockID, sendSizeKB, fromIP, toIPs)
 		//统计跨域流量
 		rack1 := getRackIDFromNodeID(task.Start)
 		rack2 := getRackIDFromNodeID(task.End)
@@ -194,7 +196,7 @@ func (p TUpdateD) Clear()  {
 	IsRunning = true
 	curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
 	curDistinctReq = make([]*config.ReqData, 0, config.MaxBatchSize)
-	sid = 0
+	//sid = 0
 	CMDList = &CMDWaitingList{
 		Queue: make([]*config.CMD, 0, config.MaxBatchSize),
 	}

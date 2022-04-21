@@ -485,8 +485,8 @@ func  GetBalanceTransmitTasks(reqData *config.ReqData) []Task {
 	relatedParityMatrix, nodeIndexs := getAdjacentMatrix(parityNodes, nodeID, NodeMatrix)
 	path := GetMSTPath(relatedParityMatrix, nodeIndexs)
 
-	bPath := getBalancePath(path, nodeIndexs)
-	log.Printf("bPath : %v\n", bPath)
+	//bPath := getBalancePath(path, nodeIndexs)
+	//log.Printf("bPath : %v\n", bPath)
 
 	taskGroup := make([]Task, 0, len(nodeIndexs)-1)
 	for i := 1; i < len(nodeIndexs); i++ {
