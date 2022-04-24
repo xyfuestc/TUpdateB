@@ -1,4 +1,4 @@
-package main
+package ms
 
 import (
 	"EC/client"
@@ -137,8 +137,10 @@ func TestAverageSpace(t *testing.T) {
 		start(totalReqs)
 		//保证主线程运行
 		for  {
-			isRoundFinished := atomic.LoadInt32(&roundFinished)
-			if isRoundFinished == 1 {
+			//isRoundFinished := atomic.LoadInt32(&roundFinished)
+
+			select {
+			case <-ScheduleFinishedChan:
 				recordSpaceAndTime(space, sumTime, averageSpaceIncrement)
 				//进入下一轮
 				//atomic.AddInt32(&curPolicy, 1)

@@ -1,4 +1,4 @@
-package main
+package ms
 
 import (
 	"EC/common"
@@ -19,8 +19,8 @@ import (
 var numOfReq = 0
 //var curPolicy = 6
 var curPolicy int32 = 2
-var NumOfMB float64 = 1 //以这个为准，会同步到各个节点
-var traceName = "hm_0"
+var NumOfMB float64 = 0.25 //以这个为准，会同步到各个节点
+var traceName = "rsrch_2"
 var XOROutFilePath = "../request/"+traceName+"_"+strconv.Itoa(int(NumOfMB))+"M.csv.txt"
 //var RSOutFilePath = "../request/"+traceName+"_"+strconv.Itoa( int(NumOfMB * float64(config.W)) )+"M.csv.txt"
 var OutFilePath = XOROutFilePath
@@ -29,7 +29,10 @@ var actualUpdatedBlocks = 0
 var beginTime time.Time
 var totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 var roundFinished int32 = 0  // 1-本轮结束 ； 0-本轮未结束
+var ScheduleFinishedChan = make(chan bool, 1)
+
 var sumTime time.Duration = 0
+
 func checkFinish() {
 
 	isRoundFinished := atomic.LoadInt32(&roundFinished)
@@ -44,6 +47,7 @@ func checkFinish() {
 		sumTime = time.Since(beginTime)
 		//本轮结束
 		atomic.StoreInt32(&roundFinished, 1)
+
 		//log.Printf("%+v, %+v, %+v", numOfReq, NumOfMB, float64(sumTime/time.Second))
 		throughput :=  float64(numOfReq) * float64(NumOfMB) / sumTime.Seconds()
 		actualUpdatedBlocks = schedule.GetCurPolicy().GetActualBlocks()
@@ -54,6 +58,8 @@ func checkFinish() {
 
 		schedule.GetCurPolicy().Clear()
 		clearRound()
+		//表明本算法结束
+		ScheduleFinishedChan <- true
 	}
 }
 /*所有算法跑完，清空操作*/
