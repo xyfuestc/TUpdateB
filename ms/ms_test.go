@@ -41,10 +41,10 @@ func recordSpaceAndTime(space int, spendTime time.Duration, averageSpace float64
 	var blockFile *os.File
 	if client.CheckFileIsExist(SpaceFilePath) { //如果文件存在
 		blockFile, _ = os.OpenFile(SpaceFilePath, os.O_APPEND|os.O_WRONLY, 0666)
-		fmt.Println("文件存在")
+		//fmt.Println("文件存在")
 	} else {
 		blockFile, _ = os.Create(SpaceFilePath) //创建文件
-		fmt.Println("文件不存在")
+		//fmt.Println("文件不存在")
 	}
 	write := bufio.NewWriter(blockFile)
 
@@ -136,6 +136,7 @@ func TestAverageSpace(t *testing.T) {
 		schedule.Space = space
 		start(totalReqs)
 		//保证主线程运行
+	FOR:
 		for  {
 			//isRoundFinished := atomic.LoadInt32(&roundFinished)
 
@@ -144,7 +145,7 @@ func TestAverageSpace(t *testing.T) {
 				recordSpaceAndTime(space, sumTime, averageSpaceIncrement)
 				//进入下一轮
 				//atomic.AddInt32(&curPolicy, 1)
-				break
+				break FOR
 			}
 		}
 		_, space = schedule.BlockMergeWithSpace(totalReqs, space)
