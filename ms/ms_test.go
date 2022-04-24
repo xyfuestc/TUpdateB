@@ -142,6 +142,7 @@ func TestAverageSpace(t *testing.T) {
 
 			select {
 			case <-ScheduleFinishedChan:
+				log.Printf("<- ScheduleFinishedChan")
 				recordSpaceAndTime(space, sumTime, averageSpaceIncrement)
 				//进入下一轮
 				//atomic.AddInt32(&curPolicy, 1)

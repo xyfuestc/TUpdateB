@@ -60,6 +60,7 @@ func checkFinish() {
 		clearRound()
 		//表明本算法结束
 		ScheduleFinishedChan <- true
+		log.Printf("ScheduleFinishedChan <- true")
 	}
 }
 /*所有算法跑完，清空操作*/
