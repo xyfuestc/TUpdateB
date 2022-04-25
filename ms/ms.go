@@ -29,7 +29,7 @@ var actualUpdatedBlocks = 0
 var beginTime time.Time
 var totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 var roundFinished int32 = 0  // 1-本轮结束 ； 0-本轮未结束
-var ScheduleFinishedChan = make(chan bool, 0)
+var ScheduleFinishedChan = make(chan bool, 1)
 
 var sumTime time.Duration = 0
 
@@ -38,8 +38,7 @@ func checkFinish() {
 	isRoundFinished := atomic.LoadInt32(&roundFinished)
 	curPolicyVal := atomic.LoadInt32(&curPolicy)
 
-	if isRoundFinished == 0 && schedule.GetCurPolicy().IsFinished() && curPolicyVal < config.NumOfAlgorithm {
-
+	if isRoundFinished == 0 && schedule.GetCurPolicy().IsFinished() && schedule.IsRunning == false && curPolicyVal < config.NumOfAlgorithm {
 
 		//清空ACK
 		schedule.ClearChannels()

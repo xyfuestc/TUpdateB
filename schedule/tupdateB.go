@@ -209,7 +209,7 @@ func (p TUpdateB) HandleACK(ack *config.ACK)  {
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)
-			//检查是否全部完成，若完成，进入下一轮
+		//检查是否全部完成，若完成，进入下一轮
 		}else if ACKIsEmpty() {
 			IsRunning = false
 		}

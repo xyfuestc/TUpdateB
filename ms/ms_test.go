@@ -114,7 +114,7 @@ func TestChan(t *testing.T)  {
 		//isRoundFinished := atomic.LoadInt32(&roundFinished)
 		for {
 			time.Sleep(1 * time.Second)
-			//ScheduleFinishedChan <- true
+			ScheduleFinishedChan <- true
 		}
 	}()
 
@@ -122,8 +122,8 @@ func TestChan(t *testing.T)  {
 	for space != 3 {
 
 		select {
-		//case <-ScheduleFinishedChan:
-		//	log.Printf("<- ScheduleFinishedChan")
+		case <-ScheduleFinishedChan:
+			log.Printf("<- ScheduleFinishedChan")
 		}
 		space++
 
