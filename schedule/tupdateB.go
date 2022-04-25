@@ -12,6 +12,7 @@ import (
 
 var Space = 10000
 var AverageSpace = 0.0
+var Over = false
 type TUpdateB struct {
 
 }
@@ -49,6 +50,7 @@ func (p TUpdateB) HandleReq(reqs []*config.ReqData)  {
 	log.Printf("一共接收到%d个请求...\n", len(totalReqs))
 
 	for len(totalReqs) > 0 {
+		Over = false
 		//过滤blocks
 		curMatchReqs := FindDistinctBlocks()
 		//mergeReqs,_ := BlockMergeWithAverageSpace(curMatchReqs, AverageSpace)
@@ -66,6 +68,9 @@ func (p TUpdateB) HandleReq(reqs []*config.ReqData)  {
 		log.Printf("本轮结束！\n")
 		log.Printf("======================================\n")
 		round++
+
+		Over = true
+
 		p.Clear()
 	}
 }
