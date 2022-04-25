@@ -109,7 +109,25 @@ func TestSpace(t *testing.T)  {
 	//	space = nextSpace
 	//}
 }
+func TestChan(t *testing.T)  {
+	go func() {
+		//isRoundFinished := atomic.LoadInt32(&roundFinished)
+		for {
+			select {
+			case <-ScheduleFinishedChan:
+				fmt.Println("结束！")
+			}
+		}
+	}()
 
+	for {
+		time.Sleep(1 * time.Second)
+		ScheduleFinishedChan <- true
+	}
+
+
+
+}
 func TestAverageSpace(t *testing.T) {
 
 	config.Init()
@@ -124,41 +142,28 @@ func TestAverageSpace(t *testing.T) {
 	listenAndReceive(config.NumOfWorkers)
 
 	curPolicy = 3
-	//GetReqsFromTrace()
-	//curPolicyVal := atomic.LoadInt32(&curPolicy)
-	//traceName = "hm_0_2.5E-0"
 	totalReqs = GetReqsFromTrace()
 	space := 0
 	averageSpaceIncrement := 0.0
-	for space != -1 {
 
+	for space != -1 {
+		//设置当前步长
 		fmt.Println("当前步长：", space)
 		schedule.Space = space
+		//启动服务
 		start(totalReqs)
-		//保证主线程运行
-	FOR:
-		for  {
-			//isRoundFinished := atomic.LoadInt32(&roundFinished)
 
-			select {
-			case <-ScheduleFinishedChan:
-				log.Printf("<- ScheduleFinishedChan")
-				recordSpaceAndTime(space, sumTime, averageSpaceIncrement)
-				//进入下一轮
-				//atomic.AddInt32(&curPolicy, 1)
-				break FOR
-			}
+		select {
+		case <-ScheduleFinishedChan:
+			log.Printf("<- ScheduleFinishedChan")
+			recordSpaceAndTime(space, sumTime, averageSpaceIncrement)
 		}
+
 		_, space = schedule.BlockMergeWithSpace(totalReqs, space)
-		//curPolicyVal = atomic.LoadInt32(&curPolicy)
-		//curPolicy++
 
 	}
 	//清空
 	clearAll()
-	//通知各个节点退出
-	//notifyNodesQuit()
-
 }
 func ListenMulticast(receive chan Message) {
 	addr, err := net.ResolveUDPAddr("udp", config.MulticastAddrWithPort)
