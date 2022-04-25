@@ -157,7 +157,6 @@ func TestAverageSpace(t *testing.T) {
 
 		select {
 		case <-ScheduleFinishedChan:
-			log.Printf("<- ScheduleFinishedChan")
 			recordSpaceAndTime(space, sumTime, averageSpaceIncrement)
 		}
 
