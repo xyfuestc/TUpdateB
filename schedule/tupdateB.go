@@ -9,9 +9,9 @@ import (
 	"sort"
 )
 /*TUpdate:  delta + handle one block + XOR + tree-structured path + batch */
-
-var Space = 10000
-var AverageSpace = 0.0
+var Space = 16385  //for 0.25MB
+//var Space = 10000  //for 1MB
+//var Space = 10000 // for 4MB
 var Done = make(chan bool, 1)
 type TUpdateB struct {
 

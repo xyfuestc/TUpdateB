@@ -46,13 +46,13 @@ func (p TUpdateDB) HandleReq(reqs []*config.ReqData)  {
 		//执行reqs
 		p.TUpdateDB(curDistinctReq)
 
-		for IsRunning {
-
+		select {
+		case <-Done:
+			log.Printf("本轮结束！\n")
+			log.Printf("======================================\n")
+			round++
+			p.Clear()
 		}
-		log.Printf("本轮结束！\n")
-		log.Printf("======================================\n")
-		round++
-		p.Clear()
 	}
 }
 
@@ -200,7 +200,7 @@ func (p TUpdateDB) HandleACK(ack *config.ACK)  {
 			ReturnACK(ack)
 		//检查是否全部完成，若完成，进入下一轮
 		}else if ACKIsEmpty() {
-			IsRunning = false
+			Done <- true
 		}
 	}
 }
