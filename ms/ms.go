@@ -29,7 +29,7 @@ var actualUpdatedBlocks = 0
 var beginTime time.Time
 var totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 var roundFinished int32 = 0  // 1-本轮结束 ； 0-本轮未结束
-var ScheduleFinishedChan = make(chan bool, 1)
+var ScheduleFinishedChan = make(chan bool, 0)
 
 var sumTime time.Duration = 0
 

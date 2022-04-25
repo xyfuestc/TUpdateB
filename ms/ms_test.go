@@ -113,19 +113,21 @@ func TestChan(t *testing.T)  {
 	go func() {
 		//isRoundFinished := atomic.LoadInt32(&roundFinished)
 		for {
-			select {
-			case <-ScheduleFinishedChan:
-				fmt.Println("结束！")
-			}
+			time.Sleep(1 * time.Second)
+			//ScheduleFinishedChan <- true
 		}
 	}()
 
-	for {
-		time.Sleep(1 * time.Second)
-		ScheduleFinishedChan <- true
+	space := -3
+	for space != 3 {
+
+		select {
+		//case <-ScheduleFinishedChan:
+		//	log.Printf("<- ScheduleFinishedChan")
+		}
+		space++
+
 	}
-
-
 
 }
 func TestAverageSpace(t *testing.T) {
