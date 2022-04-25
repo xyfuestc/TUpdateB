@@ -12,7 +12,7 @@ import (
 
 var Space = 10000
 var AverageSpace = 0.0
-var Over = false
+var Done = make(chan bool, 1)
 type TUpdateB struct {
 
 }
@@ -50,7 +50,6 @@ func (p TUpdateB) HandleReq(reqs []*config.ReqData)  {
 	log.Printf("一共接收到%d个请求...\n", len(totalReqs))
 
 	for len(totalReqs) > 0 {
-		Over = false
 		//过滤blocks
 		curMatchReqs := FindDistinctBlocks()
 		//mergeReqs,_ := BlockMergeWithAverageSpace(curMatchReqs, AverageSpace)
@@ -62,16 +61,14 @@ func (p TUpdateB) HandleReq(reqs []*config.ReqData)  {
 		//执行reqs
 		p.TUpdateB(mergeReqs)
 
-		for IsRunning {
-
+		select {
+		case <-Done:
+			log.Printf("本轮结束！\n")
+			log.Printf("======================================\n")
+			round++
+			p.Clear()
 		}
-		log.Printf("本轮结束！\n")
-		log.Printf("======================================\n")
-		round++
 
-		Over = true
-
-		p.Clear()
 	}
 }
 
@@ -216,7 +213,7 @@ func (p TUpdateB) HandleACK(ack *config.ACK)  {
 			ReturnACK(ack)
 		//检查是否全部完成，若完成，进入下一轮
 		}else if ACKIsEmpty() {
-			IsRunning = false
+			Done <- true
 		}
 	}
 }
@@ -234,7 +231,7 @@ func (p TUpdateB) RecordSIDAndReceiverIP(sid int, ip string)()  {
 	ackIPMaps.recordIP(sid, ip)
 }
 func (p TUpdateB) IsFinished() bool {
-	return len(totalReqs) == 0 && ackMaps.isEmpty()
+	return len(totalReqs) == 0 && ACKIsEmpty()
 }
 func (p TUpdateB) GetActualBlocks() int {
 	return actualBlocks

@@ -38,7 +38,7 @@ func checkFinish() {
 	isRoundFinished := atomic.LoadInt32(&roundFinished)
 	curPolicyVal := atomic.LoadInt32(&curPolicy)
 
-	if isRoundFinished == 0 && schedule.GetCurPolicy().IsFinished() && schedule.Over == true && curPolicyVal < config.NumOfAlgorithm {
+	if isRoundFinished == 0 && schedule.GetCurPolicy().IsFinished() && curPolicyVal < config.NumOfAlgorithm {
 
 		//清空ACK
 		schedule.ClearChannels()
