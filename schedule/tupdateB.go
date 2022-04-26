@@ -52,7 +52,6 @@ func (p TUpdateB) HandleReq(reqs []*config.ReqData)  {
 	for len(totalReqs) > 0 {
 		//过滤blocks
 		curMatchReqs := FindDistinctBlocks()
-		//mergeReqs,_ := BlockMergeWithAverageSpace(curMatchReqs, AverageSpace)
 		mergeReqs,_ := BlockMergeWithSpace(curMatchReqs, Space)
 		actualBlocks += len(mergeReqs)
 

@@ -121,13 +121,6 @@ func listenAndReceive(maxWorkers int)  {
 		go msgSorter(schedule.ReceivedAckCh)
 	}
 }
-func setCurrentTrace() {
-	//CAURS算法（必须保证CAURS在最后）
-	//if config.Policies[curPolicy] == "CAU_D" {
-		//OutFilePath = RSOutFilePath
-		//GetReqsFromTrace()
-	//}
-}
 
 func GetReqsFromTrace() []*config.ReqData {
 
