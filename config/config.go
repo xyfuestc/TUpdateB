@@ -91,7 +91,7 @@ const StartIP int = 172
 var NodeIPs =[]string{
 	BaseIP+"110", BaseIP+"111", BaseIP+"112", BaseIP+"113",     //rack0
 	BaseIP+"120", BaseIP+"121", BaseIP+"122", BaseIP+"123",     //rack1
-	BaseIP+"130", BaseIP+"131", BaseIP+"132", BaseIP+"133",     //rack2
+	BaseIP+"140", BaseIP+"141", BaseIP+"142", BaseIP+"143",     //rack2
 }
 //共享池
 var TDBufferPool sync.Pool
