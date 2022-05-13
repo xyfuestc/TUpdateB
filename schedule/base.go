@@ -114,6 +114,8 @@ func SetPolicy(policyType string)  {
 		CurPolicy = TUpdateB{}
 	case "TUpdateDB":
 		CurPolicy = TUpdateDB{}
+	case "TUpdateFB":
+		CurPolicy = TUpdateFB{}
 	case "CAU":
 		CurPolicy = CAU{}
 	case "CAU_D":
