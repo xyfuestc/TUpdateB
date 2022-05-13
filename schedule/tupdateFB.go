@@ -31,6 +31,35 @@ func (p TUpdateFB) Init()  {
 
 	ClearChannels()
 }
+func (p TUpdateFB) findDistinctReqsForFB() int {
+	curMatchReqs := make([]*config.ReqData, 0, config.MaxBatchSize)
+	if len(totalReqs) > config.MaxBatchSize {
+		curMatchReqs = totalReqs[:config.MaxBatchSize]
+		totalReqs = totalReqs[config.MaxBatchSize:]
+	}else { //处理最后不到100个请求
+		curMatchReqs = totalReqs
+		totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
+	}
+	//将同一block的不同修改合并（rangL，rangR）
+	//turnMatchReqsToDistinctReqs(curMatchReqs)
+
+	for _, req := range curMatchReqs {
+		if i := findBlockIndexInReqs(curDistinctReq, req.BlockID); i < 0 {
+			curDistinctReq = append(curDistinctReq, req)
+		}else{
+			curDistinctReq[i].RangeLeft = 0
+			curDistinctReq[i].RangeRight = config.BlockSize
+
+			//if req.RangeLeft < curDistinctReq[i].RangeLeft {
+			//	curDistinctReq[i].RangeLeft = req.RangeLeft
+			//}else if req.RangeRight > curDistinctReq[i].RangeRight {
+			//	curDistinctReq[i].RangeRight = req.RangeRight
+			//}
+		}
+	}
+
+	return len(curMatchReqs)
+}
 
 func (p TUpdateFB) HandleReq(reqs []*config.ReqData)  {
 
@@ -39,7 +68,7 @@ func (p TUpdateFB) HandleReq(reqs []*config.ReqData)  {
 
 	for len(totalReqs) > 0 {
 		//过滤blocks
-		numOfMatchReqs := findDistinctReqs()
+		numOfMatchReqs := p.findDistinctReqsForFB()
 		actualBlocks += len(curDistinctReq)
 		log.Printf("第%d轮 TUpdateFB：获取%d个请求，实际处理%d个block\n", round, numOfMatchReqs, len(curDistinctReq))
 
@@ -67,8 +96,6 @@ func (p TUpdateFB) TUpdateFB(reqs []*config.ReqData)   {
 	sid = oldSid
 	for _, req := range reqs {
 		req.SID = sid
-		req.RangeLeft = 0
-		req.RangeRight = config.BlockSize
 		p.handleOneReq(req)
 		sid++
 	}
