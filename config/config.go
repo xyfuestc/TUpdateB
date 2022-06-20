@@ -12,11 +12,10 @@ const K int = 8
 const M int = 4
 const W int = 8
 const N  = K + M
-var NumOfMB = 4
+var NumOfMB = 1
 const InnerBandWidth int = 200 * Megabyte / 8    //200Mbps
 const OuterBandWidth = InnerBandWidth / 5   //40Mbps
-var BlockSize = int(Megabyte * NumOfMB) //1MB
-//var RSBlockSize = int(Megabyte * NumOfMB) * W
+var BlockSize = Megabyte * NumOfMB //1MB
 const Megabyte = 1024 * 1024      //1MB
 const MaxBatchSize int = 100
 const MaxRSBatchSize int = 100
@@ -25,7 +24,6 @@ const MaxBlockSize int = 1000
 const TestFileSize = 10 * 1024 * Megabyte
 var MaxBlockIndex = TestFileSize / BlockSize - 1
 const NumOfAlgorithm int32 = 6 //采用3种算法执行相同任务
-//var Policies = []string{"MultiD", "MultiDB", "TUpdate", "TUpdateD", "TUpdateDB", "CAU", "CAU_D", "CAU_DB" }
 var Policies = []string{"MultiD", "MultiDB", "TUpdateD", "TUpdateB", "TUpdateDB", "TUpdateFB", "CAU", "CAU_DB" }
 var BitMatrix = make([]byte, K*M*W*W)
 const RackSize = M
@@ -40,17 +38,6 @@ const MTUSize =  6 * 1024 // 6K
 const UDPDuration  = time.Duration(2 * MTUSize * 1000000 / OuterBandWidth) * time.Microsecond
 const MaxDatagramSize = 20 * 1024 // 8 * 1024 = 64KB
 
-//const (
-//	BASE PolicyType = iota
-//	CAU
-//	T_Update
-//	T_Update1
-//	TAR_CAU
-//	CAU1
-//	BASEMulticast
-//	CAURS
-//
-//)
 const (
 	Timestamp int  = iota    // default 0
 	WorkloadName    //1
@@ -87,7 +74,6 @@ const (
 const BaseIP string = "192.168.1."
 var MSIP = BaseIP + "108"
 const DataFilePath string = "../../test"
-const StartIP int = 172
 var NodeIPs =[]string{
 	BaseIP+"110", BaseIP+"111", BaseIP+"112", BaseIP+"113",     //rack0
 	BaseIP+"120", BaseIP+"121", BaseIP+"122", BaseIP+"123",     //rack1
@@ -98,10 +84,8 @@ var TDBufferPool sync.Pool
 var CMDBufferPool sync.Pool
 var ReqBufferPool sync.Pool
 var AckBufferPool sync.Pool
-//var XORBlockBufferPool sync.Pool
 var BlockBufferPool sync.Pool
 var NumOfWorkers int
-
 
 //传输数据格式
 type TD struct {
