@@ -3,6 +3,7 @@ package schedule
 import (
 	"EC/common"
 	"EC/config"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -102,6 +103,8 @@ var ReceivedCMDCh = make(chan config.CMD, 10)
 func SetPolicy(policyType string)  {
 
 	switch policyType {
+	case "Base":
+		CurPolicy = Base{}
 	case "MultiD":
 		CurPolicy = MultiD{}
 	case "MultiDB":
@@ -127,9 +130,9 @@ func SetPolicy(policyType string)  {
 
 }
 func GetCurPolicy() Policy {
-	//if CurPolicy == nil {
-	//	//fmt.Println("CurPolicy is nil！")
-	//}
+	if CurPolicy == nil {
+		fmt.Println("CurPolicy is nil！")
+	}
 	return CurPolicy
 }
 func (p Base) HandleCMD(cmd *config.CMD) {
@@ -153,15 +156,6 @@ func handleOneCMD(cmd *config.CMD)  {
 			SID: cmd.SID,
 			SendSize: cmd.SendSize,
 		}
-		//td := config.TDBufferPool.Get().(*config.TD)
-		//td.BlockID = cmd.BlockID
-		//td.Buff = buff[:config.BlockSize]
-		//td.FromIP = cmd.FromIP
-		//td.ToIP = parityIP
-		//td.SID = cmd.SID
-		//td.SendSize = config.BlockSize
-		//common.SendData(td, parityIP, config.NodeTDListenPort, "")
-
 		begin := time.Now()
 		common.SendData(td, parityIP, config.NodeTDListenPort)
 		elapsed := time.Since(begin)
@@ -169,7 +163,6 @@ func handleOneCMD(cmd *config.CMD)  {
 		log.Printf("发送 td(sid: %d, blockID: %d), 从 %s 到 %s, 数据量：%d MB，  用时：%s.",
 			cmd.SID, cmd.BlockID, common.GetLocalIP(), parityIP, 1.0 * td.SendSize/config.Megabyte, elapsed)
 
-		//config.TDBufferPool.Put(td)
 	}
 	config.BlockBufferPool.Put(buff)
 }
@@ -205,11 +198,6 @@ func ReturnACK(ack *config.ACK) {
 		common.SendData(ack, ackReceiverIP, config.NodeACKListenPort)
 		log.Printf("任务已完成，给上级：%s返回ack: sid: %d, blockID: %d\n", ackReceiverIP, ack.SID, ack.BlockID)
 	}
-	//else{
-	//	log.Fatal("returnACK error! ack: ", ack, " ackReceiverIPs: ", ackIPMaps)
-	//}
-
-	//config.AckBufferPool.Put(ack)
 }
 
 func (p Base) Init()  {
@@ -242,7 +230,7 @@ func getBatchReqs() []*config.ReqData {
 func (p Base) HandleReq(reqs []*config.ReqData)  {
 
 	totalReqs = reqs
-	_ = reqs
+	//_ = reqs
 
 	for len(totalReqs) > 0 {
 		//过滤blocks

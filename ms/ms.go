@@ -5,6 +5,8 @@ import (
 	"EC/config"
 	"EC/schedule"
 	"bufio"
+	"flag"
+	"github.com/pkg/profile"
 	"io"
 	"log"
 	"net"
@@ -18,10 +20,10 @@ import (
 
 var numOfReq = 0
 //var curPolicy = 6
-var curPolicy int32 = 2
-var NumOfMB float64 = 0.25 //以这个为准，会同步到各个节点
-var traceName = "rsrch_2"
-var XOROutFilePath = "../request/"+traceName+"_"+strconv.Itoa(int(NumOfMB))+"M.csv.txt"
+//var curPolicy int32 = 2
+//var NumOfMB float64 = 0.25 //以这个为准，会同步到各个节点
+//var traceName = "rsrch_2"
+var XOROutFilePath = ""
 //var RSOutFilePath = "../request/"+traceName+"_"+strconv.Itoa( int(NumOfMB * float64(config.W)) )+"M.csv.txt"
 var OutFilePath = XOROutFilePath
 var SpaceFilePath = "../log/space_log.txt"
@@ -32,12 +34,15 @@ var roundFinished int32 = 0  // 1-本轮结束 ； 0-本轮未结束
 var ScheduleFinishedChan = make(chan bool, 1)
 
 var sumTime time.Duration = 0
-
+var NumOfMB = flag.Float64("b", 4, "块大小：int型参数，默认：64MB")
+var curPolicy = flag.Int("p", 0, "策略ID：0-Base;1-CRRepairBoost;2-Express，默认：0")
+var closeNodes = flag.Int("c", 0, "是否程序结束自动关闭各节点？1-关闭；0-不关闭，默认：0")
+var traceName = flag.String("f", "rsrch_2", "日志文件名，默认：rsrch_2")
 func checkFinish() {
 
 	isRoundFinished := atomic.LoadInt32(&roundFinished)
-	curPolicyVal := atomic.LoadInt32(&curPolicy)
-
+	p := int32(*curPolicy)
+	var curPolicyVal = atomic.LoadInt32(&p)
 	if isRoundFinished == 0 && schedule.GetCurPolicy().IsFinished() && curPolicyVal < config.NumOfAlgorithm {
 
 		//清空ACK
@@ -48,7 +53,7 @@ func checkFinish() {
 		atomic.StoreInt32(&roundFinished, 1)
 
 		//log.Printf("%+v, %+v, %+v", numOfReq, NumOfMB, float64(sumTime/time.Second))
-		throughput :=  float64(numOfReq) * float64(NumOfMB) / sumTime.Seconds()
+		throughput :=  float64(numOfReq) * float64(*NumOfMB) / sumTime.Seconds()
 		actualUpdatedBlocks = schedule.GetCurPolicy().GetActualBlocks()
 		averageOneUpdateSpeed := float64(sumTime/time.Millisecond) / float64(actualUpdatedBlocks) / 1000
 		crossTraffic := schedule.GetCurPolicy().GetCrossRackTraffic()
@@ -73,9 +78,13 @@ func clearRound()  {
 	actualUpdatedBlocks = 0
 }
 func main() {
-	//defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
+	defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
+
+	flag.Parse()
 	//初始化
 	config.Init()
+
+	XOROutFilePath = "../request/"+*traceName+"_"+strconv.Itoa(int(*NumOfMB))+"M.csv.txt"
 
 	//监听ack
 	log.Printf("ms启动...")
@@ -87,7 +96,8 @@ func main() {
 	listenAndReceive(config.NumOfWorkers)
 
 	GetReqsFromTrace()
-	curPolicyVal := atomic.LoadInt32(&curPolicy)
+	policyID := int32(*curPolicy)
+	curPolicyVal := atomic.LoadInt32(&policyID)
 	for curPolicyVal < config.NumOfAlgorithm {
 		start(totalReqs)
 		//保证主线程运行
@@ -95,18 +105,18 @@ func main() {
 			isRoundFinished := atomic.LoadInt32(&roundFinished)
 			if isRoundFinished == 1 {
 				//进入下一轮
-				atomic.AddInt32(&curPolicy, 1)
+				atomic.AddInt32(&policyID, 1)
 				break
 			}
 		}
-		curPolicyVal = atomic.LoadInt32(&curPolicy)
-		//curPolicy++
-
+		curPolicyVal = atomic.LoadInt32(&policyID)
 	}
 	//清空
 	clearAll()
 	//通知各个节点退出
-	notifyNodesQuit()
+	if *closeNodes == 1{
+		notifyNodesQuit()
+	}
 
 }
 func listenAndReceive(maxWorkers int)  {
@@ -176,20 +186,19 @@ func notifyNodesQuit()  {
 	log.Printf("退出\n")
 
 }
-func settingCurrentPolicy(policyType int32)  {
+func syncSettings(policyType int32)  {
 
 	//UsingMulticast := checkMulti(policyType)
 	p := &config.Policy{
 		Type:      policyType,
-		NumOfMB:   NumOfMB,
-		TraceName: traceName,
+		NumOfMB:   *NumOfMB,
+		TraceName: *traceName,
 	}
 
-	config.NumOfMB = int(NumOfMB)
-	config.BlockSize = int(NumOfMB * config.Megabyte)
-	//config.RSBlockSize = int(config.Megabyte * NumOfMB) * config.W
+	config.NumOfMB = int(*NumOfMB)
+	config.BlockSize = int(*NumOfMB * config.Megabyte)
 
-	log.Printf("初始化共享池...\n")
+	log.Printf("初始化共享池...%v\n", p)
 	config.InitBufferPool()
 
 	for _, ip := range config.NodeIPs{
@@ -198,27 +207,19 @@ func settingCurrentPolicy(policyType int32)  {
 	log.Printf("等待设置完成...\n")
 	time.Sleep(2 * time.Second)
 
-	//if config.Policies[curPolicy] == "CAU_D" {
-	//	curNumOfMB = float64(config.W) * NumOfMB
-	//}else{
-	//	curNumOfMB = NumOfMB
-	//}
 }
 
 func start(reqs []*config.ReqData)  {
 
-	//setCurrentTrace() //专门针对CAURS改变数据源
-
-	//time.Sleep(2 * time.Second)
 	beginTime = time.Now()
-	settingCurrentPolicy(curPolicy)
-	log.Printf(" 设置当前算法：[%s], 当前数据集为：%s, blockSize=%vMB.\n", config.Policies[curPolicy], OutFilePath, NumOfMB)
+	syncSettings(int32(*curPolicy))
+	log.Printf(" 设置当前算法：[%s], 当前数据集为：%s, blockSize=%vMB.\n", config.Policies[*curPolicy], OutFilePath, NumOfMB)
 
 	//重置为本轮未结束：0
 	atomic.StoreInt32(&roundFinished, 0)
 
-	log.Printf(" [%s]算法开始运行，总共block请求数量为：%d\n", config.Policies[curPolicy], numOfReq)
-	schedule.SetPolicy(config.Policies[curPolicy])
+	log.Printf(" [%s]算法开始运行，总共block请求数量为：%d\n", config.Policies[*curPolicy], numOfReq)
+	schedule.SetPolicy(config.Policies[*curPolicy])
 	schedule.GetCurPolicy().HandleReq(reqs)
 }
 func msgSorter(receivedAckCh <-chan config.ACK)  {
@@ -232,13 +233,6 @@ func msgSorter(receivedAckCh <-chan config.ACK)  {
 
 }
 func listenACK(listen net.Listener) {
-
-	//清除连接
-	//defer func() {
-	//	for _, conn := range connections {
-	//		conn.Close()
-	//	}
-	//}()
 
 	for {
 		conn, e := listen.Accept()
@@ -255,10 +249,6 @@ func listenACK(listen net.Listener) {
 		ack := common.GetACK(conn)
 		schedule.ReceivedAckCh <- ack
 
-		//connections = append(connections, conn)
-		//if len(connections)%100 == 0 {
-		//	log.Printf("total number of connections: %v", len(connections))
-		//}
 	}
 }
 func registerSafeExit()  {

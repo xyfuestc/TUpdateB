@@ -5,6 +5,7 @@ import (
 	"EC/config"
 	"EC/schedule"
 	"fmt"
+	"github.com/pkg/profile"
 	"log"
 	"net"
 	"os"
@@ -99,7 +100,7 @@ func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, r
 	}
 }
 func main() {
-	//defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
+	defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
 
 	//先暂停处理超时
 	ticker.Stop()
