@@ -140,7 +140,7 @@ func (p Base) HandleCMD(cmd *config.CMD) {
 }
 
 func handleOneCMD(cmd *config.CMD)  {
-	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID, config.BlockSize)
+	buff := common.RandWriteBlockAndRetDelta(cmd.BlockID, cmd.SendSize)
 	//buff := common.ReadBlock(cmd.BlockID)
 	log.Printf("读取到数据 block %d: %v\n", cmd.BlockID, len(buff))
 	for _, _ = range cmd.ToIPs {
@@ -150,7 +150,7 @@ func handleOneCMD(cmd *config.CMD)  {
 	for _, parityIP := range cmd.ToIPs {
 		td := &config.TD{
 			BlockID: cmd.BlockID,
-			Buff: buff[:config.BlockSize],
+			Buff: buff,
 			FromIP: cmd.FromIP,
 			ToIP: parityIP,
 			SID: cmd.SID,
@@ -162,7 +162,6 @@ func handleOneCMD(cmd *config.CMD)  {
 
 		log.Printf("发送 td(sid: %d, blockID: %d), 从 %s 到 %s, 数据量：%d MB，  用时：%s.",
 			cmd.SID, cmd.BlockID, common.GetLocalIP(), parityIP, 1.0 * td.SendSize/config.Megabyte, elapsed)
-
 	}
 	config.BlockBufferPool.Put(buff)
 }
@@ -261,6 +260,8 @@ func (p Base) base(reqs []*config.ReqData)  {
 		req := config.ReqData{
 			BlockID: req.BlockID,
 			SID:     sid,
+			RangeLeft: req.RangeLeft,
+			RangeRight: req.RangeRight,
 		}
 		p.handleOneBlock(req)
 		sid++
@@ -272,7 +273,7 @@ func (p Base) handleOneBlock(reqData config.ReqData)  {
 	toIPs := common.GetRelatedParityIPs(reqData.BlockID)
 	common.SendCMD(fromIP, toIPs, reqData.SID, reqData.BlockID)
 	//跨域流量统计
-	totalCrossRackTraffic += len(toIPs) * config.BlockSize
+	totalCrossRackTraffic += len(toIPs) * (reqData.RangeRight - reqData.RangeLeft)
 	log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", reqData.SID,
 		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, toIPs)
 

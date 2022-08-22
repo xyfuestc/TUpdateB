@@ -172,37 +172,30 @@ func RandWriteBlockAndRetDelta(blockID, size int) []byte  {
 	/*****read old data*******/
 	oldBuff := ReadBlockWithSize(blockID, size)
 	/*****compute new delta data*******/
-	deltaBuff := config.BlockBufferPool.Get().([]byte)
 	for i := 0; i < size; i++ {
-		//deltaBuff[i] = newBuff[i] ^ oldBuff[i]
-		deltaBuff = append(deltaBuff, newBuff[i] ^ oldBuff[i])
+		newBuff[i] = newBuff[i] ^ oldBuff[i]
 	}
-
 	/*****write new data*******/
 	WriteBlockWithSize(blockID, newBuff, size)
 
 	//释放空间
 	config.BlockBufferPool.Put(oldBuff)
-	config.BlockBufferPool.Put(newBuff)
 
-	return deltaBuff[:size]
+	return newBuff
 }
 func WriteDeltaBlock(blockID int, deltaBuff []byte)   {
 	size := len(deltaBuff)
 	/*****read old data*******/
 	oldBuff := ReadBlockWithSize(blockID, size)
-	/*****compute new delta data*******/
-	newBuff := config.BlockBufferPool.Get().([]byte)
 
 	for i := 0; i < size; i++ {
-		newBuff = append(newBuff, deltaBuff[i] ^ oldBuff[i])
+		oldBuff[i] = deltaBuff[i] ^ oldBuff[i]
 	}
 	/*****write new data*******/
-	WriteBlockWithSize(blockID, newBuff, size)
+	WriteBlockWithSize(blockID, oldBuff, size)
 
 	//释放空间
 	config.BlockBufferPool.Put(oldBuff)
-	config.BlockBufferPool.Put(newBuff)
 }
 
 
