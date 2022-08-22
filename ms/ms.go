@@ -6,7 +6,6 @@ import (
 	"EC/schedule"
 	"bufio"
 	"flag"
-	"github.com/pkg/profile"
 	"io"
 	"log"
 	"net"
@@ -79,7 +78,7 @@ func clearRound()  {
 	actualUpdatedBlocks = 0
 }
 func main() {
-	defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
+	//defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
 
 	flag.Parse()
 	//初始化
