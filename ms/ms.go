@@ -57,7 +57,8 @@ func checkFinish() {
 		actualUpdatedBlocks = schedule.GetCurPolicy().GetActualBlocks()
 		averageOneUpdateSpeed := float64(sumTime/time.Millisecond) / float64(actualUpdatedBlocks) / 1000
 		crossTraffic := schedule.GetCurPolicy().GetCrossRackTraffic()
-		log.Printf("%s 总耗时: %.2fs, 完成更新任务: %d, 实际处理任务数: %d, 单块更新时间: %0.2fs, 吞吐量: %0.2fMB/s，跨域流量为：%0.2fMB\n",
+		crossTraffic = crossTraffic / float32(numOfReq)
+		log.Printf("%s 总耗时: %.2fs, 完成更新任务: %d, 实际处理任务数: %d, 单块更新时间: %0.2fs, 吞吐量: %0.2fMB/s，单块平均跨域流量为：%0.2fMB\n",
 			config.Policies[curPolicyVal], sumTime.Seconds(), numOfReq, actualUpdatedBlocks, averageOneUpdateSpeed, throughput, crossTraffic)
 
 		schedule.GetCurPolicy().Clear()
@@ -213,7 +214,7 @@ func start(reqs []*config.ReqData)  {
 
 	beginTime = time.Now()
 	syncSettings(int32(*curPolicy))
-	log.Printf(" 设置当前算法：[%s], 当前数据集为：%s, blockSize=%vMB.\n", config.Policies[*curPolicy], OutFilePath, NumOfMB)
+	log.Printf(" 设置当前算法：[%s], 当前数据集为：%s, blockSize=%vMB.\n", config.Policies[*curPolicy], OutFilePath, *NumOfMB)
 
 	//重置为本轮未结束：0
 	atomic.StoreInt32(&roundFinished, 0)
