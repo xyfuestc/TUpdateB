@@ -97,8 +97,8 @@ func main() {
 
 	GetReqsFromTrace()
 	policyID := int32(*curPolicy)
-	curPolicyVal := atomic.LoadInt32(&policyID)
-	for curPolicyVal < config.NumOfAlgorithm {
+	//curPolicyVal := atomic.LoadInt32(&policyID)
+	//for curPolicyVal < config.NumOfAlgorithm {
 		start(totalReqs)
 		//保证主线程运行
 		for  {
@@ -109,8 +109,8 @@ func main() {
 				break
 			}
 		}
-		curPolicyVal = atomic.LoadInt32(&policyID)
-	}
+		//curPolicyVal = atomic.LoadInt32(&policyID)
+	//}
 	//清空
 	clearAll()
 	//通知各个节点退出
