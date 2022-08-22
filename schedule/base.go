@@ -263,6 +263,7 @@ func (p Base) base(reqs []*config.ReqData)  {
 			RangeLeft: req.RangeLeft,
 			RangeRight: req.RangeRight,
 		}
+
 		p.handleOneBlock(req)
 		sid++
 	}
@@ -271,7 +272,8 @@ func (p Base) handleOneBlock(reqData config.ReqData)  {
 	nodeID := common.GetNodeID(reqData.BlockID)
 	fromIP := common.GetNodeIP(nodeID)
 	toIPs := common.GetRelatedParityIPs(reqData.BlockID)
-	common.SendCMD(fromIP, toIPs, reqData.SID, reqData.BlockID)
+	common.SendCMDWithSizeAndHelper(fromIP, toIPs, reqData.SID, reqData.BlockID,
+										reqData.RangeRight-reqData.RangeLeft, nil)
 	//跨域流量统计
 	totalCrossRackTraffic += len(toIPs) * (reqData.RangeRight - reqData.RangeLeft)
 	log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", reqData.SID,
