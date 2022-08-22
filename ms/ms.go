@@ -23,9 +23,9 @@ var numOfReq = 0
 //var curPolicy int32 = 2
 //var NumOfMB float64 = 0.25 //以这个为准，会同步到各个节点
 //var traceName = "rsrch_2"
-var XOROutFilePath = ""
+var OutFilePath = ""
 //var RSOutFilePath = "../request/"+traceName+"_"+strconv.Itoa( int(NumOfMB * float64(config.W)) )+"M.csv.txt"
-var OutFilePath = XOROutFilePath
+//var OutFilePath = OutFilePath
 var SpaceFilePath = "../log/space_log.txt"
 var actualUpdatedBlocks = 0
 var beginTime time.Time
@@ -84,7 +84,7 @@ func main() {
 	//初始化
 	config.Init()
 
-	XOROutFilePath = "../request/"+*traceName+"_"+strconv.Itoa(int(*NumOfMB))+"M.csv.txt"
+	OutFilePath = "../request/"+*traceName+"_"+strconv.Itoa(int(*NumOfMB))+"M.csv.txt"
 
 	//监听ack
 	log.Printf("ms启动...")
