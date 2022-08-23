@@ -108,6 +108,8 @@ func main() {
 			}
 		}
 	//}
+
+	time.Sleep(1 * time.Second)     //万一有ack返回来，等一会再结束
 	//清空
 	clearAll()
 	//通知各个节点退出
