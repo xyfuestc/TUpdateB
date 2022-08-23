@@ -6,6 +6,7 @@ import (
 	"EC/schedule"
 	"bufio"
 	"flag"
+	"github.com/pkg/profile"
 	"io"
 	"log"
 	"math"
@@ -22,7 +23,7 @@ const (
 	testNum     = 5
 )
 var num = 0
-var OutFilePath = ""
+var OutFilePath = "../request/"+*traceName+"_"+strconv.Itoa(int(*NumOfMB))+"M.csv.txt"
 var SpaceFilePath = "../log/space_log.txt"
 var actNum = 0
 var beginTime time.Time
@@ -81,12 +82,13 @@ func clear()  {
 	actNum = 0
 }
 func main() {
-	//defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
+	defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
 
 	flag.Parse()
-	OutFilePath = "../request/"+*traceName+"_"+strconv.Itoa(int(*NumOfMB))+"M.csv.txt"
+	OutFilePath = "request/"+*traceName+"_"+strconv.Itoa(int(*NumOfMB))+"M.csv.txt"
 
 	config.Init()
+	config.InitBufferPool()
 	log.Printf("ms启动...监听ack: %s:%s\n", common.GetLocalIP(), config.NodeACKListenPort)
 
 	registerSafeExit()                          //当发生意外退出时，释放所有资源
@@ -202,7 +204,7 @@ func syncSettings(policyType int32)  {
 	config.BlockSize = int(*NumOfMB * config.MB)
 
 	log.Printf("初始化共享池...%v\n", p)
-	config.InitBufferPool()
+
 
 	for _, ip := range config.NodeIPs{
 		common.SendData(p, ip, config.NodeSettingsListenPort)

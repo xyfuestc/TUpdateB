@@ -142,7 +142,7 @@ func handleOneCMD(cmd *config.CMD)  {
 	for _, _ = range cmd.ToIPs {
 		ackMaps.pushACK(cmd.SID)
 	}
-	//var td config.TD
+
 	for _, parityIP := range cmd.ToIPs {
 		td := &config.TD{
 			BlockID: cmd.BlockID,
@@ -150,7 +150,7 @@ func handleOneCMD(cmd *config.CMD)  {
 			FromIP: cmd.FromIP,
 			ToIP: parityIP,
 			SID: cmd.SID,
-			SendSize: cmd.SendSize,
+			SendSize: len(buff),
 		}
 		begin := time.Now()
 		common.SendData(td, parityIP, config.NodeTDListenPort)
@@ -227,7 +227,6 @@ func getBatchReqs() []*config.ReqData {
 func (p Base) HandleReq(reqs []*config.ReqData)  {
 
 	totalReqs = reqs
-	//_ = reqs
 
 	for len(totalReqs) > 0 {
 		//过滤blocks
@@ -255,14 +254,14 @@ func (p Base) base(reqs []*config.ReqData)  {
 	}
 	sid = 0
 	for _, req := range reqs {
-		req := config.ReqData{
-			BlockID: req.BlockID,
-			SID:     sid,
-			RangeLeft: req.RangeLeft,
-			RangeRight: req.RangeRight,
-		}
-
-		p.handleOneBlock(req)
+		//req := config.ReqData{
+		//	BlockID: req.BlockID,
+		//	SID:     sid,
+		//	RangeLeft: req.RangeLeft,
+		//	RangeRight: req.RangeRight,
+		//}
+		req.SID = sid
+		p.handleOneBlock(*req)
 		sid++
 	}
 }
@@ -274,8 +273,8 @@ func (p Base) handleOneBlock(reqData config.ReqData)  {
 										reqData.RangeRight-reqData.RangeLeft, nil)
 	//跨域流量统计
 	totalCrossRackTraffic += len(toIPs) * (reqData.RangeRight - reqData.RangeLeft)
-	log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v\n", reqData.SID,
-		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, toIPs)
+	log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v, 数据量大小：%v KB\n", reqData.SID,
+		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, toIPs, float32(reqData.RangeRight - reqData.RangeLeft)/config.KB)
 
 }
 func (p Base) RecordSIDAndReceiverIP(sid int, ip string)  {

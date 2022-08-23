@@ -108,14 +108,7 @@ func GetRelatedParityIPs(blockID int) []string {
 
 func ReadBlockWithSize(blockID, size int) []byte  {
 	index := GetIndex(blockID)
-	buff := config.BlockBufferPool.Get().([]byte)
-
-	length := len(buff)
-	if length < size {
-		for i := 0; i < size -length; i++ {
-			buff = append(buff, byte(0))
-		}
-	}
+	buff := make([]byte, size)
 
 	file, err := os.OpenFile(config.DataFilePath, os.O_RDONLY, 0)
 
@@ -125,8 +118,8 @@ func ReadBlockWithSize(blockID, size int) []byte  {
 
 	defer file.Close()
 
-	readSize, err := file.ReadAt(buff[:size], int64(index * size))
-	log.Printf("index: %v, size:%v, buff length: %v, readSize:%v", index, size, length, readSize)
+	readSize, err := file.ReadAt(buff, int64(index * size))
+	log.Printf("index: %v, size:%v, readSize:%v", index, size, readSize)
 
 	if err != nil {
 		log.Fatal("读取文件失败：", err)
@@ -135,7 +128,7 @@ func ReadBlockWithSize(blockID, size int) []byte  {
 		log.Printf("读取大小为不一致 in ReadBlockWithSize：%+v, %+v", readSize, size)
 	}
 
-	return buff[:size]
+	return buff
 }
 func WriteBlockWithSize(blockID int, buff []byte, size int)  {
 	index := GetIndex(blockID)
@@ -234,13 +227,14 @@ func SendCMDWithSizeAndHelper(fromIP string, toIPs []string, sid, blockID, sendS
 	cmd := config.CMDBufferPool.Get().(*config.CMD)
 	cmd.SID = sid
 	cmd.BlockID = blockID
-	cmd.SendSize = config.BlockSize
 	cmd.Helpers = helpers
 	cmd.Matched = 0
 	cmd.ToIPs = toIPs
 	cmd.FromIP = fromIP
 	cmd.SendSize = sendSize
 
+	fmt.Printf("发送命令 sid:%v, blockID:%v, toIP:%v, fromIP:%v, sendSize:%0.2f KB\n",
+							cmd.SID, cmd.BlockID, cmd.ToIPs, cmd.FromIP, float32(cmd.SendSize)/config.KB)
 	SendData(cmd, fromIP, config.NodeCMDListenPort)
 
 	config.CMDBufferPool.Put(cmd)

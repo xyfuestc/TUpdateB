@@ -16,7 +16,9 @@ import (
 	"time"
 )
 
+func TestCMD(t *testing.T)  {
 
+}
 
 func TestMulticast(t *testing.T)  {
 

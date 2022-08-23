@@ -56,6 +56,15 @@ func recordSpaceAndTime(space int, spendTime time.Duration, averageSpace float64
 	defer blockFile.Close()
 }
 
+func TestMS(t *testing.T)  {
+	config.InitBufferPool()
+	GetReqsFromTrace()
+
+	log.Printf(" [%s]算法开始运行，总共block请求数量为：%d\n", config.Policies[*policyID], num)
+	schedule.SetPolicy(config.Policies[*policyID])
+	schedule.GetPolicy().HandleReq(totalReqs)
+}
+
 func TestSpace(t *testing.T)  {
 	config.Init()
 
@@ -68,7 +77,7 @@ func TestSpace(t *testing.T)  {
 	//监听并接收ack，检测程序结束
 	listenAndReceive(config.NumOfWorkers)
 
-	policyID = 3
+
 	//GetReqsFromTrace()
 	//curPolicyVal := atomic.LoadInt32(&policyID)
 	//traceName = "hm_0_2.5E-0"
@@ -78,13 +87,12 @@ func TestSpace(t *testing.T)  {
 	for averageSpace != -1 {
 
 		fmt.Println("当前步长：", averageSpace)
-		schedule.AverageSpace = averageSpace
 		start(totalReqs)
 		//保证主线程运行
 		for  {
 			isRoundFinished := atomic.LoadInt32(&roundFinished)
 			if isRoundFinished == 1 {
-				recordSpaceAndTime(0, t, averageSpace)
+				//recordSpaceAndTime(0, t, averageSpace)
 				//进入下一轮
 				//atomic.AddInt32(&policyID, 1)
 				break
@@ -143,10 +151,9 @@ func TestAverageSpace(t *testing.T) {
 	//监听并接收ack，检测程序结束
 	listenAndReceive(config.NumOfWorkers)
 
-	policyID = 3
 	totalReqs = GetReqsFromTrace()
 	space := 0
-	averageSpaceIncrement := 0.0
+	//averageSpaceIncrement := 0.0
 
 	for space != -1 {
 		//设置当前步长
@@ -157,7 +164,7 @@ func TestAverageSpace(t *testing.T) {
 
 		select {
 		case <-Done:
-			recordSpaceAndTime(space, t, averageSpaceIncrement)
+			//recordSpaceAndTime(space, t, averageSpaceIncrement)
 		}
 
 		_, space = schedule.BlockMergeWithSpace(totalReqs, space)
