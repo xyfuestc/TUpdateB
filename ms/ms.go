@@ -82,7 +82,7 @@ func clear()  {
 	actNum = 0
 }
 func main() {
-	defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
+	//defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
 
 	flag.Parse()
 	OutFilePath = "../request/"+*traceName+"_"+strconv.Itoa(int(*NumOfMB))+"M.csv.txt"
