@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+
 type Policy interface {
 	Init()
 	HandleReq(reqs []*config.ReqData)
@@ -23,6 +24,7 @@ type Policy interface {
 
 }
 
+// Base 整块传输
 type Base struct {
 
 }
@@ -105,6 +107,8 @@ func SetPolicy(policyType string)  {
 	switch policyType {
 	case "Base":
 		CurPolicy = Base{}
+	case "PDN_P":
+		CurPolicy = PDN_P{}
 	case "MultiD":
 		CurPolicy = MultiD{}
 	case "MultiDB":
@@ -253,14 +257,13 @@ func (p Base) base(reqs []*config.ReqData)  {
 	}
 	sid = 0
 	for _, req := range reqs {
-		//req := config.ReqData{
-		//	BlockID: req.BlockID,
-		//	SID:     sid,
-		//	RangeLeft: req.RangeLeft,
-		//	RangeRight: req.RangeRight,
-		//}
-		req.SID = sid
-		p.handleOneBlock(*req)
+		req := config.ReqData{
+			BlockID: req.BlockID,
+			SID:     sid,
+			RangeLeft: 0,
+			RangeRight: config.BlockSize,
+		}
+		p.handleOneBlock(req)
 		sid++
 	}
 }
