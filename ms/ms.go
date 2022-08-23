@@ -49,8 +49,7 @@ func checkFinish() {
 		schedule.ClearChan()
 
 		t = time.Since(beginTime)
-		//本轮结束
-		atomic.StoreInt32(&roundFinished, 1)
+
 
 		throughput :=  float64(num) * float64(*NumOfMB) / t.Seconds()
 		//throughputs = append(throughputs, throughput)
@@ -61,6 +60,9 @@ func checkFinish() {
 
 		log.Printf("%s 总耗时: %.2fs, 完成更新任务: %d, 实际处理任务数: %d, 单块更新时间: %0.2fs, 吞吐量: %0.2fMB/s，单块平均跨域流量为：%0.3fMB\n",
 			config.Policies[policy], t.Seconds(), num, actNum, speed, throughput, traffic)
+
+		//本轮结束
+		atomic.StoreInt32(&roundFinished, 1)
 
 		schedule.GetPolicy().Clear()
 		clear()
