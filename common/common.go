@@ -150,15 +150,7 @@ func GetNodeIP(nodeID int) string {
 }
 func RandWriteBlockAndRetDelta(blockID, size int) []byte  {
 	newDataStr := uniuri.NewLen(size)
-	newBuff := config.BlockBufferPool.Get().([]byte)
-
-	len := len(newBuff)
-	if len < size {
-		for i := 0; i < size - len; i++ {
-			newBuff = append(newBuff, newDataStr[i])
-		}
-	}
-
+	newBuff := make([]byte, size)
 	copy(newBuff, newDataStr)
 	/*****read old data*******/
 	oldBuff := ReadBlockWithSize(blockID, size)
@@ -168,9 +160,6 @@ func RandWriteBlockAndRetDelta(blockID, size int) []byte  {
 	}
 	/*****write new data*******/
 	WriteBlockWithSize(blockID, newBuff, size)
-
-	//释放空间
-	config.BlockBufferPool.Put(oldBuff)
 
 	return newBuff
 }
