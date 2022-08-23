@@ -159,9 +159,10 @@ func handleOneCMD(cmd *config.CMD)  {
 		begin := time.Now()
 		common.SendData(td, parityIP, config.NodeTDListenPort)
 		elapsed := time.Since(begin)
+		sendSize := float32(td.SendSize) / config.KB
 
-		log.Printf("发送 td(sid: %d, blockID: %d), 从 %s 到 %s, 数据量：%d MB，  用时：%s.",
-			cmd.SID, cmd.BlockID, common.GetLocalIP(), parityIP, 1.0 * td.SendSize/config.Megabyte, elapsed)
+		log.Printf("发送 td(sid: %d, blockID: %d), 从 %s 到 %s, 数据量：%0.3f KB，  用时：%s.",
+			cmd.SID, cmd.BlockID, common.GetLocalIP(), parityIP, sendSize, elapsed)
 	}
 	config.BlockBufferPool.Put(buff)
 }
@@ -307,6 +308,6 @@ func (p Base) GetActualBlocks() int {
 }
 //数据格式：MB
 func (p Base) GetCrossRackTraffic() float32 {
-	return  float32(totalCrossRackTraffic) / config.Megabyte
+	return  float32(totalCrossRackTraffic) / config.MB
 }
 

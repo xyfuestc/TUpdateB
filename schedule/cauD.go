@@ -92,7 +92,7 @@ func getMapBlockTDsFromHelpers(helpers []int) map[int]*config.TD  {
 }
 func getXORBuffFromMapBlockTDs(mapBlockTDs map[int]*config.TD, toIP string) []byte {
 	//xorBuff := make([]byte, config.RSBlockSize)
-	//var xorBuff [64 * config.Megabyte]byte
+	//var xorBuff [64 * config.MB]byte
 	//parityNodeID := common.GetIDFromIP(toIP)
 	//row := parityNodeID - config.K
 	//
@@ -348,5 +348,5 @@ func (p CAU_D) GetActualBlocks() int {
 }
 
 func (p CAU_D) GetCrossRackTraffic() float32 {
-	return  float32(totalCrossRackTraffic) / config.Megabyte
+	return  float32(totalCrossRackTraffic) / config.MB
 }

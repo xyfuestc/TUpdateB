@@ -250,5 +250,5 @@ func (p TUpdateFB) GetActualBlocks() int {
 }
 
 func (p TUpdateFB) GetCrossRackTraffic() float32 {
-	return  float32(totalCrossRackTraffic) / config.Megabyte
+	return  float32(totalCrossRackTraffic) / config.MB
 }

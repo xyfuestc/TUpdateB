@@ -415,5 +415,5 @@ func (p MultiD) GetCrossRackTraffic() float32 {
 		totalCrossRackTraffic += traffic
 		log.Printf("%v's resent traffic is: %v", ip, traffic)
 	}
-	return  float32(totalCrossRackTraffic) / config.Megabyte
+	return  float32(totalCrossRackTraffic) / config.MB
 }

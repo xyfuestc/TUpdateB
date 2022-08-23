@@ -23,7 +23,7 @@ func TestMulticast(t *testing.T)  {
 	//msgLog := map[string]config.MTU{} // key: "sid:fid"
 	config.Init()
 	config.InitBufferPool()
-	common.ReadBlockWithSize(3000000, 4 * config.Megabyte)
+	common.ReadBlockWithSize(3000000, 4 * config.MB)
 
 	//config.BASEMulticast
 	schedule.SetPolicy("BASEMulticast")

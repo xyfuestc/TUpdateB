@@ -237,7 +237,7 @@ func (p TUpdateB) GetActualBlocks() int {
 }
 
 func (p TUpdateB) GetCrossRackTraffic() float32 {
-	return  float32(totalCrossRackTraffic) / config.Megabyte
+	return  float32(totalCrossRackTraffic) / config.MB
 }
 
 func BlockMerge(reqs []*config.ReqData) []*config.ReqData {

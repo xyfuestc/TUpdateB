@@ -225,5 +225,5 @@ func (p TUpdateDB) GetActualBlocks() int {
 }
 
 func (p TUpdateDB) GetCrossRackTraffic() float32 {
-	return  float32(totalCrossRackTraffic) / config.Megabyte
+	return  float32(totalCrossRackTraffic) / config.MB
 }

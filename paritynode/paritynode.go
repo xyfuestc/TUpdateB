@@ -33,8 +33,8 @@ func setPolicy(conn net.Conn) {
 	}
 
 	schedule.SetPolicy(config.Policies[p.Type])
-	config.BlockSize = int(p.NumOfMB * config.Megabyte)
-	//config.RSBlockSize = int(p.NumOfMB*config.Megabyte) * config.W
+	config.BlockSize = int(p.NumOfMB * config.MB)
+	//config.RSBlockSize = int(p.NumOfMB*config.MB) * config.W
 	config.MaxBlockIndex =  config.TestFileSize / config.BlockSize - 1
 
 	log.Printf("初始化共享池...\n")

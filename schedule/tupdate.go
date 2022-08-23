@@ -183,11 +183,9 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 		for _, cmd := range cmds {
 
 			begin := time.Now()
-
 			for _, toIP := range cmd.ToIPs {
 
 				var SendTD config.TD
-				//SendTD := config.TDBufferPool.Get().(*config.TD)
 				SendTD.BlockID = cmd.BlockID
 				SendTD.Buff = make([]byte, cmd.SendSize)
 				SendTD.Buff = td.Buff[:cmd.SendSize]
@@ -196,16 +194,12 @@ func (p TUpdate) HandleTD(td *config.TD)  {
 				SendTD.SID = cmd.SID
 				SendTD.SendSize = cmd.SendSize
 
-				sendSizeRate := float32(SendTD.SendSize * 1.0) / float32(config.BlockSize) * 100.0
-				log.Printf("发送 block:%d sendSize: %.2f%% -> %s.\n", SendTD.BlockID, sendSizeRate, toIP)
-
 				common.SendData(SendTD, toIP, config.NodeTDListenPort)
 
 			}
-
-			elapsed := time.Since(begin)
-			log.Printf("发送 block %d 给 %v， 发送大小为：%vMB， 用时：%s.\n", cmd.BlockID, cmd.ToIPs, len(td.Buff),
-			elapsed)
+			sendTime := time.Since(begin)
+			sendSize := float32(len(td.Buff)) / config.KB
+			log.Printf("发送 block %d 给 %v， 发送大小为：%v KB， 用时：%s.\n", cmd.BlockID, cmd.ToIPs, sendSize, sendTime)
 
 		}
 
@@ -475,7 +469,7 @@ func (p TUpdate) GetActualBlocks() int {
 }
 
 func (p TUpdate) GetCrossRackTraffic() float32 {
-	return  float32(totalCrossRackTraffic) / config.Megabyte
+	return  float32(totalCrossRackTraffic) / config.MB
 }
 
 func  GetBalanceTransmitTasks(reqData *config.ReqData) []Task {

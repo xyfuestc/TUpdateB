@@ -196,7 +196,7 @@ func syncSettings(policyType int32)  {
 	}
 
 	config.NumOfMB = int(*NumOfMB)
-	config.BlockSize = int(*NumOfMB * config.Megabyte)
+	config.BlockSize = int(*NumOfMB * config.MB)
 
 	log.Printf("初始化共享池...%v\n", p)
 	config.InitBufferPool()
