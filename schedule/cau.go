@@ -84,13 +84,13 @@ func (p CAU) HandleReq(reqs []*config.ReqData)  {
 
 		p.cau()
 
-		for IsRunning {
-			
+		select {
+		case <-Done:
+			log.Printf("本轮结束！\n")
+			log.Printf("======================================\n")
+			round++
+			p.Clear()
 		}
-		log.Printf("本轮结束！\n")
-		log.Printf("======================================\n")
-		round++
-		p.Clear()
 	}
 }
 
@@ -420,12 +420,11 @@ func (p CAU) HandleCMD(cmd *config.CMD)  {
 func (p CAU) HandleACK(ack *config.ACK)  {
 	restACKs := ackMaps.popACK(ack.SID)
 	if restACKs == 0 {
-		//SentMsgLog.popMsg(ack.SID)      //该SID不需要重发
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)
 		}else if ACKIsEmpty() { //检查是否全部完成，若完成，进入下一轮
-			IsRunning = false
+			Done <- true
 		}
 	}
 }

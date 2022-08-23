@@ -51,7 +51,6 @@ func checkFinish() {
 		//本轮结束
 		atomic.StoreInt32(&roundFinished, 1)
 
-		//log.Printf("%+v, %+v, %+v", numOfReq, NumOfMB, float64(sumTime/time.Second))
 		throughput :=  float64(numOfReq) * float64(*NumOfMB) / sumTime.Seconds()
 		actualUpdatedBlocks = schedule.GetCurPolicy().GetActualBlocks()
 		averageOneUpdateSpeed := float64(sumTime/time.Millisecond) / float64(actualUpdatedBlocks) / 1000

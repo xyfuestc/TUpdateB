@@ -142,13 +142,13 @@ func (p CAU_DB) HandleReq(reqs []*config.ReqData)  {
 		//执行reqs
 		cau_db()
 
-		for IsRunning {
-			
+		select {
+		case <-Done:
+			log.Printf("本轮结束！\n")
+			log.Printf("======================================\n")
+			round++
+			p.Clear()
 		}
-		log.Printf("本轮结束！\n")
-		log.Printf("======================================\n")
-		round++
-		p.Clear()
 	}
 }
 
@@ -580,9 +580,8 @@ func (p CAU_DB) HandleACK(ack *config.ACK)  {
 		//ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)
-		//检查是否全部完成，若完成，进入下一轮
-		}else if ACKIsEmpty() {
-			IsRunning = false
+		}else if ACKIsEmpty() { //检查是否全部完成，若完成，进入下一轮
+			Done <- true
 		}
 	}
 }

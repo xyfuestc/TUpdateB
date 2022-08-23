@@ -182,12 +182,11 @@ func handleOneTD(td *config.TD)  {
 func (p Base) HandleACK(ack *config.ACK)  {
 	restACKs := ackMaps.popACK(ack.SID)
 	if restACKs == 0 {
-		//ms不需要反馈ack
+		////ms不需要反馈ack
 		if common.GetLocalIP() != config.MSIP {
 			ReturnACK(ack)
-		//检查是否全部完成，若完成，进入下一轮
-		}else if ACKIsEmpty() {
-			IsRunning = false
+		}else if ACKIsEmpty() { //检查是否全部完成，若完成，进入下一轮
+			Done <- true
 		}
 	}
 }
@@ -238,13 +237,13 @@ func (p Base) HandleReq(reqs []*config.ReqData)  {
 		//执行base
 		p.base(batchReqs)
 
-		for IsRunning {
-
+		select {
+		case <-Done:
+			log.Printf("本轮结束！\n")
+			log.Printf("======================================\n")
+			round++
+			p.Clear()
 		}
-		log.Printf("本轮结束！\n")
-		log.Printf("======================================\n")
-		round++
-		p.Clear()
 	}
 
 
@@ -297,8 +296,7 @@ func ACKIsEmpty() bool {
 }
 
 func (p Base) IsFinished() bool {
-	isFinished := len(totalReqs) == 0 && ackMaps.isEmpty()
-	return isFinished
+	return len(totalReqs) == 0 && ackMaps.isEmpty()
 }
 
 func (p Base) GetActualBlocks() int {
