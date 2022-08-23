@@ -68,9 +68,9 @@ func TestSpace(t *testing.T)  {
 	//监听并接收ack，检测程序结束
 	listenAndReceive(config.NumOfWorkers)
 
-	curPolicy = 3
+	policyID = 3
 	//GetReqsFromTrace()
-	//curPolicyVal := atomic.LoadInt32(&curPolicy)
+	//curPolicyVal := atomic.LoadInt32(&policyID)
 	//traceName = "hm_0_2.5E-0"
 	totalReqs = GetReqsFromTrace()
 	//space := 0.0
@@ -84,15 +84,15 @@ func TestSpace(t *testing.T)  {
 		for  {
 			isRoundFinished := atomic.LoadInt32(&roundFinished)
 			if isRoundFinished == 1 {
-				recordSpaceAndTime(0, sumTime, averageSpace)
+				recordSpaceAndTime(0, t, averageSpace)
 				//进入下一轮
-				//atomic.AddInt32(&curPolicy, 1)
+				//atomic.AddInt32(&policyID, 1)
 				break
 			}
 		}
 		_, averageSpace = schedule.BlockMergeWithAverageSpace(totalReqs, averageSpace)
-		//curPolicyVal = atomic.LoadInt32(&curPolicy)
-		//curPolicy++
+		//curPolicyVal = atomic.LoadInt32(&policyID)
+		//policyID++
 
 	}
 	//清空
@@ -114,7 +114,7 @@ func TestChan(t *testing.T)  {
 		//isRoundFinished := atomic.LoadInt32(&roundFinished)
 		for {
 			time.Sleep(1 * time.Second)
-			ScheduleFinishedChan <- true
+			Done <- true
 		}
 	}()
 
@@ -122,8 +122,8 @@ func TestChan(t *testing.T)  {
 	for space != 3 {
 
 		select {
-		case <-ScheduleFinishedChan:
-			log.Printf("<- ScheduleFinishedChan")
+		case <-Done:
+			log.Printf("<- Done")
 		}
 		space++
 
@@ -143,7 +143,7 @@ func TestAverageSpace(t *testing.T) {
 	//监听并接收ack，检测程序结束
 	listenAndReceive(config.NumOfWorkers)
 
-	curPolicy = 3
+	policyID = 3
 	totalReqs = GetReqsFromTrace()
 	space := 0
 	averageSpaceIncrement := 0.0
@@ -156,8 +156,8 @@ func TestAverageSpace(t *testing.T) {
 		start(totalReqs)
 
 		select {
-		case <-ScheduleFinishedChan:
-			recordSpaceAndTime(space, sumTime, averageSpaceIncrement)
+		case <-Done:
+			recordSpaceAndTime(space, t, averageSpaceIncrement)
 		}
 
 		_, space = schedule.BlockMergeWithSpace(totalReqs, space)

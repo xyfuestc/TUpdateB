@@ -6,8 +6,10 @@ import (
 	"EC/schedule"
 	"bufio"
 	"flag"
+	"fmt"
 	"io"
 	"log"
+	"math"
 	"net"
 	"os"
 	"os/signal"
@@ -17,64 +19,65 @@ import (
 	"time"
 )
 
-var numOfReq = 0
-//var curPolicy = 6
-//var curPolicy int32 = 2
-//var NumOfMB float64 = 0.25 //以这个为准，会同步到各个节点
-//var traceName = "rsrch_2"
+const (
+	testNum     = 5
+)
+var num = 0
 var OutFilePath = ""
-//var RSOutFilePath = "../request/"+traceName+"_"+strconv.Itoa( int(NumOfMB * float64(config.W)) )+"M.csv.txt"
-//var OutFilePath = OutFilePath
 var SpaceFilePath = "../log/space_log.txt"
-var actualUpdatedBlocks = 0
+var actNum = 0
 var beginTime time.Time
 var totalReqs = make([]*config.ReqData, 0, config.MaxBlockSize)
 var roundFinished int32 = 0  // 1-本轮结束 ； 0-本轮未结束
-var ScheduleFinishedChan = make(chan bool, 1)
+var Done = make(chan bool, 1)
 
-var sumTime time.Duration = 0
+var t time.Duration = 0
 var NumOfMB = flag.Float64("b", 4, "块大小：int型参数，默认：64MB")
-var curPolicy = flag.Int("p", 0, "策略ID：0-Base;1-CRRepairBoost;2-Express，默认：0")
+var policyID = flag.Int("p", 0, "策略ID：0-Base;1-CRRepairBoost;2-Express，默认：0")
 var closeNodes = flag.Int("c", 0, "是否程序结束自动关闭各节点？1-关闭；0-不关闭，默认：0")
 var traceName = flag.String("f", "rsrch_2", "日志文件名，默认：rsrch_2")
+var throughputs = make([]float64, 0, testNum)
+var traffics = make([]float64, 0, testNum)
+
 func checkFinish() {
 
-	isRoundFinished := atomic.LoadInt32(&roundFinished)
-	p := int32(*curPolicy)
-	var curPolicyVal = atomic.LoadInt32(&p)
-	if isRoundFinished == 0 && schedule.GetCurPolicy().IsFinished() && curPolicyVal < config.NumOfAlgorithm {
+	RoundFinished := atomic.LoadInt32(&roundFinished)
+	p := int32(*policyID)
+	var policy = atomic.LoadInt32(&p)
+	if RoundFinished == 0 && schedule.GetPolicy().IsFinished() && policy < config.NumOfAlgorithm {
 
 		//清空ACK
-		schedule.ClearChannels()
+		schedule.ClearChan()
 
-		sumTime = time.Since(beginTime)
+		t = time.Since(beginTime)
 		//本轮结束
 		atomic.StoreInt32(&roundFinished, 1)
 
-		throughput :=  float64(numOfReq) * float64(*NumOfMB) / sumTime.Seconds()
-		actualUpdatedBlocks = schedule.GetCurPolicy().GetActualBlocks()
-		averageOneUpdateSpeed := float64(sumTime/time.Millisecond) / float64(actualUpdatedBlocks) / 1000
-		crossTraffic := schedule.GetCurPolicy().GetCrossRackTraffic()
-		crossTraffic = crossTraffic / float32(numOfReq)
-		log.Printf("%s 总耗时: %.2fs, 完成更新任务: %d, 实际处理任务数: %d, 单块更新时间: %0.2fs, 吞吐量: %0.2fMB/s，单块平均跨域流量为：%0.3fMB\n",
-			config.Policies[curPolicyVal], sumTime.Seconds(), numOfReq, actualUpdatedBlocks, averageOneUpdateSpeed, throughput, crossTraffic)
+		throughput :=  float64(num) * float64(*NumOfMB) / t.Seconds()
+		throughputs = append(throughputs, throughput)
+		actNum = schedule.GetPolicy().GetActualBlocks()
+		speed := float64(t/time.Millisecond) / float64(actNum) / 1000       //单块更新时间（s）
+		traffic := float64(schedule.GetPolicy().GetCrossRackTraffic()) / float64(num)
+		traffics = append(traffics, traffic)
 
-		schedule.GetCurPolicy().Clear()
-		clearRound()
+		log.Printf("%s 总耗时: %.2fs, 完成更新任务: %d, 实际处理任务数: %d, 单块更新时间: %0.2fs, 吞吐量: %0.2fMB/s，单块平均跨域流量为：%0.3fMB\n",
+			config.Policies[policy], t.Seconds(), num, actNum, speed, throughput, traffic)
+
+		schedule.GetPolicy().Clear()
+		clear()
 		//表明本算法结束
-		ScheduleFinishedChan <- true
+		Done <- true
 	}
 }
 /*所有算法跑完，清空操作*/
 func clearAll() {
 	log.Printf("清空所有数据和资源...\n")
-	//schedule.CloseAllChannels()
-	actualUpdatedBlocks = 0
-	numOfReq = 0
+	actNum = 0
+	num = 0
 }
 /*每种算法结束后，清空操作*/
-func clearRound()  {
-	actualUpdatedBlocks = 0
+func clear()  {
+	actNum = 0
 }
 func main() {
 	//defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
@@ -95,9 +98,11 @@ func main() {
 	listenAndReceive(config.NumOfWorkers)
 
 	GetReqsFromTrace()
-	policyID := int32(*curPolicy)
+	policyID := int32(*policyID)
 	//curPolicyVal := atomic.LoadInt32(&policyID)
-	//for curPolicyVal < config.NumOfAlgorithm {
+	for i := 1; i <= testNum; i++ {
+		log.Printf("算法:%v 第%v次实验.", config.Policies[policyID], i)
+		clear()
 		start(totalReqs)
 		//保证主线程运行
 		for  {
@@ -109,13 +114,17 @@ func main() {
 			}
 		}
 		//curPolicyVal = atomic.LoadInt32(&policyID)
-	//}
+	}
 	//清空
 	clearAll()
 	//通知各个节点退出
 	if *closeNodes == 1{
 		notifyNodesQuit()
 	}
+	throughputMin, throughputMax, throughputAver := getMinMaxAver(throughputs)
+	trafficMin, trafficMax, trafficAver := getMinMaxAver(traffics)
+	fmt.Printf("运行%v次算法【%v】结束...吞吐量:[%v, %v], 平均值：%v, 跨域流量:[%v, %v], 平均值：%v \n",
+					testNum, config.Policies[policyID], throughputMin, throughputMax, throughputAver, trafficMin, trafficMax, trafficAver)
 
 }
 func listenAndReceive(maxWorkers int)  {
@@ -168,7 +177,7 @@ func GetReqsFromTrace() []*config.ReqData {
 		totalReqs = append(totalReqs, req)
 
 	}
-	numOfReq = len(totalReqs)
+	num = len(totalReqs)
 
 	return  totalReqs
 }
@@ -181,7 +190,7 @@ func notifyNodesQuit()  {
 		common.SendData(p, ip, config.NodeSettingsListenPort)
 	}
 	log.Printf("等待各个节点清理完成...\n")
-	time.Sleep(3 * time.Second)
+	time.Sleep(2 * time.Second)
 	log.Printf("退出\n")
 
 }
@@ -211,21 +220,21 @@ func syncSettings(policyType int32)  {
 func start(reqs []*config.ReqData)  {
 
 	beginTime = time.Now()
-	syncSettings(int32(*curPolicy))
-	log.Printf(" 设置当前算法：[%s], 当前数据集为：%s, blockSize=%vMB.\n", config.Policies[*curPolicy], OutFilePath, *NumOfMB)
+	syncSettings(int32(*policyID))
+	log.Printf(" 设置当前算法：[%s], 当前数据集为：%s, blockSize=%vMB.\n", config.Policies[*policyID], OutFilePath, *NumOfMB)
 
 	//重置为本轮未结束：0
 	atomic.StoreInt32(&roundFinished, 0)
 
-	log.Printf(" [%s]算法开始运行，总共block请求数量为：%d\n", config.Policies[*curPolicy], numOfReq)
-	schedule.SetPolicy(config.Policies[*curPolicy])
-	schedule.GetCurPolicy().HandleReq(reqs)
+	log.Printf(" [%s]算法开始运行，总共block请求数量为：%d\n", config.Policies[*policyID], num)
+	schedule.SetPolicy(config.Policies[*policyID])
+	schedule.GetPolicy().HandleReq(reqs)
 }
 func msgSorter(receivedAckCh <-chan config.ACK)  {
 	for  {
 		select {
 		case ack := <- receivedAckCh:
-			schedule.GetCurPolicy().HandleACK(&ack)
+			schedule.GetPolicy().HandleACK(&ack)
 			checkFinish()
 		}
 	}
@@ -256,7 +265,7 @@ func registerSafeExit()  {
 	go func() {
 		for range c {
 			clearAll()
-			schedule.GetCurPolicy().Clear()
+			schedule.GetPolicy().Clear()
 			//schedule.CloseAllChannels()
 			os.Exit(0)
 		}
@@ -269,4 +278,22 @@ func checkMulti(policy int32) bool  {
 	}
 	return UsingMulticast
 
+}
+
+func getMinMaxAver(results []float64) (min, max, aver float64) {
+	sum := 0.0
+	min = math.MaxFloat64
+	max = -1
+	for _, result := range results {
+		sum += result
+		if min < result {
+			min = result
+		}
+		if max > result {
+			max = result
+		}
+	}
+	aver = sum / float64(len(results))
+
+	return min, max, aver
 }

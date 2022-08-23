@@ -81,7 +81,7 @@ func (p MultiDB) Init()  {
 	totalCrossRackTraffic = 0
 	sid = 0
 	SentMsgLog.Init()
-	ClearChannels()
+	ClearChan()
 }
 
 
@@ -156,7 +156,7 @@ func (p MultiDB) Clear()  {
 		ACKReceiverIPs: map[int]string{},
 	}
 
-	ClearChannels()
+	ClearChan()
 
 	IsRunning = true
 	//清空SentMsgLog

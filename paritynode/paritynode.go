@@ -18,8 +18,8 @@ import (
 //	defer conn.Close()
 //	td := common.GetTD(conn)
 //	log.Printf("收到来自 %s 的TD，sid: %d, blockID: %d.\n", common.GetConnIP(conn), td.SID, td.BlockID)
-//	schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
-//	schedule.GetCurPolicy().HandleTD(&td)
+//	schedule.GetPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
+//	schedule.GetPolicy().HandleTD(&td)
 //}
 func setPolicy(conn net.Conn) {
 	defer conn.Close()
@@ -28,13 +28,12 @@ func setPolicy(conn net.Conn) {
 	//检测结束
 	if p.Type == -1 {
 		log.Printf("收到结束信号...\n清空所有资源，继续等待命令...\n")
-		//finish()
+		finish()
 		return
 	}
 
 	schedule.SetPolicy(config.Policies[p.Type])
 	config.BlockSize = int(p.NumOfMB * config.MB)
-	//config.RSBlockSize = int(p.NumOfMB*config.MB) * config.W
 	config.MaxBlockIndex =  config.TestFileSize / config.BlockSize - 1
 
 	log.Printf("初始化共享池...\n")
@@ -50,7 +49,7 @@ var done = make(chan bool)
 //func handleACK(conn net.Conn) {
 //	defer conn.Close()
 //	ack := common.GetACK(conn)
-//	schedule.GetCurPolicy().HandleACK(&ack)
+//	schedule.GetPolicy().HandleACK(&ack)
 //}
 func main() {
 	//defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
@@ -143,7 +142,7 @@ func listenCMD(listen net.Listener) {
 			return
 		}
 		cmd := common.GetCMD(conn)
-		schedule.GetCurPolicy().RecordSIDAndReceiverIP(cmd.SID, common.GetConnIP(conn))
+		schedule.GetPolicy().RecordSIDAndReceiverIP(cmd.SID, common.GetConnIP(conn))
 		schedule.ReceivedCMDCh <- cmd
 		//config.CMDBufferPool.Put(cmd)
 		log.Printf("收到来自 %s 的命令: 将 sid: %d, block: %d 的更新数据发送给 %v.\n", common.GetConnIP(conn), cmd.SID, cmd.BlockID, cmd.ToIPs)
@@ -166,7 +165,7 @@ func listenTD(listen net.Listener) {
 		}
 		td := common.GetTD(conn)
 		conn.SetDeadline(time.Now().Add(200 * time.Millisecond))
-		schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
+		schedule.GetPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
 		schedule.ReceivedTDCh <- td
 		//config.TDBufferPool.Put(td)
 		log.Printf("收到来自 %s 的TD，sid: %d, blockID: %d.\n", common.GetConnIP(conn), td.SID, td.BlockID)
@@ -194,13 +193,13 @@ func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, r
 	for  {
 		select {
 		case ack := <-receivedAckCh:
-			schedule.GetCurPolicy().HandleACK(&ack)
+			schedule.GetPolicy().HandleACK(&ack)
 
 		case td := <-receivedTDCh:
-			schedule.GetCurPolicy().HandleTD(&td)
+			schedule.GetPolicy().HandleTD(&td)
 
 		case cmd := <-receivedCMDCh:
-			schedule.GetCurPolicy().HandleCMD(&cmd)
+			schedule.GetPolicy().HandleCMD(&cmd)
 
 		case mtu := <-receivedMultiMTUCh:
 
@@ -209,9 +208,9 @@ func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, r
 			d := randomDelay(mtu)
 			log.Printf("收到sid: %v, blockID: %v, size: %v，模拟延时：%v.", td.SID, td.BlockID, td.SendSize, d)
 			//记录fromIP:sid
-			schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, td.FromIP)
+			schedule.GetPolicy().RecordSIDAndReceiverIP(td.SID, td.FromIP)
 			//处理TD
-			schedule.GetCurPolicy().HandleTD(td)
+			schedule.GetPolicy().HandleTD(td)
 			//内存回收
 			config.TDBufferPool.Put(td.Buff)
 		}
@@ -262,7 +261,7 @@ func GetTDFromMulticast(message config.MTU) *config.TD  {
 			//处理消息
 			//common.PrintMessage(message)
 			//if message.IsFragment == false { //不需要组包
-			//	schedule.GetCurPolicy().RecordSIDAndReceiverIP(message.SID, message.FromIP)
+			//	schedule.GetPolicy().RecordSIDAndReceiverIP(message.SID, message.FromIP)
 			//	log.Printf("记录ACKIP：sid: %v, fromIP: %v\n", message.SID, message.FromIP)
 			//	//构造td
 			//	td := &config.TD{
@@ -273,7 +272,7 @@ func GetTDFromMulticast(message config.MTU) *config.TD  {
 			//		FromIP:         message.FromIP,
 			//		SendSize:       message.SendSize,
 			//	}
-			//	go schedule.GetCurPolicy().HandleTD(td)
+			//	go schedule.GetPolicy().HandleTD(td)
 			//	log.Printf("MsgSorter：接收数据完成，执行HandleTD, td: sid: %v, sendSize: %v.\n", td.SID, td.SendSize)
 				//ack := config.ACK{
 				//	BlockID: message.BlockID,
@@ -285,7 +284,7 @@ func GetTDFromMulticast(message config.MTU) *config.TD  {
 				//if _, ok := countMap[message.SID]; !ok { //第一次收到，记录sid
 				//	countMap[message.SID] = message.FragmentCount - 1
 				//	log.Printf("MsgSorter：还需要接收%v个分片数据.\n", countMap[message.SID])
-				//	schedule.GetCurPolicy().RecordSIDAndReceiverIP(message.SID, message.FromIP)
+				//	schedule.GetPolicy().RecordSIDAndReceiverIP(message.SID, message.FromIP)
 				//	sidBuffs[message.SID] = message.Data
 				//} else if countMap[message.SID] > 0 { //组包
 				//	countMap[message.SID]--
@@ -301,7 +300,7 @@ func GetTDFromMulticast(message config.MTU) *config.TD  {
 				//			FromIP:         message.FromIP,
 				//			SendSize:       message.SendSize,
 				//		}
-				//		go schedule.GetCurPolicy().HandleTD(td)
+				//		go schedule.GetPolicy().HandleTD(td)
 				//		log.Printf("MsgSorter：分片组包完成，执行HandleTD.\n")
 				//
 				//		delete(countMap, message.SID)
@@ -331,7 +330,7 @@ func registerSafeExit()  {
 }
 
 func clearAll() {
-	if curPolicy := schedule.GetCurPolicy(); curPolicy != nil {
+	if curPolicy := schedule.GetPolicy(); curPolicy != nil {
 		curPolicy.Clear()
 	}
 

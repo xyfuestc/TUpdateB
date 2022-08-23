@@ -29,7 +29,7 @@ func (p TUpdateBA) Init()  {
 	round = 0
 	sid = 0
 
-	ClearChannels()
+	ClearChan()
 }
 
 func (p TUpdateBA) HandleReq(reqs []*config.ReqData)  {

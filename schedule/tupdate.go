@@ -124,7 +124,7 @@ func (p TUpdate) Init()  {
 	actualBlocks = 0
 	sid = 0
 	round = 0
-	ClearChannels()
+	ClearChan()
 }
 
 func (p TUpdate) HandleReq(reqs []*config.ReqData)  {

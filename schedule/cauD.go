@@ -32,7 +32,7 @@ func (p CAU_D) Init()  {
 	}
 	sid = 0
 	curMatchReqs = make([]*config.ReqData, 0, config.MaxBatchSize)
-	ClearChannels()
+	ClearChan()
 }
 
 func (p CAU_D) HandleTD(td *config.TD) {

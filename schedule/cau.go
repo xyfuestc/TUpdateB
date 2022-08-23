@@ -30,7 +30,7 @@ func (p CAU) Init()  {
 	actualBlocks = 0
 	round = 0
 	sid = 0
-	ClearChannels()
+	ClearChan()
 }
 
 func (p CAU) HandleTD(td *config.TD) {

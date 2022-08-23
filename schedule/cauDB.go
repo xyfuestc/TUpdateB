@@ -64,7 +64,7 @@ func (p CAU_DB) Init()  {
 		TDs: make([]*config.TD, 0, config.MaxBatchSize),
 	}
 
-	ClearChannels()
+	ClearChan()
 }
 func (p CAU_DB) HandleTD(td *config.TD) {
 

@@ -147,7 +147,7 @@ func (p MultiD) Init()  {
 	totalCrossRackTraffic = 0
 	sid = 0
 	SentMsgLog.Init()
-	ClearChannels()
+	ClearChan()
 }
 
 
@@ -211,7 +211,7 @@ func (p MultiD) handleOneReq(reqData config.ReqData)  {
 func (p MultiD) RecordSIDAndReceiverIP(sid int, ip string)  {
 	ackIPMaps.recordIP(sid, ip)
 }
-func ClearChannels()  {
+func ClearChan()  {
 	//清空ACK
 	select {
 	case <-MulticastReceiveAckCh:
@@ -231,7 +231,7 @@ func (p MultiD) Clear()  {
 		ACKReceiverIPs: map[int]string{},
 	}
 
-	ClearChannels()
+	ClearChan()
 
 
 	IsRunning = true

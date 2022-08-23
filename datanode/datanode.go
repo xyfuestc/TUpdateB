@@ -21,23 +21,23 @@ var ticker = time.NewTicker(tickerDuration)
 //func handleCMD(conn net.Conn)  {
 //	defer conn.Close()
 //	cmd := common.GetCMD(conn)
-//	schedule.GetCurPolicy().RecordSIDAndReceiverIP(cmd.SID, common.GetConnIP(conn))
+//	schedule.GetPolicy().RecordSIDAndReceiverIP(cmd.SID, common.GetConnIP(conn))
 //	log.Printf("收到来自 %s 的命令: 将 sid: %d, block: %d 的更新数据发送给 %v.\n", common.GetConnIP(conn), cmd.SID, cmd.BlockID, cmd.ToIPs)
-//	schedule.GetCurPolicy().HandleCMD(&cmd)
+//	schedule.GetPolicy().HandleCMD(&cmd)
 //}
 
 //func handleACK(conn net.Conn) {
 //	defer conn.Close()
 //	ack := common.GetACK(conn)
-//	schedule.GetCurPolicy().HandleACK(&ack)
+//	schedule.GetPolicy().HandleACK(&ack)
 //}
 //
 //func handleTD(conn net.Conn)  {
 //	defer conn.Close()
 //	td := common.GetTD(conn)
 //	log.Printf("收到来自 %s 的TD，sid: %d, blockID: %d.\n", common.GetConnIP(conn), td.SID, td.BlockID)
-//	schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
-//	schedule.GetCurPolicy().HandleTD(&td)
+//	schedule.GetPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
+//	schedule.GetPolicy().HandleTD(&td)
 //}
 
 func setPolicy(conn net.Conn)  {
@@ -59,7 +59,6 @@ func setPolicy(conn net.Conn)  {
 
 	schedule.SetPolicy(config.Policies[p.Type])
 	config.BlockSize = int(p.NumOfMB * config.MB)
-	//config.RSBlockSize = int(p.NumOfMB * config.MB) * config.W
 	config.MaxBlockIndex =  config.TestFileSize / config.BlockSize - 1
 
 	log.Printf("初始化共享池...\n")
@@ -81,13 +80,13 @@ func msgSorter(receivedAckCh <-chan config.ACK, receivedTDCh <-chan config.TD, r
 
 		select {
 		case ack := <-receivedAckCh:
-			schedule.GetCurPolicy().HandleACK(&ack)
+			schedule.GetPolicy().HandleACK(&ack)
 
 		case td := <-receivedTDCh:
-			schedule.GetCurPolicy().HandleTD(&td)
+			schedule.GetPolicy().HandleTD(&td)
 
 		case cmd := <-receivedCMDCh:
-			schedule.GetCurPolicy().HandleCMD(&cmd)
+			schedule.GetPolicy().HandleCMD(&cmd)
 
 		case <- ticker.C:
 			log.Printf("处理超时！")
@@ -178,7 +177,7 @@ func listenCMD(listen net.Listener) {
 		cmd := common.GetCMD(conn)
 		log.Printf("收到来自 %s 的命令: 将 sid: %d, block: %d 的更新数据发送给 %v.\n", common.GetConnIP(conn), cmd.SID, cmd.BlockID, cmd.ToIPs)
 
-		schedule.GetCurPolicy().RecordSIDAndReceiverIP(cmd.SID, common.GetConnIP(conn))
+		schedule.GetPolicy().RecordSIDAndReceiverIP(cmd.SID, common.GetConnIP(conn))
 		schedule.ReceivedCMDCh <- cmd
 		//config.CMDBufferPool.Put(cmd)
 
@@ -229,7 +228,7 @@ func listenTD(listen net.Listener) {
 			return
 		}
 		td := common.GetTD(conn)
-		schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
+		schedule.GetPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
 		schedule.ReceivedTDCh <- td
 		//config.TDBufferPool.Put(td)
 
@@ -275,7 +274,7 @@ func clearAll() {
 	//for _, conn := range connections {
 	//	conn.Close()
 	//}
-	if curPolicy := schedule.GetCurPolicy(); curPolicy != nil {
+	if curPolicy := schedule.GetPolicy(); curPolicy != nil {
 		curPolicy.Clear()
 	}
 	//schedule.CloseAllChannels()

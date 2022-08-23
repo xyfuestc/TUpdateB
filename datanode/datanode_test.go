@@ -66,7 +66,7 @@ func TestMulticast(t *testing.T)  {
 
 
 
-	//schedule.GetCurPolicy().HandleCMD(cmd)
+	//schedule.GetPolicy().HandleCMD(cmd)
 }
 
 func testSliceMem(t *testing.T, f func(b, size int) ) {
@@ -213,7 +213,7 @@ func TestListenTD(t *testing.T) {
 			return
 		}
 		td := common.GetTD(conn)
-		//schedule.GetCurPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
+		//schedule.GetPolicy().RecordSIDAndReceiverIP(td.SID, common.GetConnIP(conn))
 		//schedule.ReceivedTDCh <- td
 		//config.TDBufferPool.Put(td)
 

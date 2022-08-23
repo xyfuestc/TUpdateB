@@ -127,7 +127,7 @@ func SetPolicy(policyType string)  {
 	CurPolicy.Init()
 
 }
-func GetCurPolicy() Policy {
+func GetPolicy() Policy {
 	if CurPolicy == nil {
 		fmt.Println("CurPolicy is nil！")
 	}
@@ -207,7 +207,7 @@ func (p Base) Init()  {
 	actualBlocks = 0
 	round = 0
 	totalCrossRackTraffic = 0
-	ClearChannels()
+	ClearChan()
 
 }
 
