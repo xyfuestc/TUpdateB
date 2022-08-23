@@ -42,8 +42,6 @@ func (p PDN_P) Init()  {
 	round = 0
 	totalCrossRackTraffic = 0
 	ClearChan()
-
-	//追加
 	sid = 0
 }
 

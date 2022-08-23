@@ -1,4 +1,4 @@
-package client
+package main
 
 import (
 	common "EC/common"
@@ -19,7 +19,7 @@ var numOfUpdatedBlocks = 0
 var numOfUserRequests = 0
 const outFilePre = "./request/"
 const outFileSuffix = ".txt"
-const RequestFileName = "./example-traces/rsrch_1.csv"
+const RequestFileName = "./example-traces/hm_0.csv"
 
 func main() {
 
