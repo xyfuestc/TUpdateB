@@ -110,9 +110,9 @@ func ReadBlockWithSize(blockID, size int) []byte  {
 	index := GetIndex(blockID)
 	buff := config.BlockBufferPool.Get().([]byte)
 
-	len := len(buff)
-	if len < size {
-		for i := 0; i < size - len; i++ {
+	length := len(buff)
+	if length < size {
+		for i := 0; i < size -length; i++ {
 			buff = append(buff, byte(0))
 		}
 	}
@@ -125,10 +125,8 @@ func ReadBlockWithSize(blockID, size int) []byte  {
 
 	defer file.Close()
 
-
-
 	readSize, err := file.ReadAt(buff[:size], int64(index * size))
-	log.Printf("index: %v, size:%v, buff len: %v, readSize:%v", index, size, len, readSize)
+	log.Printf("index: %v, size:%v, buff length: %v, readSize:%v", index, size, length, readSize)
 
 	if err != nil {
 		log.Fatal("读取文件失败：", err)

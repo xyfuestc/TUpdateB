@@ -109,16 +109,14 @@ func SetPolicy(policyType string)  {
 		CurPolicy = MultiD{}
 	case "MultiDB":
 		CurPolicy = MultiDB{}
+	//case "TUpdate":
+	//	CurPolicy = TUpdate{}
 	case "TUpdate":
 		CurPolicy = TUpdate{}
-	case "TUpdateD":
-		CurPolicy = TUpdateD{}
 	case "TUpdateB":
 		CurPolicy = TUpdateB{}
-	case "TUpdateDB":
-		CurPolicy = TUpdateDB{}
-	case "TUpdateFB":
-		CurPolicy = TUpdateFB{}
+	case "TUpdateBA":
+		CurPolicy = TUpdateBA{}
 	case "CAU":
 		CurPolicy = CAU{}
 	case "CAU_D":

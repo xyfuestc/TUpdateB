@@ -7,11 +7,11 @@ import (
 )
 /*TUpdate:  delta + handle one block + XOR + tree-structured path + batch */
 
-type TUpdateDB struct {
+type TUpdateBA struct {
 
 }
 
-func (p TUpdateDB) Init()  {
+func (p TUpdateBA) Init()  {
 
 	InitNetworkDistance()
 	ackMaps = &ACKMap{
@@ -32,7 +32,7 @@ func (p TUpdateDB) Init()  {
 	ClearChannels()
 }
 
-func (p TUpdateDB) HandleReq(reqs []*config.ReqData)  {
+func (p TUpdateBA) HandleReq(reqs []*config.ReqData)  {
 
 	totalReqs = reqs
 	log.Printf("一共接收到%d个请求...\n", len(totalReqs))
@@ -41,7 +41,7 @@ func (p TUpdateDB) HandleReq(reqs []*config.ReqData)  {
 		//过滤blocks
 		lenOfBatch := findDistinctReqs()
 		actualBlocks += len(curDistinctReq)
-		log.Printf("第%d轮 TUpdateDB：获取%d个请求，实际处理%d个block\n", round, lenOfBatch, len(curDistinctReq))
+		log.Printf("第%d轮 TUpdateBA：获取%d个请求，实际处理%d个block\n", round, lenOfBatch, len(curDistinctReq))
 
 		//执行reqs
 		p.TUpdateDB(curDistinctReq)
@@ -56,7 +56,7 @@ func (p TUpdateDB) HandleReq(reqs []*config.ReqData)  {
 	}
 }
 
-func (p TUpdateDB) TUpdateDB(reqs []*config.ReqData)   {
+func (p TUpdateBA) TUpdateDB(reqs []*config.ReqData)   {
 
 	oldSid := sid
 	//记录ack
@@ -76,7 +76,7 @@ func (p TUpdateDB) TUpdateDB(reqs []*config.ReqData)   {
 
 
 
-func (p TUpdateDB) handleOneReq(reqData * config.ReqData)  {
+func (p TUpdateBA) handleOneReq(reqData * config.ReqData)  {
 	tasks := GetBalanceTransmitTasks(reqData)
 	//tasks := GetTransmitTasks(reqData)
 	log.Printf("tasks: %v\n", tasks)
@@ -101,7 +101,7 @@ func (p TUpdateDB) handleOneReq(reqData * config.ReqData)  {
 	}
 }
 
-func (p TUpdateDB) HandleTD(td *config.TD)  {
+func (p TUpdateBA) HandleTD(td *config.TD)  {
 
 	//本地数据更新
 	common.WriteDeltaBlock(td.BlockID, td.Buff)
@@ -155,7 +155,7 @@ func (p TUpdateDB) HandleTD(td *config.TD)  {
 	}
 }
 
-func (p TUpdateDB) HandleCMD(cmd *config.CMD)  {
+func (p TUpdateBA) HandleCMD(cmd *config.CMD)  {
 
 	//helpers已到位
 	if IsCMDDataExist(cmd) {
@@ -192,7 +192,7 @@ func (p TUpdateDB) HandleCMD(cmd *config.CMD)  {
 		CMDList.pushCMD(cmd)
 	}
 }
-func (p TUpdateDB) HandleACK(ack *config.ACK)  {
+func (p TUpdateBA) HandleACK(ack *config.ACK)  {
 	restACKs := ackMaps.popACK(ack.SID)
 	if restACKs == 0 {
 		//ms不需要反馈ack
@@ -204,7 +204,7 @@ func (p TUpdateDB) HandleACK(ack *config.ACK)  {
 		}
 	}
 }
-func (p TUpdateDB) Clear()  {
+func (p TUpdateBA) Clear()  {
 	IsRunning = true
 	curDistinctBlocks = make([]int, 0, config.MaxBatchSize)
 	curDistinctReq = make([]*config.ReqData, 0, config.MaxBatchSize)
@@ -214,16 +214,16 @@ func (p TUpdateDB) Clear()  {
 	}
 	NodeMatrix = make(config.Matrix, (config.N)*(config.N))
 }
-func (p TUpdateDB) RecordSIDAndReceiverIP(sid int, ip string)()  {
+func (p TUpdateBA) RecordSIDAndReceiverIP(sid int, ip string)()  {
 	ackIPMaps.recordIP(sid, ip)
 }
-func (p TUpdateDB) IsFinished() bool {
+func (p TUpdateBA) IsFinished() bool {
 	return len(totalReqs) == 0 && ackMaps.isEmpty()
 }
-func (p TUpdateDB) GetActualBlocks() int {
+func (p TUpdateBA) GetActualBlocks() int {
 	return actualBlocks
 }
 
-func (p TUpdateDB) GetCrossRackTraffic() float32 {
+func (p TUpdateBA) GetCrossRackTraffic() float32 {
 	return  float32(totalCrossRackTraffic) / config.MB
 }

@@ -4,6 +4,7 @@ import (
 	"EC/common"
 	"EC/config"
 	"fmt"
+	"github.com/wxnacy/wgo/arrays"
 	"log"
 	"math"
 	"sort"
@@ -16,6 +17,8 @@ var Done = make(chan bool, 1)
 type TUpdateB struct {
 
 }
+
+
 
 type MergeBlockCandidate struct {
 	BlockID int
@@ -411,3 +414,155 @@ func BlockMergeWithAverageSpace(reqs []*config.ReqData, space float64) ([]*confi
 
 	return mergeReqs, nextSpace
 }
+func getAdjacentMatrix(parities []byte, nodeID int, allMatrix []byte) (config.Matrix, config.Matrix) {
+	nodeIDs := make(config.Matrix, 0, (1+config.M)*(1+config.M))
+	nodeIDs = append(nodeIDs, (byte)(nodeID))
+	for i := 0; i < len(parities); i++ {
+		if arrays.Contains(nodeIDs, parities[i]) < 0 {
+			nodeIDs = append(nodeIDs, parities[i])
+		}
+	}
+	len := len(nodeIDs) //[0 4 5]
+	newMatrix := make(config.Matrix, len*len)
+	for i := 0; i < len; i++ {
+		for j := 0; j < len; j++ {
+			value :=  nodeIDs[i]*(byte)(config.N)+ nodeIDs[j]
+			newMatrix[i*len+j] = allMatrix[value]
+		}
+	}
+	return newMatrix, nodeIDs
+}
+func InitNetworkDistance()  {
+	for i := 0; i < config.N; i++ {
+		for j := 0; j < config.N; j++ {
+			if i == j {
+				NodeMatrix[i*config.N+j] = 0
+			}else{
+				NodeMatrix[i*config.N+j] = 2
+			}
+		}
+	}
+	//初始化Rack内部网络距离
+	for r := 0; r < config.N / config.RackSize; r++ {
+		curRackMinNode := config.RackSize * r
+		curRackMaxNode := config.RackSize * r + config.RackSize
+		for i := curRackMinNode; i < curRackMaxNode; i++ {
+			for j := curRackMinNode; j < curRackMaxNode; j++ {
+				if i != j {
+					NodeMatrix[i*config.N+j] = 1
+				}
+			}
+		}
+	}
+}
+/*Prim算法*/
+func Prim(G Graph) config.Matrix{
+	var lowCost = [MAX_COUNT]byte{}
+	var vertex = make(config.Matrix, MAX_COUNT)
+	lowCost[0] = 0
+	for j := 1; j < G.N; j++ {
+		lowCost[j] = G.Arc[0][j]
+		vertex[j] = 0
+	}
+	for i := 1; i < G.N; i++ {
+		k := 1
+		min := INFINITY
+		for j := 1; j < G.N; j++ {
+			if lowCost[j] != 0 && lowCost[j] < min {
+				min = lowCost[j]
+				k = j
+			}
+		}
+		lowCost[k] = 0
+		for j := 0; j < G.N; j++ {
+			if lowCost[j] != 0 && G.Arc[k][j] < lowCost[j] {
+				lowCost[j] = G.Arc[k][j]
+				vertex[j] = byte(k)
+			}
+		}
+	}
+	return vertex
+}
+/*构造函数*/
+func NewGraph(N int) Graph {
+	buf := make([][]byte, N)
+	for i := 0; i < N; i++ {
+		buf[i] = make([]byte, N)
+	}
+	return Graph{
+		N: N,
+		M: 0,
+		Arc: buf,
+	}
+}
+/*测试*/
+func GetMSTPath(matrix, nodeIndexs config.Matrix) config.Matrix   {
+	len := len(nodeIndexs)
+	G := NewGraph(len)
+	for i := 0; i < G.N; i++ {
+		for j := 0; j < G.N; j++ {
+			G.Arc[i][j] = matrix[i*len+j]
+		}
+	}
+	path := Prim(G)
+	return path
+}
+
+func getBalancePath(path, nodeIndexes []byte) []byte  {
+	childNum := initChild(path)
+
+	for i := 0; i < len(nodeIndexes); i++ {
+		for childNum[i] > 2 {
+			j := findOne(i, path)
+			adjustOnce(j, path, childNum)
+		}
+	}
+	return path
+}
+
+func initChild(path []byte) []int {
+	childNum := make([]int, len(path))
+	for i, v := range path {
+		//root节点
+		if i == int(v) {
+			continue
+		}
+		childNum[v]++
+	}
+	return childNum
+}
+
+func findOne(i int, path []byte) int {
+	for j, v := range path{
+		if int(v) == i {
+			return j
+		}
+	}
+	return -1
+}
+
+func adjustOnce(i int, path []byte, childNum []int) {
+	originNode := i
+	//前向查找
+	p := i - 1
+	for p >= 0 {
+		if childNum[p] < 2 {
+			childNum[path[originNode]]--
+			path[i] = byte(p)
+			childNum[p]++
+			return
+		}
+		p--
+	}
+	p = i + 1
+	for p < len(childNum) {
+		if childNum[p] < 2 {
+			path[i] = byte(p)
+			childNum[p]++
+			childNum[originNode]--
+			return
+		}
+		p++
+	}
+}
+
