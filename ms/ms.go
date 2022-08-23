@@ -6,7 +6,6 @@ import (
 	"EC/schedule"
 	"bufio"
 	"flag"
-	"github.com/pkg/profile"
 	"io"
 	"log"
 	"math"
