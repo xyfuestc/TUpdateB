@@ -54,11 +54,11 @@ func checkFinish() {
 		atomic.StoreInt32(&roundFinished, 1)
 
 		throughput :=  float64(num) * float64(*NumOfMB) / t.Seconds()
-		throughputs = append(throughputs, throughput)
+		//throughputs = append(throughputs, throughput)
 		actNum = schedule.GetPolicy().GetActualBlocks()
 		speed := float64(t/time.Millisecond) / float64(actNum) / 1000       //单块更新时间（s）
 		traffic := float64(schedule.GetPolicy().GetCrossRackTraffic()) / float64(num)
-		traffics = append(traffics, traffic)
+		//traffics = append(traffics, traffic)
 
 		log.Printf("%s 总耗时: %.2fs, 完成更新任务: %d, 实际处理任务数: %d, 单块更新时间: %0.2fs, 吞吐量: %0.2fMB/s，单块平均跨域流量为：%0.3fMB\n",
 			config.Policies[policy], t.Seconds(), num, actNum, speed, throughput, traffic)
@@ -83,25 +83,19 @@ func main() {
 	//defer profile.Start(profile.MemProfile, profile.MemProfileRate(1)).Stop()
 
 	flag.Parse()
-	//初始化
-	config.Init()
-
 	OutFilePath = "../request/"+*traceName+"_"+strconv.Itoa(int(*NumOfMB))+"M.csv.txt"
 
-	//监听ack
-	log.Printf("ms启动...")
-	log.Printf("监听ack: %s:%s\n", common.GetLocalIP(), config.NodeACKListenPort)
+	config.Init()
+	log.Printf("ms启动...监听ack: %s:%s\n", common.GetLocalIP(), config.NodeACKListenPort)
 
-	//当发生意外退出时，释放所有资源
-	registerSafeExit()
-	//监听并接收ack，检测程序结束
-	listenAndReceive(config.NumOfWorkers)
+	registerSafeExit()                          //当发生意外退出时，释放所有资源
+	listenAndReceive(config.NumOfWorkers)       //监听并接收ack，检测程序结束
 
-	GetReqsFromTrace()
-	policyID := int32(*policyID)
-	//curPolicyVal := atomic.LoadInt32(&policyID)
-	for i := 1; i <= testNum; i++ {
-		log.Printf("算法:%v 第%v次实验.", config.Policies[policyID], i)
+	GetReqsFromTrace()                          //获取访问记录
+	policyValue := int32(*policyID)
+	//curPolicyVal := atomic.LoadInt32(&policyValue)
+	//for i := 1; i <= testNum; i++ {
+	//	log.Printf("算法:%v 第%v次实验.", config.Policies[policyValue], i)
 		clear()
 		start(totalReqs)
 		//保证主线程运行
@@ -109,12 +103,10 @@ func main() {
 			isRoundFinished := atomic.LoadInt32(&roundFinished)
 			if isRoundFinished == 1 {
 				//进入下一轮
-				atomic.AddInt32(&policyID, 1)
 				break
 			}
 		}
-		//curPolicyVal = atomic.LoadInt32(&policyID)
-	}
+	//}
 	//清空
 	clearAll()
 	//通知各个节点退出
@@ -124,7 +116,7 @@ func main() {
 	throughputMin, throughputMax, throughputAver := getMinMaxAver(throughputs)
 	trafficMin, trafficMax, trafficAver := getMinMaxAver(traffics)
 	fmt.Printf("运行%v次算法【%v】结束...吞吐量:[%v, %v], 平均值：%v, 跨域流量:[%v, %v], 平均值：%v \n",
-					testNum, config.Policies[policyID], throughputMin, throughputMax, throughputAver, trafficMin, trafficMax, trafficAver)
+					testNum, config.Policies[policyValue], throughputMin, throughputMax, throughputAver, trafficMin, trafficMax, trafficAver)
 
 }
 func listenAndReceive(maxWorkers int)  {
@@ -266,7 +258,6 @@ func registerSafeExit()  {
 		for range c {
 			clearAll()
 			schedule.GetPolicy().Clear()
-			//schedule.CloseAllChannels()
 			os.Exit(0)
 		}
 	}()

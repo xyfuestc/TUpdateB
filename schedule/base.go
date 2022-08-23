@@ -109,8 +109,6 @@ func SetPolicy(policyType string)  {
 		CurPolicy = MultiD{}
 	case "MultiDB":
 		CurPolicy = MultiDB{}
-	//case "TUpdate":
-	//	CurPolicy = TUpdate{}
 	case "TUpdate":
 		CurPolicy = TUpdate{}
 	case "TUpdateB":
@@ -209,6 +207,8 @@ func (p Base) Init()  {
 	totalCrossRackTraffic = 0
 	ClearChan()
 
+	//追加
+	sid = 0
 }
 
 func getBatchReqs() []*config.ReqData {
