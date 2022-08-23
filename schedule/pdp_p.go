@@ -55,7 +55,7 @@ func (p PDN_P) HandleReq(reqs []*config.ReqData)  {
 		//过滤blocks
 		batchReqs := getBatchReqs()
 		actualBlocks += len(batchReqs)
-		log.Printf("第%d轮 BASE：处理%d个block\n", round, len(batchReqs))
+		log.Printf("第%d轮 PDN-P 处理%d个block\n", round, len(batchReqs))
 		//执行base
 		p.base(batchReqs)
 
