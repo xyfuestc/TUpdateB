@@ -6,7 +6,6 @@ import (
 	"EC/schedule"
 	"bufio"
 	"flag"
-	"fmt"
 	"io"
 	"log"
 	"math"
@@ -92,7 +91,7 @@ func main() {
 	listenAndReceive(config.NumOfWorkers)       //监听并接收ack，检测程序结束
 
 	GetReqsFromTrace()                          //获取访问记录
-	policyValue := int32(*policyID)
+	//policyValue := int32(*policyID)
 	//curPolicyVal := atomic.LoadInt32(&policyValue)
 	//for i := 1; i <= testNum; i++ {
 	//	log.Printf("算法:%v 第%v次实验.", config.Policies[policyValue], i)
@@ -113,10 +112,10 @@ func main() {
 	if *closeNodes == 1{
 		notifyNodesQuit()
 	}
-	throughputMin, throughputMax, throughputAver := getMinMaxAver(throughputs)
-	trafficMin, trafficMax, trafficAver := getMinMaxAver(traffics)
-	fmt.Printf("运行%v次算法【%v】结束...吞吐量:[%v, %v], 平均值：%v, 跨域流量:[%v, %v], 平均值：%v \n",
-					testNum, config.Policies[policyValue], throughputMin, throughputMax, throughputAver, trafficMin, trafficMax, trafficAver)
+	//throughputMin, throughputMax, throughputAver := getMinMaxAver(throughputs)
+	//trafficMin, trafficMax, trafficAver := getMinMaxAver(traffics)
+	//fmt.Printf("运行%v次算法【%v】结束...吞吐量:[%v, %v], 平均值：%v, 跨域流量:[%v, %v], 平均值：%v \n",
+	//				testNum, config.Policies[policyValue], throughputMin, throughputMax, throughputAver, trafficMin, trafficMax, trafficAver)
 
 }
 func listenAndReceive(maxWorkers int)  {
