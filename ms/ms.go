@@ -286,10 +286,10 @@ func getMinMaxAver(results []float64) (min, max, aver float64) {
 	max = -1
 	for _, result := range results {
 		sum += result
-		if min < result {
+		if result < min {
 			min = result
 		}
-		if max > result {
+		if result > max {
 			max = result
 		}
 	}
