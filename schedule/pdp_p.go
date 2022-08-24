@@ -3,6 +3,7 @@ package schedule
 import (
 	"EC/common"
 	"EC/config"
+	"fmt"
 	"log"
 )
 
@@ -59,13 +60,13 @@ func (p PDN_P) HandleReq(reqs []*config.ReqData)  {
 		//执行base
 		p.pdn_p(batchReqs)
 
-		//select {
-		//case <-Done:
-		//	log.Printf("本轮结束！\n")
-		//	log.Printf("======================================\n")
+		select {
+		case <-Done:
+			log.Printf("本轮结束！\n")
+			log.Printf("======================================\n")
 			round++
 			p.Clear()
-		//}
+		}
 	}
 
 
@@ -89,8 +90,8 @@ func (p PDN_P) pdn_p(reqs []*config.ReqData)  {
 		sid++
 	}
 	sid = 0
-	//nodes := GetSourceNodeNums(reqs)
-	//fmt.Println(nodes)
+	nodes := GetSourceNodeNums(reqs)
+	fmt.Println(nodes)
 	for _, req := range reqs {
 		req.SID = sid
 		p.handleOneBlock(*req)
