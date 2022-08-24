@@ -58,12 +58,13 @@ func recordSpaceAndTime(space int, spendTime time.Duration, averageSpace float64
 
 func TestMS(t *testing.T)  {
 	config.InitBufferPool()
-	OutFilePath = "../request/"+*traceName+"_"+strconv.Itoa(int(*NumOfMB))+"M.csv.txt"
+	config.Init()
+	OutFilePath = "../request/hm_0_4M.csv.txt"
 	GetReqsFromTrace()
 
 
 	log.Printf(" [%s]算法开始运行，总共block请求数量为：%d\n", config.Policies[*policyID], num)
-	schedule.SetPolicy("TUpdateB")
+	schedule.SetPolicy("PDN_P")
 	schedule.GetPolicy().HandleReq(totalReqs)
 
 }

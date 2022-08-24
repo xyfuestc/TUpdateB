@@ -257,7 +257,7 @@ func IsClosed(ch <-chan interface{}) bool {
 }
 
 func CloseAllChannels()  {
-	//base
+	//pdn_p
 	_, beforeClosed := <-ReceivedAckCh
 	if !beforeClosed {
 		fmt.Println("ReceivedAckCh has been closed")
