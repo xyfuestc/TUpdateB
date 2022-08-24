@@ -92,13 +92,6 @@ func (p PDN_P) pdn_p(reqs []*config.ReqData)  {
 	//nodes := GetSourceNodeNums(reqs)
 	//fmt.Println(nodes)
 	for _, req := range reqs {
-		//req := config.ReqData{
-		//  BlockID: req.BlockID,
-		//  SID:     sid,
-		//  RangeLeft: req.RangeLeft,
-		//  RangeRight: req.RangeRight,
-		//}
-
 		req.SID = sid
 		p.handleOneBlock(*req)
 		sid++
@@ -112,7 +105,7 @@ func (p PDN_P) handleOneBlock(reqData config.ReqData)  {
 		reqData.RangeRight-reqData.RangeLeft, nil)
 	//跨域流量统计
 	totalCrossRackTraffic += len(toIPs) * (reqData.RangeRight - reqData.RangeLeft)
-	//log.Printf("(%v, %v, %v)，size：%v KB\n", nodeID, reqData.BlockID, toIPs, float32(reqData.RangeRight - reqData.RangeLeft)/config.KB)
+	log.Printf("(%v, %v, %v)，size：%v KB\n", nodeID, reqData.BlockID, toIPs, float32(reqData.RangeRight - reqData.RangeLeft)/config.KB)
 }
 func (p PDN_P) RecordSIDAndReceiverIP(sid int, ip string)  {
 	ackIPMaps.recordIP(sid, ip)
