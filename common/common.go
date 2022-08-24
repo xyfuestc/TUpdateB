@@ -222,8 +222,8 @@ func SendCMDWithSizeAndHelper(fromIP string, toIPs []string, sid, blockID, sendS
 	cmd.FromIP = fromIP
 	cmd.SendSize = sendSize
 
-	fmt.Printf("发送命令 sid:%v, blockID:%v, toIP:%v, fromIP:%v, sendSize:%0.2f KB\n",
-							cmd.SID, cmd.BlockID, cmd.ToIPs, cmd.FromIP, float32(cmd.SendSize)/config.KB)
+	//fmt.Printf("发送命令 sid:%v, blockID:%v, toIP:%v, fromIP:%v, sendSize:%0.2f KB\n",
+	//						cmd.SID, cmd.BlockID, cmd.ToIPs, cmd.FromIP, float32(cmd.SendSize)/config.KB)
 	SendData(cmd, fromIP, config.NodeCMDListenPort)
 
 	config.CMDBufferPool.Put(cmd)

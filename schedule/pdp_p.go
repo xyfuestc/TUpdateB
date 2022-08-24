@@ -55,9 +55,9 @@ func (p PDN_P) HandleReq(reqs []*config.ReqData)  {
 		//过滤blocks
 		batchReqs := getBatchReqs()
 		actualBlocks += len(batchReqs)
-		log.Printf("第%d轮 BASE：处理%d个block\n", round, len(batchReqs))
+		log.Printf("第%d轮 PDN-P 处理%d个block\n", round, len(batchReqs))
 		//执行base
-		p.base(batchReqs)
+		p.pdn_p(batchReqs)
 
 		select {
 		case <-Done:
@@ -70,19 +70,28 @@ func (p PDN_P) HandleReq(reqs []*config.ReqData)  {
 
 
 }
-func (p PDN_P) base(reqs []*config.ReqData)  {
+func GetSourceNodeNums(reqs []*config.ReqData) map[int]int {
+	nodes := map[int]int{}
+	for _, req := range reqs {
+		 nodeID := common.GetNodeID(req.BlockID)
+		if _, ok := nodes[nodeID]; ok {
+			// 存在
+			nodes[nodeID] += 1
+		}else{
+			nodes[nodeID] = 1
+		}
+	}
+	return nodes
+}
+func (p PDN_P) pdn_p(reqs []*config.ReqData)  {
 	for _, _ = range reqs {
 		ackMaps.pushACK(sid)
 		sid++
 	}
 	sid = 0
+	//nodes := GetSourceNodeNums(reqs)
+	//fmt.Println(nodes)
 	for _, req := range reqs {
-		//req := config.ReqData{
-		//  BlockID: req.BlockID,
-		//  SID:     sid,
-		//  RangeLeft: req.RangeLeft,
-		//  RangeRight: req.RangeRight,
-		//}
 		req.SID = sid
 		p.handleOneBlock(*req)
 		sid++
@@ -96,9 +105,7 @@ func (p PDN_P) handleOneBlock(reqData config.ReqData)  {
 		reqData.RangeRight-reqData.RangeLeft, nil)
 	//跨域流量统计
 	totalCrossRackTraffic += len(toIPs) * (reqData.RangeRight - reqData.RangeLeft)
-	log.Printf("sid : %d, 发送命令给 Node %d (%s)，使其将Block %d 发送给 %v, 数据量大小：%v KB\n", reqData.SID,
-		nodeID, common.GetNodeIP(nodeID), reqData.BlockID, toIPs, float32(reqData.RangeRight - reqData.RangeLeft)/config.KB)
-
+	log.Printf("(%v, %v, %v)，size：%v KB\n", nodeID, reqData.BlockID, toIPs, float32(reqData.RangeRight - reqData.RangeLeft)/config.KB)
 }
 func (p PDN_P) RecordSIDAndReceiverIP(sid int, ip string)  {
 	ackIPMaps.recordIP(sid, ip)

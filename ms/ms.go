@@ -32,7 +32,7 @@ var Done = make(chan bool, 1)
 
 var t time.Duration = 0
 var NumOfMB = flag.Float64("b", 4, "块大小：int型参数，默认：64MB")
-var policyID = flag.Int("p", 0, "策略ID：0-Base;1-CRRepairBoost;2-Express，默认：0")
+var policyID = flag.Int("p", 0, "策略ID：0-PDN_P;1-CRRepairBoost;2-Express，默认：0")
 var closeNodes = flag.Int("c", 0, "是否程序结束自动关闭各节点？1-关闭；0-不关闭，默认：0")
 var traceName = flag.String("f", "rsrch_2", "日志文件名，默认：rsrch_2")
 var throughputs = make([]float64, 0, testNum)
