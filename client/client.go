@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	common "EC/common"

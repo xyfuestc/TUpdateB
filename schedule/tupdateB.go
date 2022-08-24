@@ -94,7 +94,7 @@ func (p TUpdateB) TUpdateB(reqs []*config.ReqData)   {
 func (p TUpdateB) handleOneReq(reqData * config.ReqData)  {
 	tasks := GetBalanceTransmitTasks(reqData)
 	//tasks := GetTransmitTasks(reqData)
-	log.Printf("tasks: %v\n", tasks)
+	//log.Printf("tasks: %v\n", tasks)
 	for _, task := range tasks {
 
 		//构造cmd
