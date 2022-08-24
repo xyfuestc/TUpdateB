@@ -59,7 +59,7 @@ func recordSpaceAndTime(space int, spendTime time.Duration, averageSpace float64
 func TestMS(t *testing.T)  {
 	config.InitBufferPool()
 	config.Init()
-	OutFilePath = "../request/hm_0_4M.csv.txt"
+	OutFilePath = "../request/wdev_1_4M.csv.txt"
 	GetReqsFromTrace()
 
 

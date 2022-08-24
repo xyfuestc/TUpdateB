@@ -3,7 +3,6 @@ package schedule
 import (
 	"EC/common"
 	"EC/config"
-	"fmt"
 	"log"
 )
 
@@ -90,8 +89,8 @@ func (p PDN_P) pdn_p(reqs []*config.ReqData)  {
 		sid++
 	}
 	sid = 0
-	nodes := GetSourceNodeNums(reqs)
-	fmt.Println(nodes)
+	//nodes := GetSourceNodeNums(reqs)
+	//fmt.Println(nodes)
 	for _, req := range reqs {
 		//req := config.ReqData{
 		//  BlockID: req.BlockID,
