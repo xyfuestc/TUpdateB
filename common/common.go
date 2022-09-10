@@ -64,7 +64,7 @@ func SendData(data interface{}, targetIP string, port string) {
 	conn.Close()
 }
 func GetStripeIDFromBlockID(blockID int) int {
-	return blockID/(config.K * config.W)
+	return blockID/config.K
 }
 
 func GetRSStripeIDFromBlockID(blockID int) int {
