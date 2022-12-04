@@ -422,12 +422,12 @@ func getAdjacentMatrix(parities []byte, nodeID int, allMatrix []byte) (config.Ma
 			nodeIDs = append(nodeIDs, parities[i])
 		}
 	}
-	len := len(nodeIDs) //[0 4 5]
-	newMatrix := make(config.Matrix, len*len)
-	for i := 0; i < len; i++ {
-		for j := 0; j < len; j++ {
+	length := len(nodeIDs) //[0 4 5]
+	newMatrix := make(config.Matrix, length*length)
+	for i := 0; i < length; i++ {
+		for j := 0; j < length; j++ {
 			value :=  nodeIDs[i]*(byte)(config.N)+ nodeIDs[j]
-			newMatrix[i*len+j] = allMatrix[value]
+			newMatrix[i*length+j] = allMatrix[value]
 		}
 	}
 	return newMatrix, nodeIDs

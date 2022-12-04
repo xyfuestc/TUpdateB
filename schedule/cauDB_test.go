@@ -44,3 +44,11 @@ func initReqs() []*config.ReqData {
 	}
 	return reqs
 }
+
+func TestPrim(t *testing.T)  {
+	getAdjacentMatrix()
+	path := GetMSTPath(relatedParityMatrix, nodeIndexs)
+
+	//bPath := getBalancePath(path, nodeIndexs)
+	//log.Printf("bPath : %v\n", bPath)
+}
